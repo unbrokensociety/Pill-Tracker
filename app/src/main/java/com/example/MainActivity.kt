@@ -177,55 +177,26 @@ fun MainScreen(viewModel: MainViewModel) {
                 startDestination = "home",
                 modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
                 enterTransition = {
-                    val initialRoute = initialState.destination.route
                     val targetRoute = targetState.destination.route
                     if (targetRoute == "add") {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = tween(250, easing = FastOutSlowInEasing)
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
                         )
-                    } else if (initialRoute == "add") {
-                        fadeIn(animationSpec = tween(150))
                     } else {
-                        val initialIdx = getRouteIndex(initialRoute)
-                        val targetIdx = getRouteIndex(targetRoute)
-                        if (targetIdx > initialIdx) {
-                            slideIntoContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(250, easing = FastOutSlowInEasing)
-                            )
-                        } else {
-                            slideIntoContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(250, easing = FastOutSlowInEasing)
-                            )
-                        }
+                        fadeIn(animationSpec = tween(180, easing = LinearOutSlowInEasing)) + 
+                        scaleIn(initialScale = 0.98f, animationSpec = tween(180, easing = LinearOutSlowInEasing))
                     }
                 },
                 exitTransition = {
                     val initialRoute = initialState.destination.route
-                    val targetRoute = targetState.destination.route
                     if (initialRoute == "add") {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(250, easing = FastOutSlowInEasing)
+                            animationSpec = tween(250, easing = FastOutLinearInEasing)
                         )
-                    } else if (targetRoute == "add") {
-                        fadeOut(animationSpec = tween(150))
                     } else {
-                        val initialIdx = getRouteIndex(initialRoute)
-                        val targetIdx = getRouteIndex(targetRoute)
-                        if (targetIdx > initialIdx) {
-                            slideOutOfContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(250, easing = FastOutSlowInEasing)
-                            )
-                        } else {
-                            slideOutOfContainer(
-                                AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(250, easing = FastOutSlowInEasing)
-                            )
-                        }
+                        fadeOut(animationSpec = tween(120, easing = FastOutLinearInEasing))
                     }
                 }
             ) {

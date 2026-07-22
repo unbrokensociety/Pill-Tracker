@@ -10,11 +10,13 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.MainActivity
 import com.example.R
+import com.example.ui.locale.LocaleHelper
 import kotlinx.coroutines.*
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val medicationName = intent?.getStringExtra("EXTRA_MEDICATION_NAME") ?: context.getString(R.string.alarm_default_med)
+        val localizedContext = LocaleHelper.getLocalizedContext(context)
+        val medicationName = intent?.getStringExtra("EXTRA_MEDICATION_NAME") ?: localizedContext.getString(R.string.alarm_default_med)
         val scheduleId = intent?.getIntExtra("EXTRA_SCHEDULE_ID", -1) ?: -1
         
         showNotification(context, medicationName, scheduleId)
@@ -46,35 +48,37 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 
     private fun showNotification(context: Context, medicationName: String, scheduleId: Int) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val localizedContext = LocaleHelper.getLocalizedContext(context)
+        val notificationManager = localizedContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "medication_channel"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                context.getString(R.string.alarm_channel_name),
+                localizedContext.getString(R.string.alarm_channel_name),
                 NotificationManager.IMPORTANCE_HIGH
             )
-            channel.description = context.getString(R.string.alarm_channel_desc)
+            channel.description = localizedContext.getString(R.string.alarm_channel_desc)
             notificationManager.createNotificationChannel(channel)
         }
 
-        val mainIntent = Intent(context, MainActivity::class.java).apply {
+        val mainIntent = Intent(localizedContext, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         val pendingIntent = PendingIntent.getActivity(
-            context,
+            localizedContext,
             scheduleId,
             mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val builder = NotificationCompat.Builder(context, channelId)
-            // .setSmallIcon(R.mipmap.ic_launcher) // In real app, standard drawable
-            // Using system icon for simplicity if resources not synced
+        val defaultMedName = localizedContext.getString(R.string.alarm_default_med)
+        val finalMedName = if (medicationName.isBlank()) defaultMedName else medicationName
+
+        val builder = NotificationCompat.Builder(localizedContext, channelId)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle(context.getString(R.string.alarm_title, medicationName))
-            .setContentText(context.getString(R.string.alarm_text))
+            .setContentTitle(localizedContext.getString(R.string.alarm_title, finalMedName))
+            .setContentText(localizedContext.getString(R.string.alarm_text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -82,3 +86,4 @@ class AlarmReceiver : BroadcastReceiver() {
         notificationManager.notify(scheduleId, builder.build())
     }
 }
+

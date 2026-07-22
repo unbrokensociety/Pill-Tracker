@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MediTracker</string>
+    <string name="app_name">Pill Tracker</string>
     <string name="nav_today">Today</string>
     <string name="nav_calendar">Calendar</string>
     <string name="nav_meds">Meds</string>
@@ -16,6 +16,11 @@
     <string name="action_save">Save</string>
     <string name="action_add">Add</string>
     <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_edit">Edit</string>
+    
+    <string name="dialog_delete_title">Delete Medication</string>
+    <string name="dialog_delete_msg">Are you sure you want to delete %1$s? All schedule history for this medication will be removed.</string>
     
     <string name="calendar_history">Intake History</string>
     <string name="calendar_placeholder">Please use the date selector on the home screen to view history.</string>
@@ -38,6 +43,7 @@
     <string name="settings_notifications">Notifications Enabled</string>
     
     <string name="settings_language">Language</string>
+    <string name="settings_lang_system">System Default</string>
     <string name="settings_lang_en">English</string>
     <string name="settings_lang_uk">Ukrainian (Українська)</string>
     <string name="settings_lang_ru">Russian (Русский)</string>
@@ -46,8 +52,8 @@
     <string name="settings_stats_today_ratio">Today\'s compliance</string>
     <string name="settings_stats_active_meds">Registered medications: %1$d</string>
     <string name="settings_about">About app</string>
-    <string name="settings_about_desc">MediTracker is your personal healthcare assistant. Take your medications on time and stay healthy!</string>
-    <string name="settings_version">Version 1.1.0</string>
+    <string name="settings_about_desc">Pill Tracker is your personal healthcare assistant. Take your medications on time and stay healthy!</string>
+    <string name="settings_version">Version 1.2.0</string>
     
     <string name="status_taken">Taken</string>
     

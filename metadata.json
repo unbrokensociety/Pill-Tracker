@@ -1,6 +1,6 @@
 {
-  "name": "Напоминание о таблетках",
-  "description": "Приложение с уведомлениями и отслеживанием расписания приема лекарств.",
+  "name": "Pill Tracker",
+  "description": "Smart medication reminder and schedule tracker.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

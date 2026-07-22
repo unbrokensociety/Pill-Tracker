@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Таблетница</string>
+    <string name="app_name">Pill Tracker</string>
     <string name="nav_today">Сегодня</string>
     <string name="nav_calendar">Календарь</string>
     <string name="nav_meds">Лекарства</string>
@@ -16,6 +16,11 @@
     <string name="action_save">Сохранить</string>
     <string name="action_add">Добавить</string>
     <string name="action_delete">Удалить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_edit">Редактировать</string>
+    
+    <string name="dialog_delete_title">Удалить лекарство</string>
+    <string name="dialog_delete_msg">Вы уверены, что хотите удалить %1$s? Вся история расписания для этого препарата будет удалена.</string>
     
     <string name="calendar_history">История приема</string>
     <string name="calendar_placeholder">Пожалуйста, используйте переключатель дней на главном экране для просмотра истории.</string>
@@ -38,6 +43,7 @@
     <string name="settings_notifications">Уведомления включены</string>
     
     <string name="settings_language">Язык</string>
+    <string name="settings_lang_system">Системный язык</string>
     <string name="settings_lang_en">Английский (English)</string>
     <string name="settings_lang_uk">Украинский (Українська)</string>
     <string name="settings_lang_ru">Русский (Русский)</string>
@@ -46,8 +52,8 @@
     <string name="settings_stats_today_ratio">Выпито сегодня</string>
     <string name="settings_stats_active_meds">Зарегистрировано лекарств: %1$d</string>
     <string name="settings_about">О приложении</string>
-    <string name="settings_about_desc">Таблетница — ваш персональный медицинский помощник. Принимайте лекарства вовремя и будьте здоровы!</string>
-    <string name="settings_version">Версия 1.1.0</string>
+    <string name="settings_about_desc">Pill Tracker — ваш персональный медицинский помощник. Принимайте лекарства вовремя и будьте здоровы!</string>
+    <string name="settings_version">Версия 1.2.0</string>
     
     <string name="status_taken">Принято</string>
     
@@ -58,6 +64,7 @@
     <string name="add_med_empty_time_warning">Пожалуйста, добавьте хотя бы одно время приема</string>
     <string name="add_med_intake_number">Прием №%1$d</string>
     <string name="add_med_delete_time">Удалить время приема</string>
+    <string name="add_med_color_label">Цветовая метка</string>
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">Общие параметры</string>

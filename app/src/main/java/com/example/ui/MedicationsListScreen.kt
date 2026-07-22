@@ -31,6 +31,44 @@ import com.example.data.Medication
 @Composable
 fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit.Dp) {
     val medications by viewModel.allMedications.collectAsState()
+    var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
+
+    if (medicationToDelete != null) {
+        val med = medicationToDelete!!
+        AlertDialog(
+            onDismissRequest = { medicationToDelete = null },
+            title = {
+                Text(
+                    text = stringResource(R.string.dialog_delete_title),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = stringResource(R.string.dialog_delete_msg, med.name)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteMedication(med)
+                        medicationToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.action_delete))
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { medicationToDelete = null }
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -120,7 +158,7 @@ fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.comp
                         ) {
                             MedicationInfoCard(
                                 medication = med,
-                                onDelete = { viewModel.deleteMedication(med) }
+                                onDelete = { medicationToDelete = med }
                             )
                         }
                     }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Таблетниця</string>
+    <string name="app_name">Pill Tracker</string>
     <string name="nav_today">Сьогодні</string>
     <string name="nav_calendar">Календар</string>
     <string name="nav_meds">Ліки</string>
@@ -8,7 +8,7 @@
     <string name="home_no_schedules">Немає розкладу на цей день</string>
     
     <string name="add_med_title">Додати ліки</string>
-    <string name="add_med_name_label">Назва ліків</string>
+    <string name="add_med_name_label">Назва препарату</string>
     <string name="add_med_dosage_label">Дозування (наприклад, 1 таблетка)</string>
     <string name="add_med_time_label">Час прийому</string>
     <string name="add_med_add_time">Додати час</string>
@@ -16,17 +16,22 @@
     <string name="action_save">Зберегти</string>
     <string name="action_add">Додати</string>
     <string name="action_delete">Вилучити</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_edit">Редагувати</string>
+    
+    <string name="dialog_delete_title">Вилучити ліки</string>
+    <string name="dialog_delete_msg">Ви впевнені, що хочете вилучити %1$s? Усю історію розкладу для цього препарату буде видалено.</string>
     
     <string name="calendar_history">Історія прийому</string>
     <string name="calendar_placeholder">Будь ласка, використовуйте перемикач днів на головному екрані для перегляду історії.</string>
     
     <string name="meds_my_meds">Мої ліки</string>
-    <string name="meds_no_meds">Ви ще не додали ліків</string>
+    <string name="meds_no_meds">Ви ще не додали жодного препарату</string>
     <string name="meds_intakes_per_day">Прийомів на день: %1$d</string>
-
-    <string name="alarm_default_med">Ліки</string>
+    
+    <string name="alarm_default_med">Препарат</string>
     <string name="alarm_title">Час прийняти %1$s</string>
-    <string name="alarm_text">Не забудьте випити свої ліки!</string>
+    <string name="alarm_text">Не забудьте прийняти свої ліки!</string>
     <string name="alarm_channel_name">Сповіщення про ліки</string>
     <string name="alarm_channel_desc">Нагадування про прийом препаратів</string>
     
@@ -35,19 +40,20 @@
     <string name="settings_theme_system">Системна</string>
     <string name="settings_theme_light">Світла</string>
     <string name="settings_theme_dark">Темна</string>
-    <string name="settings_notifications">Сповіщення увімкнені</string>
+    <string name="settings_notifications">Сповіщення увімкнено</string>
     
     <string name="settings_language">Мова</string>
+    <string name="settings_lang_system">Системна мова</string>
     <string name="settings_lang_en">Англійська (English)</string>
     <string name="settings_lang_uk">Українська (Українська)</string>
     <string name="settings_lang_ru">Російська (Русский)</string>
     
     <string name="settings_stats">Прогрес прийому</string>
-    <string name="settings_stats_today_ratio">Випито сьогодні</string>
+    <string name="settings_stats_today_ratio">Прийнято сьогодні</string>
     <string name="settings_stats_active_meds">Зареєстровано ліків: %1$d</string>
-    <string name="settings_about">Про додаток</string>
-    <string name="settings_about_desc">Таблетниця — ваш персональний медичний помічник. Приймайте ліки вчасно та будьте здорові!</string>
-    <string name="settings_version">Версія 1.1.0</string>
+    <string name="settings_about">Про застосунок</string>
+    <string name="settings_about_desc">Pill Tracker — ваш персональний медичний помічник. Приймайте ліки вчасно та будьте здорові!</string>
+    <string name="settings_version">Версія 1.2.0</string>
     
     <string name="status_taken">Прийнято</string>
     

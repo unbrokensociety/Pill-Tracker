@@ -333,9 +333,10 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                             )
 
                             val languages = listOf(
-                                "ru" to stringResource(R.string.settings_lang_ru),
+                                "system" to stringResource(R.string.settings_lang_system),
+                                "en" to stringResource(R.string.settings_lang_en),
                                 "uk" to stringResource(R.string.settings_lang_uk),
-                                "en" to stringResource(R.string.settings_lang_en)
+                                "ru" to stringResource(R.string.settings_lang_ru)
                             )
                             val currentLanguage = LocaleHelper.getLanguage(context)
 

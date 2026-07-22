@@ -1,0 +1,69 @@
+<resources>
+    <string name="app_name">MediTracker</string>
+    <string name="nav_today">Today</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_meds">Meds</string>
+    <string name="nav_settings">Settings</string>
+    
+    <string name="home_no_schedules">No schedules for this day</string>
+    
+    <string name="add_med_title">Add Medication</string>
+    <string name="add_med_name_label">Medication Name</string>
+    <string name="add_med_dosage_label">Dosage (e.g. 1 pill)</string>
+    <string name="add_med_time_label">Intake Time</string>
+    <string name="add_med_add_time">Add Time</string>
+    
+    <string name="action_save">Save</string>
+    <string name="action_add">Add</string>
+    <string name="action_delete">Delete</string>
+    
+    <string name="calendar_history">Intake History</string>
+    <string name="calendar_placeholder">Please use the date selector on the home screen to view history.</string>
+    
+    <string name="meds_my_meds">My Medications</string>
+    <string name="meds_no_meds">You haven\'t added any medications yet</string>
+    <string name="meds_intakes_per_day">Intakes per day: %1$d</string>
+    
+    <string name="alarm_default_med">Medication</string>
+    <string name="alarm_title">Time to take %1$s</string>
+    <string name="alarm_text">Don\'t forget to take your medication!</string>
+    <string name="alarm_channel_name">Medication Notifications</string>
+    <string name="alarm_channel_desc">Reminders to take medications</string>
+    
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System Default</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_notifications">Notifications Enabled</string>
+    
+    <string name="settings_language">Language</string>
+    <string name="settings_lang_en">English</string>
+    <string name="settings_lang_uk">Ukrainian (Українська)</string>
+    <string name="settings_lang_ru">Russian (Русский)</string>
+    
+    <string name="settings_stats">Medication Progress</string>
+    <string name="settings_stats_today_ratio">Today\'s compliance</string>
+    <string name="settings_stats_active_meds">Registered medications: %1$d</string>
+    <string name="settings_about">About app</string>
+    <string name="settings_about_desc">MediTracker is your personal healthcare assistant. Take your medications on time and stay healthy!</string>
+    <string name="settings_version">Version 1.1.0</string>
+    
+    <string name="status_taken">Taken</string>
+    
+    <!-- Add Medication localization elements -->
+    <string name="add_med_info_title">Medication Information</string>
+    <string name="add_med_name_placeholder">e.g. Aspirin</string>
+    <string name="add_med_dosage_placeholder">e.g. 1 pill / 5 ml</string>
+    <string name="add_med_empty_time_warning">Please add at least one intake time</string>
+    <string name="add_med_intake_number">Intake №%1$d</string>
+    <string name="add_med_delete_time">Delete time slot</string>
+    <string name="add_med_color_label">Color Label</string>
+    
+    <!-- Settings section localization elements -->
+    <string name="settings_group_general">General Parameters</string>
+    <string name="settings_notif_active">Active</string>
+    <string name="settings_notif_disabled">Disabled</string>
+    <string name="settings_my_profile">My Profile</string>
+    <string name="settings_active_user">Active Member</string>
+</resources>

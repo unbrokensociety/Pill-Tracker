@@ -1,0 +1,6 @@
+{
+  "name": "Напоминание о таблетках",
+  "description": "Приложение с уведомлениями и отслеживанием расписания приема лекарств.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

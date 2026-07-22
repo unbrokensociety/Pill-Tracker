@@ -1,0 +1,69 @@
+<resources>
+    <string name="app_name">Таблетниця</string>
+    <string name="nav_today">Сьогодні</string>
+    <string name="nav_calendar">Календар</string>
+    <string name="nav_meds">Ліки</string>
+    <string name="nav_settings">Опції</string>
+    
+    <string name="home_no_schedules">Немає розкладу на цей день</string>
+    
+    <string name="add_med_title">Додати ліки</string>
+    <string name="add_med_name_label">Назва ліків</string>
+    <string name="add_med_dosage_label">Дозування (наприклад, 1 таблетка)</string>
+    <string name="add_med_time_label">Час прийому</string>
+    <string name="add_med_add_time">Додати час</string>
+    
+    <string name="action_save">Зберегти</string>
+    <string name="action_add">Додати</string>
+    <string name="action_delete">Вилучити</string>
+    
+    <string name="calendar_history">Історія прийому</string>
+    <string name="calendar_placeholder">Будь ласка, використовуйте перемикач днів на головному екрані для перегляду історії.</string>
+    
+    <string name="meds_my_meds">Мої ліки</string>
+    <string name="meds_no_meds">Ви ще не додали ліків</string>
+    <string name="meds_intakes_per_day">Прийомів на день: %1$d</string>
+
+    <string name="alarm_default_med">Ліки</string>
+    <string name="alarm_title">Час прийняти %1$s</string>
+    <string name="alarm_text">Не забудьте випити свої ліки!</string>
+    <string name="alarm_channel_name">Сповіщення про ліки</string>
+    <string name="alarm_channel_desc">Нагадування про прийом препаратів</string>
+    
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_system">Системна</string>
+    <string name="settings_theme_light">Світла</string>
+    <string name="settings_theme_dark">Темна</string>
+    <string name="settings_notifications">Сповіщення увімкнені</string>
+    
+    <string name="settings_language">Мова</string>
+    <string name="settings_lang_en">Англійська (English)</string>
+    <string name="settings_lang_uk">Українська (Українська)</string>
+    <string name="settings_lang_ru">Російська (Русский)</string>
+    
+    <string name="settings_stats">Прогрес прийому</string>
+    <string name="settings_stats_today_ratio">Випито сьогодні</string>
+    <string name="settings_stats_active_meds">Зареєстровано ліків: %1$d</string>
+    <string name="settings_about">Про додаток</string>
+    <string name="settings_about_desc">Таблетниця — ваш персональний медичний помічник. Приймайте ліки вчасно та будьте здорові!</string>
+    <string name="settings_version">Версія 1.1.0</string>
+    
+    <string name="status_taken">Прийнято</string>
+    
+    <!-- Add Medication localization elements -->
+    <string name="add_med_info_title">Інформація про препарат</string>
+    <string name="add_med_name_placeholder">Наприклад: Аспірин</string>
+    <string name="add_med_dosage_placeholder">Наприклад: 1 таблетка / 5 мл</string>
+    <string name="add_med_empty_time_warning">Будь ласка, додайте хоча б один час прийому</string>
+    <string name="add_med_intake_number">Прийом №%1$d</string>
+    <string name="add_med_delete_time">Вилучити час прийому</string>
+    <string name="add_med_color_label">Колір маркування</string>
+    
+    <!-- Settings section localization elements -->
+    <string name="settings_group_general">Загальні параметри</string>
+    <string name="settings_notif_active">Активні</string>
+    <string name="settings_notif_disabled">Вимкнені</string>
+    <string name="settings_my_profile">Мій профіль</string>
+    <string name="settings_active_user">Активний користувач</string>
+</resources>

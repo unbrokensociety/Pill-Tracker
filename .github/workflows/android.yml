@@ -28,6 +28,12 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
 
+    - name: Decode Debug Keystore
+      run: |
+        if [ -f "debug.keystore.base64" ]; then
+          base64 -d debug.keystore.base64 > debug.keystore
+        fi
+
     - name: Build Debug APK
       run: ./gradlew assembleDebug --no-daemon || gradle assembleDebug
 

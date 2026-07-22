@@ -30,6 +30,8 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
+import com.example.ui.components.GlassCard
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit.Dp) {
@@ -44,7 +46,7 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
                 title = { 
                     Text(
                         text = stringResource(R.string.nav_today),
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
                 },
@@ -60,7 +62,7 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
                 .fillMaxSize()
         ) {
             
-            // Horizontal Date strip (Material You capsule design)
+            // Horizontal Date strip
             val dateStrip = remember {
                 (-2..2).map { LocalDate.now().plusDays(it.toLong()) }
             }
@@ -105,18 +107,15 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
                             .padding(bottom = bottomPadding + 32.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Card(
+                        GlassCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                .padding(24.dp)
                         ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(32.dp),
+                                    .padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
@@ -124,7 +123,7 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
                                     modifier = Modifier
                                         .size(64.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(

@@ -39,8 +39,8 @@
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_system">System Default</string>
     <string name="settings_theme_light">Light</string>
-    <string name="settings_theme_dark">Dark (AMOLED Black)</string>
-    <string name="settings_theme_brand">Brand (AMOLED Emerald)</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_brand">Brand</string>
     <string name="settings_notifications">Notifications Enabled</string>
     
     <string name="settings_language">Language</string>
@@ -66,6 +66,7 @@
     <string name="add_med_intake_number">Intake №%1$d</string>
     <string name="add_med_delete_time">Delete time slot</string>
     <string name="add_med_color_label">Color Label</string>
+    <string name="add_med_start_date_label">Start Date</string>
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">General Parameters</string>

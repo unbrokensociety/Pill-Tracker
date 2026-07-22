@@ -39,8 +39,8 @@
     <string name="settings_theme">Тема</string>
     <string name="settings_theme_system">Системна</string>
     <string name="settings_theme_light">Світла</string>
-    <string name="settings_theme_dark">Темна (AMOLED Чорна)</string>
-    <string name="settings_theme_brand">Фірмова (AMOLED Emerald)</string>
+    <string name="settings_theme_dark">Темна</string>
+    <string name="settings_theme_brand">Фірмова</string>
     <string name="settings_notifications">Сповіщення увімкнено</string>
     
     <string name="settings_language">Мова</string>
@@ -66,6 +66,7 @@
     <string name="add_med_intake_number">Прийом №%1$d</string>
     <string name="add_med_delete_time">Вилучити час прийому</string>
     <string name="add_med_color_label">Колір маркування</string>
+    <string name="add_med_start_date_label">Дата початку прийому</string>
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">Загальні параметри</string>

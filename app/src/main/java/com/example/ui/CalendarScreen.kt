@@ -30,6 +30,8 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
+import com.example.ui.components.GlassCard
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit.Dp) {
@@ -46,7 +48,7 @@ fun CalendarScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                 title = { 
                     Text(
                         stringResource(R.string.nav_calendar),
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
                 },
@@ -70,13 +72,8 @@ fun CalendarScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
         ) {
             item {
                 // Calendar Card - Material You glassmorphic round style
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),

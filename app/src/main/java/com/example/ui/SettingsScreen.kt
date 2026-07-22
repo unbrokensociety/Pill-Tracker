@@ -31,6 +31,8 @@ import com.example.data.ThemeMode
 import com.example.ui.locale.LocaleHelper
 import com.example.ui.locale.findActivity
 
+import com.example.ui.components.GlassCard
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit.Dp) {
@@ -61,7 +63,7 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                 title = { 
                     Text(
                         stringResource(R.string.settings_title),
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
                 },
@@ -83,18 +85,12 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Stats section - Progress Overview
+            // Stats section - Progress Overview Glass Card
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(
@@ -131,13 +127,13 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                             Text(
                                 text = stringResource(R.string.settings_stats_today_ratio),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "$takenSchedules / $totalSchedules ($ratioPercent%)",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         
@@ -148,14 +144,14 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                                 .height(10.dp)
                                 .clip(RoundedCornerShape(5.dp)),
                             color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                         )
 
                         Text(
                             text = stringResource(R.string.settings_stats_active_meds, medications.size),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -172,18 +168,12 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                 )
             }
 
-            // Preference card
+            // Preference Glass Card
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         // Notifications Toggle with elegant Layout

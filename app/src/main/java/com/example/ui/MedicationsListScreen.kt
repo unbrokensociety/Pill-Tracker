@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.Medication
 
+import com.example.ui.components.GlassCard
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit.Dp) {
@@ -77,7 +79,7 @@ fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.comp
                 title = { 
                     Text(
                         stringResource(R.string.meds_my_meds),
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
                 },
@@ -99,16 +101,13 @@ fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.comp
                         .padding(bottom = bottomPadding + 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Card(
+                    GlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                            .padding(24.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(32.dp),
+                            modifier = Modifier.padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
@@ -116,7 +115,7 @@ fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.comp
                                 modifier = Modifier
                                     .size(64.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -170,26 +169,8 @@ fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.comp
 
 @Composable
 fun MedicationInfoCard(medication: Medication, onDelete: () -> Unit) {
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "infoCardScale"
-    )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .clickable { isPressed = !isPressed },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    GlassCard(
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

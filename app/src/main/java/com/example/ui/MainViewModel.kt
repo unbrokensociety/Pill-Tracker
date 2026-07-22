@@ -87,19 +87,20 @@ class MainViewModel(
 
     fun addMedication(medication: Medication, times: List<Pair<Int, Int>>) {
         viewModelScope.launch {
-            repository.addMedicationWithSchedules(medication, times)
-            
-            // Re-schedule all alarms internally in production (for simplicity here, we assume it's created and managed)
-            // Ideally, after adding, we'll schedule upcoming alarms limit:
-            // Since ID is generated, we'd need to fetch inserted schedules to schedule alarms.
-            // A more complex app uses a background worker for alarm integrity.
+            val createdSchedules = repository.addMedicationWithSchedules(medication, times)
+            createdSchedules.forEach { schedule ->
+                alarmScheduler.scheduleAlarm(schedule, medication.name)
+            }
         }
     }
 
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
+            val schedules = repository.getSchedulesForMedication(medication.id)
+            schedules.forEach { schedule ->
+                alarmScheduler.cancelAlarm(schedule)
+            }
             repository.deleteMedication(medication)
-            // Similar note - cancel alarms
         }
     }
 }

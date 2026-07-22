@@ -1,5 +1,6 @@
 package com.example.ui
 
+import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,13 +28,15 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.ui.components.GlassCard
 import com.example.ui.locale.findActivity
+import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -44,6 +48,7 @@ fun AddMedicationScreen(
     var name by remember { mutableStateOf("") }
     var dosage by remember { mutableStateOf("") }
     var selectedColorIdx by remember { mutableStateOf(0) }
+    var selectedStartDate by remember { mutableStateOf(LocalDate.now()) }
     val times = remember { mutableStateListOf<LocalTime>(LocalTime.of(8, 0)) }
     val context = LocalContext.current
     
@@ -51,12 +56,13 @@ fun AddMedicationScreen(
     val isFormValid = name.isNotBlank() && dosage.isNotBlank() && times.isNotEmpty()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { 
                     Text(
                         text = stringResource(R.string.add_med_title),
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
                 },
@@ -77,12 +83,17 @@ fun AddMedicationScreen(
             ExtendedFloatingActionButton(
                 onClick = {
                     if (isFormValid) {
+                        val startOfDayMillis = selectedStartDate
+                            .atStartOfDay(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+
                         val newMed = com.example.data.Medication(
                             name = name,
                             dosage = dosage,
                             color = selectedColorIdx,
                             timesPerDay = times.size,
-                            startDate = System.currentTimeMillis()
+                            startDate = startOfDayMillis
                         )
                         viewModel.addMedication(newMed, times.map { it.hour to it.minute })
                         onNavigateBack()
@@ -103,18 +114,12 @@ fun AddMedicationScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // General Info Card - Beautiful Pixel Style
+            // General Info Glass Card
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
@@ -155,18 +160,71 @@ fun AddMedicationScreen(
                 }
             }
 
-            // Color Selector Card
+            // Start Date Picker Glass Card (Aligned calendar & text)
             item {
-                Card(
+                GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f))
+                    onClick = {
+                        val activityContext = context.findActivity() ?: context
+                        val datePicker = DatePickerDialog(
+                            activityContext,
+                            { _, y, m, d ->
+                                selectedStartDate = LocalDate.of(y, m + 1, d)
+                            },
+                            selectedStartDate.year,
+                            selectedStartDate.monthValue - 1,
+                            selectedStartDate.dayOfMonth
+                        )
+                        datePicker.show()
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.DateRange,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.add_med_start_date_label),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = selectedStartDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy")),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Color Selector Glass Card
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
@@ -195,7 +253,7 @@ fun AddMedicationScreen(
                             predefinedColors.forEachIndexed { index, color ->
                                 val isSelected = selectedColorIdx == index
                                 val scale by animateFloatAsState(
-                                    targetValue = if (isSelected) 1.2f else 1.0f,
+                                    targetValue = if (isSelected) 1.25f else 1.0f,
                                     animationSpec = spring(
                                         dampingRatio = Spring.DampingRatioMediumBouncy,
                                         stiffness = Spring.StiffnessMedium
@@ -232,7 +290,7 @@ fun AddMedicationScreen(
                 }
             }
 
-            // Intake Times Section
+            // Intake Times Section Header
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -248,7 +306,6 @@ fun AddMedicationScreen(
                     
                     TextButton(
                         onClick = { 
-                            // Add a smart new time (e.g. 4 hours after the last time, or default 12:00)
                             val nextTime = if (times.isNotEmpty()) {
                                 val last = times.last()
                                 last.plusHours(4)
@@ -266,7 +323,7 @@ fun AddMedicationScreen(
                 }
             }
 
-            // List of pill shaped times with interactive native TimePickerDialogs & delete crosses
+            // List of pill shaped times with interactive TimePickerDialogs & delete button
             if (times.isEmpty()) {
                 item {
                     Box(
@@ -279,8 +336,7 @@ fun AddMedicationScreen(
                             text = stringResource(R.string.add_med_empty_time_warning),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 16.dp)
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -301,59 +357,70 @@ fun AddMedicationScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Styled Pill for Time Selector
+                            // Time Slot Glass Card
                             val formattedTime = String.format("%02d:%02d", time.hour, time.minute)
                             
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
-                                    .clickable {
-                                        // Open beautiful native TimePickerDialog with the activity context to prevent window crashes
-                                        val activityContext = context.findActivity() ?: context
-                                        val timePickerDialog = TimePickerDialog(
-                                            activityContext,
-                                            { _, selectedHour, selectedMinute ->
-                                                times[index] = LocalTime.of(selectedHour, selectedMinute)
-                                            },
-                                            time.hour,
-                                            time.minute,
-                                            true // Use 24-hour style
-                                        )
-                                        timePickerDialog.show()
-                                    }
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            GlassCard(
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    val activityContext = context.findActivity() ?: context
+                                    val timePickerDialog = TimePickerDialog(
+                                        activityContext,
+                                        { _, selectedHour, selectedMinute ->
+                                            times[index] = LocalTime.of(selectedHour, selectedMinute)
+                                        },
+                                        time.hour,
+                                        time.minute,
+                                        true
+                                    )
+                                    timePickerDialog.show()
+                                }
                             ) {
-                                Icon(
-                                    imageVector = Icons.Filled.DateRange,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Column {
-                                    Text(
-                                        text = stringResource(R.string.add_med_intake_number, index + 1),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                                    )
-                                    Text(
-                                        text = formattedTime,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Schedule,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Column(
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.add_med_intake_number, index + 1),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = formattedTime,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
                                 }
                             }
 
-                            // Close/Cross delete button
+                            // Close/Delete button
                             IconButton(
                                 onClick = { times.removeAt(index) },
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
+                                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f))
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Close,

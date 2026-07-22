@@ -2,17 +2,22 @@ package com.example.data
 
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
-import java.time.ZoneOffset
+import java.time.ZoneId
 
 class MedicationRepository(private val dao: MedicationDao) {
     val allMedications: Flow<List<Medication>> = dao.getAllMedications()
 
-    suspend fun addMedicationWithSchedules(medication: Medication, times: List<Pair<Int, Int>>) {
+    suspend fun addMedicationWithSchedules(medication: Medication, times: List<Pair<Int, Int>>): List<Schedule> {
         val medId = dao.insertMedication(medication).toInt()
-        val schedules = times.map { (hour, minute) ->
+        val schedulesToInsert = times.map { (hour, minute) ->
             Schedule(medicationId = medId, timeHour = hour, timeMinute = minute)
         }
-        dao.insertSchedules(schedules)
+        dao.insertSchedules(schedulesToInsert)
+        return dao.getSchedulesForMedication(medId)
+    }
+
+    suspend fun getSchedulesForMedication(medicationId: Int): List<Schedule> {
+        return dao.getSchedulesForMedication(medicationId)
     }
 
     suspend fun deleteMedication(medication: Medication) {
@@ -20,23 +25,27 @@ class MedicationRepository(private val dao: MedicationDao) {
         dao.deleteMedication(medication)
     }
 
+    private fun getStartOfDayEpochMillis(date: LocalDate): Long {
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
+
     fun getDailySchedules(date: LocalDate): Flow<List<DailyScheduleView>> {
-        val dateEpoch = date.atStartOfDay().toEpochSecond(ZoneOffset.UTC)
-        return dao.getDailySchedules(dateEpoch * 1000)
+        val dateEpoch = getStartOfDayEpochMillis(date)
+        return dao.getDailySchedules(dateEpoch)
     }
 
     suspend fun getIntakeLog(scheduleId: Int, date: LocalDate): IntakeLog? {
-        val dateEpoch = date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) * 1000
+        val dateEpoch = getStartOfDayEpochMillis(date)
         return dao.getIntakeLog(scheduleId, dateEpoch)
     }
 
     fun getIntakeLogsForDate(date: LocalDate): Flow<List<IntakeLog>> {
-        val dateEpoch = date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) * 1000
+        val dateEpoch = getStartOfDayEpochMillis(date)
         return dao.getIntakeLogsForDate(dateEpoch)
     }
 
     suspend fun toggleIntake(schedule: DailyScheduleView, date: LocalDate, isTaken: Boolean) {
-        val dateEpoch = date.atStartOfDay().toEpochSecond(ZoneOffset.UTC) * 1000
+        val dateEpoch = getStartOfDayEpochMillis(date)
         if (isTaken) {
             val log = IntakeLog(
                 scheduleId = schedule.scheduleId,

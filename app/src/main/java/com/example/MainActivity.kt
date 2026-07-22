@@ -32,6 +32,8 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.navigation.compose.*
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.AddMedicationScreen
 import com.example.ui.CalendarScreen
 import com.example.ui.HomeScreen
@@ -217,26 +219,34 @@ fun MainScreen(viewModel: MainViewModel) {
         }
 
         if (showBottomBar) {
-            // Liquid Glass experimental floating navigation capsule
             val isDark = isSystemInDarkTheme()
+            val selectedIndex = when (currentDestination) {
+                "home" -> 0
+                "calendar" -> 1
+                "meds" -> 2
+                "settings" -> 3
+                else -> 0
+            }
+
             val glassBgGradient = androidx.compose.ui.graphics.Brush.verticalGradient(
                 colors = if (isDark) {
                     listOf(
-                        Color.White.copy(alpha = 0.15f),
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                        Color.White.copy(alpha = 0.16f),
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.80f)
                     )
                 } else {
                     listOf(
-                        Color.White.copy(alpha = 0.60f),
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
+                        Color.White.copy(alpha = 0.75f),
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.70f)
                     )
                 }
             )
 
             val glassBorderBrush = androidx.compose.ui.graphics.Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.65f),
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    Color.White.copy(alpha = 0.85f),
+                    Color.White.copy(alpha = 0.30f),
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)
                 )
             )
 
@@ -245,7 +255,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 14.dp)
+                    .padding(horizontal = 18.dp, vertical = 12.dp)
                     .shadow(
                         elevation = 20.dp,
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
@@ -253,6 +263,13 @@ fun MainScreen(viewModel: MainViewModel) {
                         spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
                     )
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(32.dp))
+                    .graphicsLayer {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                            renderEffect = android.graphics.RenderEffect
+                                .createBlurEffect(30f, 30f, android.graphics.Shader.TileMode.CLAMP)
+                                .asComposeRenderEffect()
+                        }
+                    }
                     .background(brush = glassBgGradient)
                     .border(
                         width = 1.2.dp,
@@ -260,61 +277,93 @@ fun MainScreen(viewModel: MainViewModel) {
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
                     )
             ) {
-                Row(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 6.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 4.dp, vertical = 6.dp)
                 ) {
-                    FloatingNavItem(
-                        icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.nav_today)) },
-                        label = stringResource(R.string.nav_today),
-                        selected = currentDestination == "home",
-                        onClick = {
-                            navController.navigate("home") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+                    val tabWidth = maxWidth / 4
+                    val indicatorOffset by animateDpAsState(
+                        targetValue = tabWidth * selectedIndex,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "indicatorOffsetAnim"
                     )
-                    FloatingNavItem(
-                        icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
-                        label = stringResource(R.string.nav_calendar),
-                        selected = currentDestination == "calendar",
-                        onClick = {
-                            navController.navigate("calendar") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+
+                    // Smooth sliding liquid glass indicator pill
+                    Box(
+                        modifier = Modifier
+                            .offset(x = indicatorOffset)
+                            .width(tabWidth)
+                            .height(52.dp)
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                            .background(
+                                MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.25f else 0.15f)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+                            )
                     )
-                    FloatingNavItem(
-                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
-                        label = stringResource(R.string.nav_meds),
-                        selected = currentDestination == "meds",
-                        onClick = {
-                            navController.navigate("meds") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FloatingNavItem(
+                            icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.nav_today)) },
+                            label = stringResource(R.string.nav_today),
+                            selected = currentDestination == "home",
+                            onClick = {
+                                navController.navigate("home") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
-                        }
-                    )
-                    FloatingNavItem(
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
-                        label = stringResource(R.string.nav_settings),
-                        selected = currentDestination == "settings",
-                        onClick = {
-                            navController.navigate("settings") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                        )
+                        FloatingNavItem(
+                            icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
+                            label = stringResource(R.string.nav_calendar),
+                            selected = currentDestination == "calendar",
+                            onClick = {
+                                navController.navigate("calendar") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
-                        }
-                    )
+                        )
+                        FloatingNavItem(
+                            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
+                            label = stringResource(R.string.nav_meds),
+                            selected = currentDestination == "meds",
+                            onClick = {
+                                navController.navigate("meds") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                        FloatingNavItem(
+                            icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
+                            label = stringResource(R.string.nav_settings),
+                            selected = currentDestination == "settings",
+                            onClick = {
+                                navController.navigate("settings") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -329,25 +378,19 @@ fun RowScope.FloatingNavItem(
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1.15f else 1f,
+        targetValue = if (selected) 1.12f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
         ),
         label = "pillScale"
     )
 
-    val backgroundAlpha by animateFloatAsState(
-        targetValue = if (selected) 0.18f else 0.0f,
-        animationSpec = tween(durationMillis = 200),
-        label = "pillBgAlpha"
-    )
-
     val translationY by animateDpAsState(
-        targetValue = if (selected) (-4).dp else 0.dp,
+        targetValue = if (selected) (-2).dp else 0.dp,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
         ),
         label = "translationY"
     )
@@ -355,7 +398,7 @@ fun RowScope.FloatingNavItem(
     val targetContentColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
     }
 
     val contentColor by animateColorAsState(
@@ -367,23 +410,20 @@ fun RowScope.FloatingNavItem(
     Column(
         modifier = Modifier
             .weight(1f)
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+            .height(52.dp)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = androidx.compose.foundation.LocalIndication.current,
                 onClick = onClick
-            )
-            .padding(vertical = 6.dp),
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
                 .offset(y = translationY)
-                .scale(scale)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = backgroundAlpha))
-                .padding(horizontal = 20.dp, vertical = 6.dp),
+                .scale(scale),
             contentAlignment = Alignment.Center
         ) {
             CompositionLocalProvider(
@@ -392,7 +432,7 @@ fun RowScope.FloatingNavItem(
                 icon()
             }
         }
-        Spacer(modifier = Modifier.height(2.dp))
+        
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,

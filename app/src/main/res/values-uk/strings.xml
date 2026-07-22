@@ -74,4 +74,23 @@
     <string name="settings_notif_disabled">Вимкнені</string>
     <string name="settings_my_profile">Мій профіль</string>
     <string name="settings_active_user">Активний користувач</string>
+
+    <!-- Streak and Flame Mini-Game strings -->
+    <string name="streak_title">Серія прийому: %1$d %2$s 🔥</string>
+    <string name="streak_zero_title">Серія прийому: 0 днів</string>
+    <string name="streak_sub_active">Чудовий результат! Не пропускайте прийом</string>
+    <string name="streak_sub_zero">Позначте прийом сьогодні, щоб розпочати серію</string>
+    <string name="streak_day_1">день</string>
+    <string name="streak_day_2_4">дні</string>
+    <string name="streak_day_5">днів</string>
+    <string name="streak_menu_title">Вогняна серія та досягнення 🔥</string>
+    <string name="streak_menu_level">Рівень полум\'я: Рівень %1$d</string>
+    <string name="streak_menu_keep_flame">Міні-гра: Підтримуй вогонь!</string>
+    <string name="streak_menu_tap_flame">Натискай на полум\'я!</string>
+    <string name="streak_menu_sparks">Зібрано іскор: %1$d</string>
+    <string name="streak_menu_achievements">Досягнення полум\'я</string>
+    <string name="streak_achievement_1">Перша іскра (1 день)</string>
+    <string name="streak_achievement_3">Розпалювач (3 дні)</string>
+    <string name="streak_achievement_7">Тиждень сили (7 днів)</string>
+    <string name="streak_achievement_30">Незгасне полум\'я (30 днів)</string>
 </resources>

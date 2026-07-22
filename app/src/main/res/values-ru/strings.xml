@@ -74,4 +74,23 @@
     <string name="settings_notif_disabled">Отключены</string>
     <string name="settings_my_profile">Мой профиль</string>
     <string name="settings_active_user">Активный пользователь</string>
+
+    <!-- Streak and Flame Mini-Game strings -->
+    <string name="streak_title">Серия приёма: %1$d %2$s 🔥</string>
+    <string name="streak_zero_title">Серия приёма: 0 дней</string>
+    <string name="streak_sub_active">Отличный результат! Не пропускайте приём</string>
+    <string name="streak_sub_zero">Отметьте приём сегодня, чтобы запустить серию</string>
+    <string name="streak_day_1">день</string>
+    <string name="streak_day_2_4">дня</string>
+    <string name="streak_day_5">дней</string>
+    <string name="streak_menu_title">Огненная серия и достижения 🔥</string>
+    <string name="streak_menu_level">Уровень пламени: Уровень %1$d</string>
+    <string name="streak_menu_keep_flame">Мини-игра: Поддерживай огонь!</string>
+    <string name="streak_menu_tap_flame">Нажимай на пламя!</string>
+    <string name="streak_menu_sparks">Собрано искр: %1$d</string>
+    <string name="streak_menu_achievements">Достижения пламени</string>
+    <string name="streak_achievement_1">Первая искра (1 день)</string>
+    <string name="streak_achievement_3">Разжигатель (3 дня)</string>
+    <string name="streak_achievement_7">Неделя силы (7 дней)</string>
+    <string name="streak_achievement_30">Неугасимое пламя (30 дней)</string>
 </resources>

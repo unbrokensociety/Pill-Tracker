@@ -74,4 +74,23 @@
     <string name="settings_notif_disabled">Disabled</string>
     <string name="settings_my_profile">My Profile</string>
     <string name="settings_active_user">Active Member</string>
+
+    <!-- Streak and Flame Mini-Game strings -->
+    <string name="streak_title">Intake Streak: %1$d %2$s 🔥</string>
+    <string name="streak_zero_title">Intake Streak: 0 days</string>
+    <string name="streak_sub_active">Great job! Don\'t miss your medication</string>
+    <string name="streak_sub_zero">Mark an intake today to kick off your streak</string>
+    <string name="streak_day_1">day</string>
+    <string name="streak_day_2_4">days</string>
+    <string name="streak_day_5">days</string>
+    <string name="streak_menu_title">Flame Streak &amp; Milestones 🔥</string>
+    <string name="streak_menu_level">Flame Level: Level %1$d</string>
+    <string name="streak_menu_keep_flame">Flame Mini-Game: Keep the Spark Alive!</string>
+    <string name="streak_menu_tap_flame">Tap the Flame!</string>
+    <string name="streak_menu_sparks">Sparks Collected: %1$d</string>
+    <string name="streak_menu_achievements">Flame Milestones</string>
+    <string name="streak_achievement_1">First Spark (1 Day)</string>
+    <string name="streak_achievement_3">Flame Starter (3 Days)</string>
+    <string name="streak_achievement_7">Week of Power (7 Days)</string>
+    <string name="streak_achievement_30">Unstoppable Fire (30 Days)</string>
 </resources>

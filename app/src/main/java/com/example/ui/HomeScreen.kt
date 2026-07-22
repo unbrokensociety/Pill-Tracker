@@ -38,6 +38,7 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
     val selectedDate by viewModel.selectedDate.collectAsState()
     val schedules by viewModel.dailySchedules.collectAsState()
     val logs by viewModel.todayIntakeLogs.collectAsState()
+    val streakDays by viewModel.streakDays.collectAsState()
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -62,6 +63,9 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
                 .fillMaxSize()
         ) {
             
+            // Streak motivation banner
+            StreakBanner(streakDays = streakDays)
+
             // Horizontal Date strip
             val dateStrip = remember {
                 (-2..2).map { LocalDate.now().plusDays(it.toLong()) }
@@ -435,5 +439,70 @@ fun MedicationCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StreakBanner(streakDays: Int) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "🔥",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (streakDays > 0) "Серия приёма: $streakDays ${getDaysSuffix(streakDays)} 🔥" else "Серия приёма: 0 дней",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (streakDays > 0) "Отличный результат! Не пропускайте приём" else "Отметьте приём сегодня, чтобы запустить серию",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+private fun getDaysSuffix(days: Int): String {
+    val remainder10 = days % 10
+    val remainder100 = days % 100
+    return when {
+        remainder100 in 11..19 -> "дней"
+        remainder10 == 1 -> "день"
+        remainder10 in 2..4 -> "дня"
+        else -> "дней"
     }
 }

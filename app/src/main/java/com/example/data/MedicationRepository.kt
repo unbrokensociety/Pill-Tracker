@@ -6,6 +6,7 @@ import java.time.ZoneId
 
 class MedicationRepository(private val dao: MedicationDao) {
     val allMedications: Flow<List<Medication>> = dao.getAllMedications()
+    val allIntakeLogDates: Flow<List<Long>> = dao.getAllIntakeLogDates()
 
     suspend fun addMedicationWithSchedules(medication: Medication, times: List<Pair<Int, Int>>): List<Schedule> {
         val medId = dao.insertMedication(medication).toInt()

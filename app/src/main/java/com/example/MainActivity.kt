@@ -228,83 +228,114 @@ fun MainScreen(viewModel: MainViewModel) {
         }
 
         if (showBottomBar) {
-            // Clean floating navigation capsule
+            val selectedIndex = when (currentDestination) {
+                "home" -> 0
+                "calendar" -> 1
+                "meds" -> 2
+                "settings" -> 3
+                else -> 0
+            }
+
+            // Clean floating navigation capsule with smooth sliding indicator pill
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
                     .shadow(
-                        elevation = 16.dp,
+                        elevation = 12.dp,
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
-                        clip = true
+                        clip = false
                     )
-                    .background(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
-                    )
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
                     .border(
                         width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
                     )
             ) {
-                Row(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 6.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 6.dp, vertical = 6.dp)
                 ) {
-                    FloatingNavItem(
-                        icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.nav_today)) },
-                        label = stringResource(R.string.nav_today),
-                        selected = currentDestination == "home",
-                        onClick = {
-                            navController.navigate("home") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+                    val tabWidth = maxWidth / 4
+                    val indicatorOffset by animateDpAsState(
+                        targetValue = tabWidth * selectedIndex,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "indicatorOffsetAnim"
                     )
-                    FloatingNavItem(
-                        icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
-                        label = stringResource(R.string.nav_calendar),
-                        selected = currentDestination == "calendar",
-                        onClick = {
-                            navController.navigate("calendar") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+
+                    // Smooth sliding active tab pill indicator
+                    Box(
+                        modifier = Modifier
+                            .offset(x = indicatorOffset)
+                            .width(tabWidth)
+                            .height(52.dp)
+                            .padding(horizontal = 4.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f))
                     )
-                    FloatingNavItem(
-                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
-                        label = stringResource(R.string.nav_meds),
-                        selected = currentDestination == "meds",
-                        onClick = {
-                            navController.navigate("meds") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FloatingNavItem(
+                            icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.nav_today)) },
+                            label = stringResource(R.string.nav_today),
+                            selected = currentDestination == "home",
+                            onClick = {
+                                navController.navigate("home") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
-                        }
-                    )
-                    FloatingNavItem(
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
-                        label = stringResource(R.string.nav_settings),
-                        selected = currentDestination == "settings",
-                        onClick = {
-                            navController.navigate("settings") {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
+                        )
+                        FloatingNavItem(
+                            icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
+                            label = stringResource(R.string.nav_calendar),
+                            selected = currentDestination == "calendar",
+                            onClick = {
+                                navController.navigate("calendar") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
-                        }
-                    )
+                        )
+                        FloatingNavItem(
+                            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
+                            label = stringResource(R.string.nav_meds),
+                            selected = currentDestination == "meds",
+                            onClick = {
+                                navController.navigate("meds") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                        FloatingNavItem(
+                            icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
+                            label = stringResource(R.string.nav_settings),
+                            selected = currentDestination == "settings",
+                            onClick = {
+                                navController.navigate("settings") {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -343,7 +374,7 @@ fun RowScope.FloatingNavItem(
     )
 
     val targetContentColor = if (selected) {
-        MaterialTheme.colorScheme.primary
+        MaterialTheme.colorScheme.onPrimaryContainer
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
     }
@@ -363,7 +394,7 @@ fun RowScope.FloatingNavItem(
                 indication = androidx.compose.foundation.LocalIndication.current,
                 onClick = onClick
             )
-            .padding(vertical = 6.dp),
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -371,9 +402,7 @@ fun RowScope.FloatingNavItem(
             modifier = Modifier
                 .offset(y = translationY)
                 .scale(scale)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = backgroundAlpha))
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = 12.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
             CompositionLocalProvider(

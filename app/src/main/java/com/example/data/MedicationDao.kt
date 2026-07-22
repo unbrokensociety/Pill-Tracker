@@ -48,6 +48,9 @@ interface MedicationDao {
     @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND scheduledDateEpoch = :dateEpoch LIMIT 1")
     suspend fun getIntakeLog(scheduleId: Int, dateEpoch: Long): IntakeLog?
 
+    @Query("SELECT DISTINCT scheduledDateEpoch FROM intake_logs ORDER BY scheduledDateEpoch DESC")
+    fun getAllIntakeLogDates(): Flow<List<Long>>
+
     @Query("""
         SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute 
         FROM medications m 

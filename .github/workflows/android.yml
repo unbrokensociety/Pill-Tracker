@@ -51,11 +51,10 @@ jobs:
       run: |
         echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
         echo "" >> RELEASE_NOTES.md
-        echo "- 🎨 **Material 3 Design**: Clean, modern cards and floating navigation bar without heavy blur or background effects." >> RELEASE_NOTES.md
-        echo "- ⚡ **144Hz High Refresh Rate**: Optimized display mode selection supporting 120Hz/144Hz high refresh rates for ultra-smooth UI rendering." >> RELEASE_NOTES.md
-        echo "- 🔑 **Signature Compatibility**: Fixed APK signing configuration ensuring seamless version upgrades without package conflicts." >> RELEASE_NOTES.md
-        echo "- ⏰ **Exact Alarm Engine**: Upgraded alarm triggers to \`setAlarmClock\` for exact time notifications without system delays." >> RELEASE_NOTES.md
-        echo "- 🏷️ **Dynamic Versioning**: Automatically syncs version display in 'About Application' to match build releases (v1.${{ github.run_number }})." >> RELEASE_NOTES.md
+        echo "- 🎯 **Floating Sliding Indicator**: Integrated smooth sliding pill indicator for floating navigation capsule with spring physics." >> RELEASE_NOTES.md
+        echo "- 📅 **Calendar Formatting**: Corrected Russian month names in calendar header to nominative standalone case (\"Июль\" instead of \"Июля\")." >> RELEASE_NOTES.md
+        echo "- 🔥 **Medication Streak & Motivation**: Introduced daily intake streak tracking with motivational progress badge and flame indicator." >> RELEASE_NOTES.md
+        echo "- ⚡ **144Hz Display Mode**: Optimized high refresh rate support (120Hz/144Hz) for fluid animations." >> RELEASE_NOTES.md
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2

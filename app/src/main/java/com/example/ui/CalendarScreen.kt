@@ -95,7 +95,7 @@ fun CalendarScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                             }
                             
                             val monthName = remember(currentMonth) {
-                                currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+                                currentMonth.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.getDefault())
                                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
                             }
                             Text(

@@ -19,7 +19,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import kotlinx.coroutines.flow.map
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class MainViewModel(
@@ -42,6 +45,30 @@ class MainViewModel(
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
+
+    val streakDays: StateFlow<Int> = repository.allIntakeLogDates.map { logEpochs ->
+        val logDatesSet = logEpochs.map { epoch ->
+            Instant.ofEpochMilli(epoch).atZone(ZoneId.systemDefault()).toLocalDate()
+        }.toSet()
+
+        val today = LocalDate.now()
+        var streak = 0
+        var checkDate = today
+
+        if (!logDatesSet.contains(today)) {
+            checkDate = today.minusDays(1)
+        }
+
+        while (logDatesSet.contains(checkDate)) {
+            streak++
+            checkDate = checkDate.minusDays(1)
+        }
+        streak
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0
+    )
 
     // Using flatMapLatest so whenever selectedDate changes, we query new data
     val dailySchedules: StateFlow<List<DailyScheduleView>> = _selectedDate

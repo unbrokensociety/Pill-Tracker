@@ -49,14 +49,13 @@ jobs:
 
     - name: Generate Release Changelog
       run: |
-        echo "### 🚀 Что нового в версии 1.${{ github.run_number }}:" > RELEASE_NOTES.md
+        echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
         echo "" >> RELEASE_NOTES.md
-        echo "- 🧪 **Liquid Glass UI**: Реализован эффект жидкого стекла с аппаратным фоновым размытием и световыми бликами." >> RELEASE_NOTES.md
-        echo "- 🎯 **Плавная анимированная навигация**: Добавлен скользящий индикатор переключения вкладок нижнего меню." >> RELEASE_NOTES.md
-        echo "- ⏰ **Точные напоминания**: Обновлен механизм вызова будильников через \`setAlarmClock\` без системных задержек." >> RELEASE_NOTES.md
-        echo "- 📐 **Идеальное выравнивание**: Исправлено центрирование пустого состояния экрана «Мои лекарства»." >> RELEASE_NOTES.md
-        echo "- 🏷️ **Динамическая версия**: Номер версии в «О приложении» отныне автоматически синхронизируется (v1.${{ github.run_number }})." >> RELEASE_NOTES.md
-        echo "- 📄 **Документация**: Обновленный README.md с поддержкой украинского, английского и русского языков." >> RELEASE_NOTES.md
+        echo "- 🧪 **Liquid Glass UI**: Added experimental glassmorphic container with hardware background blur (\`RenderEffect\`) and subtle light borders." >> RELEASE_NOTES.md
+        echo "- 🎯 **Smooth Tab Navigation**: Integrated smooth sliding liquid pill indicator for bottom tab navigation with spring physics." >> RELEASE_NOTES.md
+        echo "- ⏰ **Exact Alarm Engine**: Upgraded alarm triggers to \`setAlarmClock\` for exact time firing without system Doze mode delays." >> RELEASE_NOTES.md
+        echo "- 📐 **Layout Alignment**: Centered empty states and text cards across 'My Medications' and 'Home' screens." >> RELEASE_NOTES.md
+        echo "- 🏷️ **Dynamic Versioning**: Automatically syncs version display in 'About Application' to match build releases (v1.${{ github.run_number }})." >> RELEASE_NOTES.md
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2

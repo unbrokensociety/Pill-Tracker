@@ -350,27 +350,12 @@ fun RowScope.FloatingNavItem(
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1.12f else 1f,
+        targetValue = if (selected) 1.08f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
+            dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMediumLow
         ),
         label = "pillScale"
-    )
-
-    val backgroundAlpha by animateFloatAsState(
-        targetValue = if (selected) 0.16f else 0.0f,
-        animationSpec = tween(durationMillis = 200),
-        label = "pillBgAlpha"
-    )
-
-    val translationY by animateDpAsState(
-        targetValue = if (selected) (-3).dp else 0.dp,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "translationY"
     )
 
     val targetContentColor = if (selected) {
@@ -400,7 +385,6 @@ fun RowScope.FloatingNavItem(
     ) {
         Box(
             modifier = Modifier
-                .offset(y = translationY)
                 .scale(scale)
                 .padding(horizontal = 12.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center

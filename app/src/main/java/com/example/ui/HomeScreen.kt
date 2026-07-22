@@ -93,16 +93,16 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
                 transitionSpec = {
                     val isAfter = targetState.isAfter(initialState)
                     if (isAfter) {
-                        (slideInHorizontally { width -> width / 5 } + fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMedium))).togetherWith(
-                            slideOutHorizontally { width -> -width / 5 } + fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMedium))
+                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
+                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> -width / 8 } + fadeOut(animationSpec = tween(180))
                         )
                     } else {
-                        (slideInHorizontally { width -> -width / 5 } + fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMedium))).togetherWith(
-                            slideOutHorizontally { width -> width / 5 } + fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMedium))
+                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> -width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
+                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> width / 8 } + fadeOut(animationSpec = tween(180))
                         )
-                    }.using(SizeTransform(clip = false))
+                    }
                 },
-                contentAlignment = Alignment.Center,
+                contentAlignment = Alignment.TopCenter,
                 label = "dayContentTransition",
                 modifier = Modifier.fillMaxSize()
             ) { currDate ->
@@ -446,15 +446,6 @@ fun MedicationCard(
 
 @Composable
 fun StreakBanner(streakDays: Int) {
-    var showFlameDialog by remember { mutableStateOf(false) }
-
-    if (showFlameDialog) {
-        FlameStreakDialog(
-            streakDays = streakDays,
-            onDismiss = { showFlameDialog = false }
-        )
-    }
-
     val daysSuffix = remember(streakDays) {
         val rem10 = streakDays % 10
         val rem100 = streakDays % 100
@@ -481,8 +472,7 @@ fun StreakBanner(streakDays: Int) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable { showFlameDialog = true },
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
@@ -527,210 +517,7 @@ fun StreakBanner(streakDays: Int) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
-    }
-}
-
-@Composable
-fun FlameStreakDialog(
-    streakDays: Int,
-    onDismiss: () -> Unit
-) {
-    var sparkCount by remember { mutableStateOf(0) }
-    var buttonScale by remember { mutableStateOf(1f) }
-
-    val animatedScale by animateFloatAsState(
-        targetValue = buttonScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "flameButtonScale"
-    )
-
-    val infiniteTransition = rememberInfiniteTransition(label = "flameGlow")
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
-    )
-
-    val flameLevel = (streakDays / 3) + 1
-
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = stringResource(R.string.streak_menu_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Big Animated Flame Avatar
-                Box(
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0xFFFF9800).copy(alpha = glowAlpha),
-                                    Color(0xFFFF5722).copy(alpha = 0.15f),
-                                    Color.Transparent
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "🔥",
-                        style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.scale(animatedScale)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = stringResource(R.string.streak_menu_level, flameLevel),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Milestones list
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.streak_menu_achievements),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    MilestoneItem(title = stringResource(R.string.streak_achievement_1), reached = streakDays >= 1)
-                    MilestoneItem(title = stringResource(R.string.streak_achievement_3), reached = streakDays >= 3)
-                    MilestoneItem(title = stringResource(R.string.streak_achievement_7), reached = streakDays >= 7)
-                    MilestoneItem(title = stringResource(R.string.streak_achievement_30), reached = streakDays >= 30)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Flame Mini-Game
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = stringResource(R.string.streak_menu_keep_flame),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.streak_menu_sparks, sparkCount),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Button(
-                            onClick = {
-                                sparkCount += 1
-                                buttonScale = 1.25f
-                            },
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Text(text = "✨ " + stringResource(R.string.streak_menu_tap_flame) + " 🔥")
-                        }
-                    }
-                }
-
-                LaunchedEffect(sparkCount) {
-                    if (buttonScale > 1f) {
-                        kotlinx.coroutines.delay(120)
-                        buttonScale = 1.0f
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(text = stringResource(R.string.action_save))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MilestoneItem(title: String, reached: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = if (reached) "✅" else "🔒",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (reached) FontWeight.Bold else FontWeight.Normal,
-            color = if (reached) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        )
     }
 }
 

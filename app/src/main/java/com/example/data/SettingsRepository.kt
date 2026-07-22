@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-enum class ThemeMode { SYSTEM, LIGHT, DARK }
+enum class ThemeMode { SYSTEM, LIGHT, DARK, BRAND }
 
 class SettingsRepository(private val context: Context) {
     companion object {

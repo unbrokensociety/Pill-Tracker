@@ -265,57 +265,64 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                                 )
                             }
                             
-                            val themes = listOf(
+                            val themesList1 = listOf(
                                 ThemeMode.SYSTEM to stringResource(R.string.settings_theme_system),
-                                ThemeMode.LIGHT to stringResource(R.string.settings_theme_light),
-                                ThemeMode.DARK to stringResource(R.string.settings_theme_dark)
+                                ThemeMode.LIGHT to stringResource(R.string.settings_theme_light)
+                            )
+                            val themesList2 = listOf(
+                                ThemeMode.DARK to stringResource(R.string.settings_theme_dark),
+                                ThemeMode.BRAND to stringResource(R.string.settings_theme_brand)
                             )
 
-                            // Render themes side by side (chip style) or nice rows
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                themes.forEach { (mode, label) ->
-                                    val isSelected = (mode == themeMode)
-                                    val chipBgColor by animateColorAsState(
-                                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-                                                      else MaterialTheme.colorScheme.surfaceVariant,
-                                        animationSpec = tween(durationMillis = 200),
-                                        label = "chipBgColorAnim"
-                                    )
-                                    val chipContentColor by animateColorAsState(
-                                        targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                                      else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        animationSpec = tween(durationMillis = 200),
-                                        label = "chipContentColorAnim"
-                                    )
-                                    val chipScale by animateFloatAsState(
-                                        targetValue = if (isSelected) 1.05f else 1.0f,
-                                        animationSpec = spring(
-                                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                                            stiffness = Spring.StiffnessMedium
-                                        ),
-                                        label = "chipScaleAnim"
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .scale(chipScale)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(chipBgColor)
-                                            .clickable { viewModel.setTheme(mode) }
-                                            .padding(vertical = 12.dp),
-                                        contentAlignment = Alignment.Center
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf(themesList1, themesList2).forEach { rowThemes ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text(
-                                            text = label,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                            color = chipContentColor
-                                        )
+                                        rowThemes.forEach { (mode, label) ->
+                                            val isSelected = (mode == themeMode)
+                                            val chipBgColor by animateColorAsState(
+                                                targetValue = if (isSelected) MaterialTheme.colorScheme.primary
+                                                              else MaterialTheme.colorScheme.surfaceVariant,
+                                                animationSpec = tween(durationMillis = 200),
+                                                label = "chipBgColorAnim"
+                                            )
+                                            val chipContentColor by animateColorAsState(
+                                                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                                              else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                animationSpec = tween(durationMillis = 200),
+                                                label = "chipContentColorAnim"
+                                            )
+                                            val chipScale by animateFloatAsState(
+                                                targetValue = if (isSelected) 1.02f else 1.0f,
+                                                animationSpec = spring(
+                                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                    stiffness = Spring.StiffnessMedium
+                                                ),
+                                                label = "chipScaleAnim"
+                                            )
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .scale(chipScale)
+                                                    .clip(RoundedCornerShape(16.dp))
+                                                    .background(chipBgColor)
+                                                    .clickable { viewModel.setTheme(mode) }
+                                                    .padding(horizontal = 12.dp, vertical = 14.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                    color = chipContentColor
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }

@@ -45,13 +45,7 @@ import com.example.data.ThemeMode
 @Composable
 fun MyAppThemeWrapper(viewModel: MainViewModel, content: @Composable () -> Unit) {
     val themeMode by viewModel.themeMode.collectAsState()
-    val isSystemDark = isSystemInDarkTheme()
-    val darkTheme = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemDark
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-    }
-    MyApplicationTheme(darkTheme = darkTheme) {
+    MyApplicationTheme(themeMode = themeMode) {
         content()
     }
 }
@@ -118,32 +112,10 @@ fun MainScreen(viewModel: MainViewModel) {
     
     val showBottomBar = currentDestination in listOf("home", "calendar", "meds", "settings")
 
-    val themeMode by viewModel.themeMode.collectAsState()
-    val isSystemDark = isSystemInDarkTheme()
-    val isDark = remember(themeMode, isSystemDark) {
-        when (themeMode) {
-            ThemeMode.SYSTEM -> isSystemDark
-            ThemeMode.LIGHT -> false
-            ThemeMode.DARK -> true
-        }
-    }
-
-    val backgroundBrush = remember(isDark) {
-        if (isDark) {
-            androidx.compose.ui.graphics.Brush.verticalGradient(
-                colors = listOf(Color(0xFF0F1722), Color(0xFF1B2735))
-            )
-        } else {
-            androidx.compose.ui.graphics.Brush.verticalGradient(
-                colors = listOf(Color(0xFFEBF2FA), Color(0xFFF8F9FA))
-            )
-        }
-    }
-
-    androidx.compose.foundation.layout.Box(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundBrush)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Scaffold(
             containerColor = Color.Transparent,
@@ -233,12 +205,12 @@ fun MainScreen(viewModel: MainViewModel) {
                         clip = true
                     )
                     .background(
-                        color = if (isDark) Color(0xF2141C29) else Color(0xFAF2F6FA),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
                     )
                     .border(
                         width = 1.dp,
-                        color = if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
                     )
             ) {
@@ -259,8 +231,7 @@ fun MainScreen(viewModel: MainViewModel) {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        },
-                        isDark = isDark
+                        }
                     )
                     FloatingNavItem(
                         icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
@@ -272,8 +243,7 @@ fun MainScreen(viewModel: MainViewModel) {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        },
-                        isDark = isDark
+                        }
                     )
                     FloatingNavItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
@@ -285,8 +255,7 @@ fun MainScreen(viewModel: MainViewModel) {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        },
-                        isDark = isDark
+                        }
                     )
                     FloatingNavItem(
                         icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
@@ -298,8 +267,7 @@ fun MainScreen(viewModel: MainViewModel) {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        },
-                        isDark = isDark
+                        }
                     )
                 }
             }
@@ -312,8 +280,7 @@ fun RowScope.FloatingNavItem(
     icon: @Composable () -> Unit,
     label: String,
     selected: Boolean,
-    onClick: () -> Unit,
-    isDark: Boolean
+    onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
         targetValue = if (selected) 1.15f else 1f,
@@ -325,7 +292,7 @@ fun RowScope.FloatingNavItem(
     )
 
     val backgroundAlpha by animateFloatAsState(
-        targetValue = if (selected) 0.15f else 0.0f,
+        targetValue = if (selected) 0.18f else 0.0f,
         animationSpec = tween(durationMillis = 200),
         label = "pillBgAlpha"
     )
@@ -342,7 +309,7 @@ fun RowScope.FloatingNavItem(
     val targetContentColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
-        if (isDark) Color.White.copy(alpha = 0.55f) else Color.Black.copy(alpha = 0.55f)
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
     }
 
     val contentColor by animateColorAsState(

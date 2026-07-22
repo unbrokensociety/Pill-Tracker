@@ -12,34 +12,34 @@ import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme =
   darkColorScheme(
-    primary = GreenPrimaryDark,
-    onPrimary = GreenOnPrimaryDark,
-    primaryContainer = GreenPrimaryContainerDark,
-    onPrimaryContainer = GreenOnPrimaryContainerDark,
-    background = GreenBackgroundDark,
-    onBackground = GreenOnBackgroundDark,
-    surface = GreenSurfaceDark,
-    onSurface = GreenOnSurfaceDark,
-    surfaceVariant = GreenSurfaceVariantDark,
-    onSurfaceVariant = GreenOnSurfaceVariantDark,
-    outline = GreenOutlineDark,
-    outlineVariant = GreenOutlineVariantDark
+    primary = TealPrimaryDark,
+    onPrimary = TealOnPrimaryDark,
+    primaryContainer = TealPrimaryContainerDark,
+    onPrimaryContainer = TealOnPrimaryContainerDark,
+    background = TealBackgroundDark,
+    onBackground = TealOnBackgroundDark,
+    surface = TealSurfaceDark,
+    onSurface = TealOnSurfaceDark,
+    surfaceVariant = TealSurfaceVariantDark,
+    onSurfaceVariant = TealOnSurfaceVariantDark,
+    outline = TealOutlineDark,
+    outlineVariant = TealOutlineVariantDark
   )
 
 private val LightColorScheme =
   lightColorScheme(
-    primary = GreenPrimary,
-    onPrimary = GreenOnPrimary,
-    primaryContainer = GreenPrimaryContainer,
-    onPrimaryContainer = GreenOnPrimaryContainer,
-    background = GreenBackground,
-    onBackground = GreenOnBackground,
-    surface = GreenSurface,
-    onSurface = GreenOnSurface,
-    surfaceVariant = GreenSurfaceVariant,
-    onSurfaceVariant = GreenOnSurfaceVariant,
-    outline = GreenOutline,
-    outlineVariant = GreenOutlineVariant
+    primary = TealPrimary,
+    onPrimary = TealOnPrimary,
+    primaryContainer = TealPrimaryContainer,
+    onPrimaryContainer = TealOnPrimaryContainer,
+    background = TealBackground,
+    onBackground = TealOnBackground,
+    surface = TealSurface,
+    onSurface = TealOnSurface,
+    surfaceVariant = TealSurfaceVariant,
+    onSurfaceVariant = TealOnSurfaceVariant,
+    outline = TealOutline,
+    outlineVariant = TealOutlineVariant
   )
 
 @Composable

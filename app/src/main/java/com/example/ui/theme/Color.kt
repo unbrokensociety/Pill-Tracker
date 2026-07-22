@@ -2,37 +2,39 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val GreenPrimary = Color(0xFF386B40)
-val GreenOnPrimary = Color(0xFFFFFFFF)
-val GreenPrimaryContainer = Color(0xFFD7E8CD)
-val GreenOnPrimaryContainer = Color(0xFF191D17)
+// Signature Light Theme Palette (Deep Emerald Teal)
+val TealPrimary = Color(0xFF0F766E)
+val TealOnPrimary = Color(0xFFFFFFFF)
+val TealPrimaryContainer = Color(0xFFCCFBF1)
+val TealOnPrimaryContainer = Color(0xFF0F514C)
 
-val GreenBackground = Color(0xFFF7FBF1)
-val GreenOnBackground = Color(0xFF191D17)
+val TealBackground = Color(0xFFF8FAF9)
+val TealOnBackground = Color(0xFF0F172A)
 
-val GreenSurface = Color(0xFFFFFFFF)
-val GreenOnSurface = Color(0xFF191D17)
+val TealSurface = Color(0xFFFFFFFF)
+val TealOnSurface = Color(0xFF0F172A)
 
-val GreenSurfaceVariant = Color(0xFFF1F3EA)
-val GreenOnSurfaceVariant = Color(0xFF56624B)
+val TealSurfaceVariant = Color(0xFFF1F5F9)
+val TealOnSurfaceVariant = Color(0xFF475569)
 
-val GreenOutline = Color(0xFFE0E4D7)
-val GreenOutlineVariant = Color(0xFFBFC9B4)
+val TealOutline = Color(0xFFE2E8F0)
+val TealOutlineVariant = Color(0xFFCBD5E1)
 
-// Dark theme
-val GreenPrimaryDark = Color(0xFFA1D3A5)
-val GreenOnPrimaryDark = Color(0xFF043916)
-val GreenPrimaryContainerDark = Color(0xFF1F512A)
-val GreenOnPrimaryContainerDark = Color(0xFFD7E8CD)
+// Signature Dark Theme Palette (Midnight Slate & Vibrant Emerald)
+val TealPrimaryDark = Color(0xFF2DD4BF)
+val TealOnPrimaryDark = Color(0xFF003733)
+val TealPrimaryContainerDark = Color(0xFF115E59)
+val TealOnPrimaryContainerDark = Color(0xFFCCFBF1)
 
-val GreenBackgroundDark = Color(0xFF11140E)
-val GreenOnBackgroundDark = Color(0xFFE1E4D9)
+val TealBackgroundDark = Color(0xFF0B0F17)
+val TealOnBackgroundDark = Color(0xFFF1F5F9)
 
-val GreenSurfaceDark = Color(0xFF11140E)
-val GreenOnSurfaceDark = Color(0xFFE1E4D9)
+val TealSurfaceDark = Color(0xFF151C28)
+val TealOnSurfaceDark = Color(0xFFF8FAFC)
 
-val GreenSurfaceVariantDark = Color(0xFF42493F)
-val GreenOnSurfaceVariantDark = Color(0xFFC2C9BD)
+val TealSurfaceVariantDark = Color(0xFF1E293B)
+val TealOnSurfaceVariantDark = Color(0xFF94A3B8)
 
-val GreenOutlineDark = Color(0xFF8C9388)
-val GreenOutlineVariantDark = Color(0xFF42493F)
+val TealOutlineDark = Color(0xFF334155)
+val TealOutlineVariantDark = Color(0xFF1E293B)
+

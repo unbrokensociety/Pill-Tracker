@@ -3,6 +3,7 @@ package com.example.ui
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -414,27 +415,25 @@ fun MedicationCard(
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(animatedIconBg)
+                    .border(
+                        width = if (isTaken) 0.dp else 2.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                        shape = CircleShape
+                    )
             ) {
-                AnimatedVisibility(
-                    visible = isTaken,
-                    enter = scaleIn(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
-                    ) + fadeIn(),
-                    exit = scaleOut(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
-                    ) + fadeOut()
-                ) {
+                if (isTaken) {
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = stringResource(R.string.status_taken),
                         tint = animatedIconColor,
                         modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                     )
                 }
             }

@@ -27,48 +27,28 @@ class AlarmScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Find the next time it happens today or tomorrow
         val now = LocalDateTime.now()
-        var nextTime = now.withHour(schedule.timeHour).withMinute(schedule.timeMinute).withSecond(0)
+        var nextTime = now.withHour(schedule.timeHour).withMinute(schedule.timeMinute).withSecond(0).withNano(0)
         
-        if (nextTime.isBefore(now)) {
+        // If time today has passed (more than 5 seconds ago), schedule for tomorrow
+        if (nextTime.isBefore(now.minusSeconds(5))) {
             nextTime = nextTime.plusDays(1)
         }
 
         val triggerAtMillis = nextTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         try {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                if (alarmManager.canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pendingIntent
-                    )
-                } else {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAtMillis,
-                        pendingIntent
-                    )
-                }
-            } else {
+            val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent)
+            alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        } catch (e: SecurityException) {
+            try {
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     triggerAtMillis,
                     pendingIntent
                 )
-            }
-        } catch (e: SecurityException) {
-            try {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    pendingIntent
-                )
             } catch (ex: Exception) {
-                // Extreme fallback
-                alarmManager.set(
+                alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     triggerAtMillis,
                     pendingIntent

@@ -150,25 +150,50 @@ fun MainScreen(viewModel: MainViewModel) {
                 modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
                 enterTransition = {
                     val targetRoute = targetState.destination.route
+                    val initialRoute = initialState.destination.route
                     if (targetRoute == "add") {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
                         )
+                    } else if (initialRoute == "add") {
+                        fadeIn(animationSpec = tween(200))
                     } else {
-                        fadeIn(animationSpec = tween(180, easing = LinearOutSlowInEasing)) + 
-                        scaleIn(initialScale = 0.98f, animationSpec = tween(180, easing = LinearOutSlowInEasing))
+                        val targetIndex = getRouteIndex(targetRoute)
+                        val initialIndex = getRouteIndex(initialRoute)
+                        val direction = if (targetIndex > initialIndex) {
+                            AnimatedContentTransitionScope.SlideDirection.Left
+                        } else {
+                            AnimatedContentTransitionScope.SlideDirection.Right
+                        }
+                        slideIntoContainer(
+                            direction,
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(250))
                     }
                 },
                 exitTransition = {
+                    val targetRoute = targetState.destination.route
                     val initialRoute = initialState.destination.route
                     if (initialRoute == "add") {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(250, easing = FastOutLinearInEasing)
+                            animationSpec = tween(280, easing = FastOutLinearInEasing)
                         )
+                    } else if (targetRoute == "add") {
+                        fadeOut(animationSpec = tween(200))
                     } else {
-                        fadeOut(animationSpec = tween(120, easing = FastOutLinearInEasing))
+                        val targetIndex = getRouteIndex(targetRoute)
+                        val initialIndex = getRouteIndex(initialRoute)
+                        val direction = if (targetIndex > initialIndex) {
+                            AnimatedContentTransitionScope.SlideDirection.Left
+                        } else {
+                            AnimatedContentTransitionScope.SlideDirection.Right
+                        }
+                        slideOutOfContainer(
+                            direction,
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(250))
                     }
                 }
             ) {
@@ -192,26 +217,47 @@ fun MainScreen(viewModel: MainViewModel) {
         }
 
         if (showBottomBar) {
-            // High-fidelity Pixel-style floating navigation capsule
+            // Liquid Glass experimental floating navigation capsule
+            val isDark = isSystemInDarkTheme()
+            val glassBgGradient = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = if (isDark) {
+                    listOf(
+                        Color.White.copy(alpha = 0.15f),
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                    )
+                } else {
+                    listOf(
+                        Color.White.copy(alpha = 0.60f),
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
+                    )
+                }
+            )
+
+            val glassBorderBrush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.65f),
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                )
+            )
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
                     .shadow(
-                        elevation = 16.dp,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
-                        clip = true
+                        elevation = 20.dp,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                        clip = false,
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
                     )
-                    .background(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
-                    )
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(32.dp))
+                    .background(brush = glassBgGradient)
                     .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
+                        width = 1.2.dp,
+                        brush = glassBorderBrush,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp)
                     )
             ) {
                 Row(

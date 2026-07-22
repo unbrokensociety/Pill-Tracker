@@ -372,16 +372,21 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                 }
             }
 
-            // About Application Card - Stock Rounded Box Style
+            // About Application Glass Card
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+                val appVersionName = remember(context) {
+                    try {
+                        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                        "v${pInfo.versionName}"
+                    } catch (e: Exception) {
+                        "v1.0"
+                    }
+                }
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
@@ -397,7 +402,7 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -415,9 +420,9 @@ fun SettingsScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                                 )
                             }
                             Text(
-                                text = stringResource(R.string.settings_version),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
+                                text = appVersionName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }

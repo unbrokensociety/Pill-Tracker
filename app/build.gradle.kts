@@ -43,11 +43,22 @@ android {
       }
     }
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
+      val hasCustomReleaseKey = releaseKeystorePath != null && file(releaseKeystorePath).exists()
+      if (hasCustomReleaseKey) {
+        storeFile = file(releaseKeystorePath!!)
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+      } else {
+        val ksFile = file("${rootDir}/debug.keystore")
+        if (ksFile.exists()) {
+          storeFile = ksFile
+          storePassword = "android"
+          keyAlias = "androiddebugkey"
+          keyPassword = "android"
+        }
+      }
     }
   }
 

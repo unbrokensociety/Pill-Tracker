@@ -39,8 +39,8 @@
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_system">System Default</string>
     <string name="settings_theme_light">Light</string>
-    <string name="settings_theme_dark">Dark (Telegram)</string>
-    <string name="settings_theme_brand">Signature Emerald</string>
+    <string name="settings_theme_dark">Dark (AMOLED Black)</string>
+    <string name="settings_theme_brand">Brand (AMOLED Emerald)</string>
     <string name="settings_notifications">Notifications Enabled</string>
     
     <string name="settings_language">Language</string>

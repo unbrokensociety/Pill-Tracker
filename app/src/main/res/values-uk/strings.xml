@@ -39,8 +39,8 @@
     <string name="settings_theme">Тема</string>
     <string name="settings_theme_system">Системна</string>
     <string name="settings_theme_light">Світла</string>
-    <string name="settings_theme_dark">Темна (Telegram)</string>
-    <string name="settings_theme_brand">Фірмова (Emerald)</string>
+    <string name="settings_theme_dark">Темна (AMOLED Чорна)</string>
+    <string name="settings_theme_brand">Фірмова (AMOLED Emerald)</string>
     <string name="settings_notifications">Сповіщення увімкнено</string>
     
     <string name="settings_language">Мова</string>

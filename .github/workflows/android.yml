@@ -1,55 +1,66 @@
 name: Android CI
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: '9.3.1'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
 
-    - name: Accept Android SDK Licenses
-      run: |
-        mkdir -p "$ANDROID_HOME/licenses"
-        echo -e "\n8933902d075f4b3826b566165d513be473804393\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
-        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
-        if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-        elif [ -f "$ANDROID_HOME/tools/bin/sdkmanager" ]; then
-          yes | "$ANDROID_HOME/tools/bin/sdkmanager" --licenses || true
-        fi
-
-    - name: Setup environment variables
-      run: |
-        if [ ! -f ".env" ]; then
-          if [ -f ".env.example" ]; then
-            cp .env.example .env
-          else
-            touch .env
+      - name: Accept Android SDK Licenses
+        run: |
+          mkdir -p "$ANDROID_HOME/licenses"
+          echo -e "\n8933902d075f4b3826b566165d513be473804393\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          elif [ -f "$ANDROID_HOME/tools/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/tools/bin/sdkmanager" --licenses || true
           fi
-        fi
 
-    - name: Ensure google-services.json
-      run: |
-        if [ ! -f "app/google-services.json" ]; then
-          echo "⚠️ app/google-services.json is missing. Creating fallback mock file for CI build..."
-          mkdir -p app
-          cat << 'EOF' > app/google-services.json
+      - name: Setup environment variables
+        run: |
+          if [ ! -f ".env" ]; then
+            if [ -f ".env.example" ]; then
+              cp .env.example .env
+            else
+              touch .env
+            fi
+          fi
+
+      - name: Ensure google-services.json
+        run: |
+          if [ ! -f "app/google-services.json" ]; then
+            echo "⚠️ app/google-services.json is missing. Creating fallback mock file for CI build..."
+            mkdir -p app
+            cat << 'EOF' > app/google-services.json
 {
   "project_info": {
     "project_number": "86011733059",
@@ -80,56 +91,56 @@ jobs:
   "configuration_version": "1"
 }
 EOF
-        fi
+          fi
 
-    - name: Ensure Valid Gradle Wrapper
-      run: |
-        if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
-          echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper with Gradle 9.3.1..."
-          gradle wrapper --gradle-version 9.3.1
-        fi
+      - name: Ensure Valid Gradle Wrapper
+        run: |
+          if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
+            echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper with Gradle 9.3.1..."
+            gradle wrapper --gradle-version 9.3.1
+          fi
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew || true
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew || true
 
-    - name: Decode Debug Keystore
-      run: |
-        if [ -f "debug.keystore.base64" ]; then
-          python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
-        fi
+      - name: Decode Debug Keystore
+        run: |
+          if [ -f "debug.keystore.base64" ]; then
+            python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
+          fi
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
 
-    - name: Prepare Named APK
-      run: |
-        cp app/build/outputs/apk/debug/app-debug.apk pill-tracker.apk
+      - name: Prepare Named APK
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk pill-tracker.apk
 
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: pill-tracker
-        path: pill-tracker.apk
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pill-tracker
+          path: pill-tracker.apk
 
-    - name: Generate Release Changelog
-      run: |
-        if [ ! -s "RELEASE_NOTES.md" ]; then
-          echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
-          echo "- 🔐 **Seamless Email Verification**: Automatic verification link polling and account activation." >> RELEASE_NOTES.md
-          echo "- 🚀 **Instant Offline Mode**: Continue using the app immediately while waiting for verification." >> RELEASE_NOTES.md
-          echo "- 📜 **Legal Privacy Consent**: Mandatory privacy policy agreement and immutable audit record." >> RELEASE_NOTES.md
-        fi
+      - name: Generate Release Changelog
+        run: |
+          if [ ! -s "RELEASE_NOTES.md" ]; then
+            echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            echo "- 🔐 **Seamless Email Verification**: Automatic verification link polling and account activation." >> RELEASE_NOTES.md
+            echo "- 🚀 **Instant Offline Mode**: Continue using the app immediately while waiting for verification." >> RELEASE_NOTES.md
+            echo "- 📜 **Legal Privacy Consent**: Mandatory privacy policy agreement and immutable audit record." >> RELEASE_NOTES.md
+          fi
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        tag_name: v1.${{ github.run_number }}
-        name: "Pill Tracker v1.${{ github.run_number }}"
-        body_path: RELEASE_NOTES.md
-        files: pill-tracker.apk
-        overwrite: true
-        fail_on_unmatched_files: false
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v1.${{ github.run_number }}
+          name: "Pill Tracker v1.${{ github.run_number }}"
+          body_path: RELEASE_NOTES.md
+          files: pill-tracker.apk
+          overwrite: true
+          fail_on_unmatched_files: false
 

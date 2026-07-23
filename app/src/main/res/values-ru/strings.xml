@@ -93,4 +93,55 @@
     <string name="streak_achievement_3">Разжигатель (3 дня)</string>
     <string name="streak_achievement_7">Неделя силы (7 дней)</string>
     <string name="streak_achievement_30">Неугасимое пламя (30 дней)</string>
+
+    <!-- Auth & Database Onboarding strings -->
+    <string name="auth_welcome_title">Добро пожаловать в MediTracker</string>
+    <string name="auth_welcome_subtitle">Контролируйте здоровье и приём лекарств безопасно</string>
+    <string name="auth_tab_signin">Вход</string>
+    <string name="auth_tab_signup">Регистрация</string>
+    <string name="auth_field_name">Имя и фамилия</string>
+    <string name="auth_field_email">Электронная почта</string>
+    <string name="auth_field_password">Пароль</string>
+    <string name="auth_btn_signin">Войти и синхронизировать</string>
+    <string name="auth_btn_signup">Создать аккаунт</string>
+    <string name="auth_btn_skip">Пропустить / Войти как гость</string>
+    <string name="auth_skip_desc">Все функции работают локально без регистрации. Создавать аккаунт необязательно.</string>
+    <string name="auth_guest_title">Гостевой профиль</string>
+    <string name="auth_guest_subtitle">Локальный режим базы данных (Офлайн)</string>
+    <string name="auth_cloud_title">Облачный аккаунт</string>
+    <string name="auth_cloud_subtitle">База данных синхронизирована</string>
+    <string name="auth_action_link_account">Войти через Google / Аккаунт</string>
+    <string name="auth_action_sign_out">Выйти (Перейти в гостевой режим)</string>
+    <string name="db_export_title">Резервная копия базы данных</string>
+    <string name="db_export_desc">Локальная база данных Room активна и защищена</string>
+    <string name="db_export_success">Локальный снимок базы данных сохранён!</string>
+
+    <string name="auth_btn_google">Войти через Google</string>
+    <string name="auth_google_select_account">Выберите аккаунт Google</string>
+    <string name="auth_google_simulated_subtitle">Выберите профиль Google для входа и синхронизации с MediTracker</string>
+    <string name="auth_registered_users">Сохранённые профили в БД Room</string>
+    <string name="auth_error_invalid_email">Введите корректный адрес электронной почты</string>
+    <string name="auth_error_short_password">Пароль должен содержать минимум 4 символа</string>
+    <string name="auth_provider_google">Аккаунт Google</string>
+    <string name="auth_provider_email">Email / Пароль</string>
+
+    <string name="stock_title">Запас лекарств</string>
+    <string name="stock_remaining">Осталось: %1$d шт.</string>
+    <string name="stock_low_warning">Мало таблеток!</string>
+    <string name="stock_refill_btn">+ Пополнить запас</string>
+    <string name="stock_refill_30">+30 шт.</string>
+    <string name="stock_refill_success">Запас успешно пополнен!</string>
+
+    <string name="report_export_title">Экспорт отчёта для врача</string>
+    <string name="report_export_desc">Поделиться историей приёма и статистикой</string>
+    <string name="report_share_btn">Поделиться отчётом</string>
+
+    <string name="qr_doctor_title">QR-карта для врача</string>
+    <string name="qr_doctor_desc">Показать QR-код со списком препаратов и расписанием</string>
+    <string name="qr_dialog_title">Медицинский QR-код</string>
+
+    <string name="ai_advisor_title">Gemini AI Консультант</string>
+    <string name="ai_advisor_desc">Задать вопрос о приёме лекарств, совместимости и советах</string>
+    <string name="ai_advisor_prompt_hint">Задайте вопрос о здоровье или приёме...</string>
+
 </resources>

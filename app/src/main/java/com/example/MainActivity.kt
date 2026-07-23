@@ -35,6 +35,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.AddMedicationScreen
+import com.example.ui.AuthScreen
 import com.example.ui.CalendarScreen
 import com.example.ui.HomeScreen
 import com.example.ui.MedicationsListScreen
@@ -67,6 +68,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        try {
+            com.google.firebase.FirebaseApp.initializeApp(this)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         
         // Request highest refresh rate (up to 144Hz) for ultra-smooth 120/144 FPS animations
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
@@ -119,6 +126,15 @@ fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
     
     val currentBackStack by navController.currentBackStackEntryAsState()
+    val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState()
+
+    LaunchedEffect(isOnboardingCompleted) {
+        if (!isOnboardingCompleted) {
+            navController.navigate("auth") {
+                popUpTo("home") { inclusive = false }
+            }
+        }
+    }
     val currentDestination = currentBackStack?.destination?.route ?: "home"
     
     val showBottomBar = currentDestination in listOf("home", "calendar", "meds", "settings")
@@ -216,11 +232,25 @@ fun MainScreen(viewModel: MainViewModel) {
                     MedicationsListScreen(viewModel, 120.dp)
                 }
                 composable("settings") { 
-                    SettingsScreen(viewModel, 120.dp)
+                    SettingsScreen(
+                        viewModel = viewModel,
+                        bottomPadding = 120.dp,
+                        onNavigateToAuth = { navController.navigate("auth") }
+                    )
                 }
                 composable("add") {
                     AddMedicationScreen(
                         onNavigateBack = { navController.popBackStack() },
+                        viewModel = viewModel
+                    )
+                }
+                composable("auth") {
+                    AuthScreen(
+                        onCompleteAuth = {
+                            navController.navigate("home") {
+                                popUpTo("auth") { inclusive = true }
+                            }
+                        },
                         viewModel = viewModel
                     )
                 }

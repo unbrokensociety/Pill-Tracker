@@ -93,4 +93,55 @@
     <string name="streak_achievement_3">Flame Starter (3 Days)</string>
     <string name="streak_achievement_7">Week of Power (7 Days)</string>
     <string name="streak_achievement_30">Unstoppable Fire (30 Days)</string>
+
+    <!-- Auth & Database Onboarding strings -->
+    <string name="auth_welcome_title">Welcome to MediTracker</string>
+    <string name="auth_welcome_subtitle">Keep track of your health and medications safely</string>
+    <string name="auth_tab_signin">Sign In</string>
+    <string name="auth_tab_signup">Register</string>
+    <string name="auth_field_name">Full Name</string>
+    <string name="auth_field_email">Email Address</string>
+    <string name="auth_field_password">Password</string>
+    <string name="auth_btn_signin">Sign In &amp; Sync</string>
+    <string name="auth_btn_signup">Create Account</string>
+    <string name="auth_btn_skip">Skip / Continue as Guest</string>
+    <string name="auth_skip_desc">You can use all features locally without an account. Registration is optional.</string>
+    <string name="auth_guest_title">Guest Account</string>
+    <string name="auth_guest_subtitle">Local Database Mode (Offline)</string>
+    <string name="auth_cloud_title">Cloud Account</string>
+    <string name="auth_cloud_subtitle">Database Synced &amp; Backed Up</string>
+    <string name="auth_action_link_account">Link Cloud / Google Account</string>
+    <string name="auth_action_sign_out">Sign Out (Guest Mode)</string>
+    <string name="db_export_title">Database Backup</string>
+    <string name="db_export_desc">Local Room database is active and secure</string>
+    <string name="db_export_success">Local database snapshot saved successfully!</string>
+
+    <string name="auth_btn_google">Continue with Google</string>
+    <string name="auth_google_select_account">Choose a Google Account</string>
+    <string name="auth_google_simulated_subtitle">Select your account to sign in and sync with MediTracker</string>
+    <string name="auth_registered_users">Saved Profiles in Local DB</string>
+    <string name="auth_error_invalid_email">Please enter a valid email address</string>
+    <string name="auth_error_short_password">Password must be at least 4 characters</string>
+    <string name="auth_provider_google">Google Account</string>
+    <string name="auth_provider_email">Email Account</string>
+
+    <string name="stock_title">Pill Stock</string>
+    <string name="stock_remaining">Remaining: %1$d pills</string>
+    <string name="stock_low_warning">Low Stock Warning!</string>
+    <string name="stock_refill_btn">+ Refill Stock</string>
+    <string name="stock_refill_30">+30 Pills</string>
+    <string name="stock_refill_success">Refilled stock successfully!</string>
+
+    <string name="report_export_title">Export Health Report</string>
+    <string name="report_export_desc">Share intake logs and compliance summary with doctor</string>
+    <string name="report_share_btn">Share Medical Report</string>
+
+    <string name="qr_doctor_title">Doctor QR Card</string>
+    <string name="qr_doctor_desc">Show QR code with active medications &amp; schedule</string>
+    <string name="qr_dialog_title">Medical Schedule QR</string>
+
+    <string name="ai_advisor_title">Gemini AI Health Advisor</string>
+    <string name="ai_advisor_desc">Ask AI about medication rules, food precautions &amp; advice</string>
+    <string name="ai_advisor_prompt_hint">Type your health or medication question...</string>
+
 </resources>

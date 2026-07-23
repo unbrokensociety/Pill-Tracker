@@ -68,6 +68,14 @@ fun HomeScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit
             // Streak motivation banner
             StreakBanner(streakDays = streakDays)
 
+            val lowStockMeds by viewModel.lowStockMedications.collectAsState()
+            if (lowStockMeds.isNotEmpty()) {
+                LowStockBanner(
+                    lowStockMeds = lowStockMeds,
+                    onRefill = { medId -> viewModel.refillStock(medId, 30) }
+                )
+            }
+
             // Horizontal Date strip
             val dateStrip = remember {
                 (-2..2).map { LocalDate.now().plusDays(it.toLong()) }
@@ -516,6 +524,77 @@ fun StreakBanner(streakDays: Int) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun LowStockBanner(
+    lowStockMeds: List<com.example.data.Medication>,
+    onRefill: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("⚠️", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.stock_low_warning),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            lowStockMeds.take(2).forEach { med ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${med.name}: ${stringResource(R.string.stock_remaining, med.stockCount)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+
+                    Button(
+                        onClick = { onRefill(med.id) },
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.onErrorContainer,
+                            contentColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Text(
+                            text = stringResource(R.string.stock_refill_30),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }

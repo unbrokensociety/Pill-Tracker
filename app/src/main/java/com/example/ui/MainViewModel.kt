@@ -24,12 +24,45 @@ import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.map
 
+import com.example.data.CloudSyncRepository
+import com.example.data.UserAccount
+import com.example.data.UserRepository
+
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class MainViewModel(
     private val repository: MedicationRepository,
+    private val userRepository: UserRepository,
     private val alarmScheduler: AlarmScheduler,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val cloudSyncRepository: CloudSyncRepository
 ) : ViewModel() {
+
+    val lastSyncTimestamp: StateFlow<Long> = settingsRepository.lastSyncTimestampFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0L
+    )
+
+    fun triggerCloudSync(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = cloudSyncRepository.syncToCloud()
+            onResult(result.getOrDefault("Sync complete"))
+        }
+    }
+
+    fun triggerCloudRestore(onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = cloudSyncRepository.restoreFromCloud()
+            onResult(result.getOrDefault("Restore complete"))
+        }
+    }
+
+    val allSavedUsers: StateFlow<List<UserAccount>> = userRepository.allUsers.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeModeFlow.stateIn(
         scope = viewModelScope,
@@ -41,6 +74,30 @@ class MainViewModel(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = true
+    )
+
+    val isOnboardingCompleted: StateFlow<Boolean> = settingsRepository.isOnboardingCompletedFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true // Default true to prevent flicker, will update on initial collection
+    )
+
+    val isGuestMode: StateFlow<Boolean> = settingsRepository.isGuestModeFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val userName: StateFlow<String> = settingsRepository.userNameFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
+    )
+
+    val userEmail: StateFlow<String> = settingsRepository.userEmailFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
     )
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
@@ -106,9 +163,22 @@ class MainViewModel(
         viewModelScope.launch { settingsRepository.setNotificationsEnabled(enabled) }
     }
 
-    fun toggleLog(schedule: DailyScheduleView, isTaken: Boolean) {
+    val lowStockMedications: StateFlow<List<Medication>> = repository.lowStockMedications
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    fun toggleLog(schedule: DailyScheduleView, isTaken: Boolean, sideEffectNote: String = "") {
         viewModelScope.launch {
-            repository.toggleIntake(schedule, _selectedDate.value, isTaken)
+            repository.toggleIntake(schedule, _selectedDate.value, isTaken, sideEffectNote)
+        }
+    }
+
+    fun refillStock(medicationId: Int, amount: Int) {
+        viewModelScope.launch {
+            repository.refillStock(medicationId, amount)
         }
     }
 
@@ -130,6 +200,76 @@ class MainViewModel(
             repository.deleteMedication(medication)
         }
     }
+
+    fun loginOrRegister(name: String, email: String, provider: String = "EMAIL", passwordHash: String = "") {
+        viewModelScope.launch {
+            val userAccount = UserAccount(
+                email = email,
+                name = name,
+                authProvider = provider,
+                passwordHash = passwordHash,
+                lastLoginAt = System.currentTimeMillis()
+            )
+            userRepository.saveUser(userAccount)
+            settingsRepository.setAccountState(
+                isGuest = false,
+                name = name,
+                email = email,
+                onboardingDone = true
+            )
+        }
+    }
+
+    fun loginWithGoogle(email: String, name: String, avatarUrl: String) {
+        viewModelScope.launch {
+            val userAccount = UserAccount(
+                email = email,
+                name = name,
+                authProvider = "GOOGLE",
+                avatarUrl = avatarUrl,
+                lastLoginAt = System.currentTimeMillis()
+            )
+            userRepository.saveUser(userAccount)
+            settingsRepository.setAccountState(
+                isGuest = false,
+                name = name,
+                email = email,
+                onboardingDone = true
+            )
+        }
+    }
+
+    fun switchAccount(email: String) {
+        viewModelScope.launch {
+            val user = userRepository.getUserByEmail(email)
+            if (user != null) {
+                userRepository.updateLastLogin(email)
+                settingsRepository.setAccountState(
+                    isGuest = false,
+                    name = user.name,
+                    email = user.email,
+                    onboardingDone = true
+                )
+            }
+        }
+    }
+
+    fun skipAuthAsGuest() {
+        viewModelScope.launch {
+            settingsRepository.setAccountState(
+                isGuest = true,
+                name = "",
+                email = "",
+                onboardingDone = true
+            )
+        }
+    }
+
+    fun signOutToGuest() {
+        viewModelScope.launch {
+            settingsRepository.signOutToGuest()
+        }
+    }
 }
 
 class MainViewModelFactory(
@@ -139,11 +279,14 @@ class MainViewModelFactory(
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             val database = AppDatabase.getDatabase(context)
             val repository = MedicationRepository(database.medicationDao())
+            val userRepository = UserRepository(database.userDao())
             val alarmScheduler = AlarmScheduler(context)
             val settingsRepository = SettingsRepository(context)
+            val cloudSyncRepository = CloudSyncRepository(context, database.medicationDao(), settingsRepository)
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(repository, alarmScheduler, settingsRepository) as T
+            return MainViewModel(repository, userRepository, alarmScheduler, settingsRepository, cloudSyncRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+

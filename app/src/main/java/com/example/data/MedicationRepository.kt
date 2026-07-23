@@ -45,7 +45,13 @@ class MedicationRepository(private val dao: MedicationDao) {
         return dao.getIntakeLogsForDate(dateEpoch)
     }
 
-    suspend fun toggleIntake(schedule: DailyScheduleView, date: LocalDate, isTaken: Boolean) {
+    val lowStockMedications: Flow<List<Medication>> = dao.getLowStockMedications()
+
+    suspend fun refillStock(medicationId: Int, amount: Int) {
+        dao.refillStock(medicationId, amount)
+    }
+
+    suspend fun toggleIntake(schedule: DailyScheduleView, date: LocalDate, isTaken: Boolean, sideEffectNote: String = "") {
         val dateEpoch = getStartOfDayEpochMillis(date)
         if (isTaken) {
             val log = IntakeLog(
@@ -56,11 +62,14 @@ class MedicationRepository(private val dao: MedicationDao) {
                 name = schedule.name,
                 dosage = schedule.dosage,
                 timeHour = schedule.timeHour,
-                timeMinute = schedule.timeMinute
+                timeMinute = schedule.timeMinute,
+                sideEffectNote = sideEffectNote
             )
             dao.insertIntakeLog(log)
+            dao.decrementStock(schedule.medicationId)
         } else {
             dao.deleteIntakeLog(schedule.scheduleId, dateEpoch)
+            dao.incrementStock(schedule.medicationId)
         }
     }
 }

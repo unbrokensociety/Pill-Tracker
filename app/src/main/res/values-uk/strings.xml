@@ -162,5 +162,14 @@
     <string name="auth_verification_skip">Продовжити в застосунок (Локальний режим)</string>
     <string name="auth_privacy_checkbox">Я приймаю Політику конфіденційності та юридичні умови</string>
     <string name="auth_privacy_required_error">Для реєстрації необхідно прийняти Політику конфіденційності.</string>
+    <string name="auth_forgot_password">Забули пароль?</string>
+    <string name="auth_reset_password_title">Скидання пароля</string>
+    <string name="auth_reset_password_desc">Введіть ваш email, і ми надішлемо посилання для відновлення пароля.</string>
+    <string name="auth_btn_send_reset">Надіслати посилання</string>
+    <string name="auth_reset_email_sent">Посилання для скидання пароля надіслано на %1$s!</string>
+    <string name="auth_invalid_credentials">Невірний email або пароль.</string>
+    <string name="auth_user_not_found">Користувача з таким email не знайдено.</string>
+    <string name="barcode_format_qr">QR-код</string>
+    <string name="barcode_format_1d">Штрихкод (Code 128)</string>
 
 </resources>

@@ -21,46 +21,84 @@ object ReportExportHelper {
         todayLogs: List<IntakeLog>,
         streakDays: Int
     ) {
-        val dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
         val builder = StringBuilder()
 
-        builder.append("=========================================\n")
-        builder.append("         MEDITRACKER HEALTH REPORT       \n")
-        builder.append("=========================================\n")
-        builder.append("Generated Date: $dateStr\n")
-        builder.append("Patient / User: ${userAccountName.ifBlank { "Guest User" }}\n")
-        if (userEmail.isNotBlank()) {
-            builder.append("Email Account: $userEmail\n")
-        }
-        builder.append("Adherence Streak: $streakDays days compliant\n\n")
+        val totalScheduled = schedules.size
+        val takenCount = todayLogs.size
+        val adherenceRate = if (totalScheduled > 0) ((takenCount.toDouble() / totalScheduled.toDouble()) * 100).toInt() else 100
 
-        builder.append("--- ACTIVE MEDICATIONS (${medications.size}) ---\n")
+        builder.append("=====================================================\n")
+        builder.append("         CLINICAL & PHARMACOLOGICAL REPORT           \n")
+        builder.append("                    PILL TRACKER                     \n")
+        builder.append("=====================================================\n")
+        builder.append("Report Timestamp : $dateStr\n")
+        builder.append("Patient Name     : ${userAccountName.ifBlank { "Guest Patient" }}\n")
+        if (userEmail.isNotBlank()) {
+            builder.append("Account Email    : $userEmail\n")
+        }
+        builder.append("Adherence Rate   : $adherenceRate% today ($takenCount/$totalScheduled doses completed)\n")
+        builder.append("Compliance Streak: $streakDays consecutive days active\n\n")
+
+        builder.append("-----------------------------------------------------\n")
+        builder.append(" 1. PRESCRIPTION & STOCK REGISTRY (${medications.size} Active)\n")
+        builder.append("-----------------------------------------------------\n")
         if (medications.isEmpty()) {
-            builder.append("No active medications listed.\n")
+            builder.append("No active medications registered in system.\n\n")
         } else {
             medications.forEachIndexed { index, med ->
-                builder.append("${index + 1}. ${med.name} (${med.dosage})\n")
-                if (med.notes.isNotBlank()) builder.append("   Notes: ${med.notes}\n")
-                builder.append("   Frequency: ${med.timesPerDay} time(s) per day\n")
-                builder.append("   Stock Remaining: ${med.stockCount} pills (Low Stock Refill Level: ${med.lowStockThreshold})\n")
-                builder.append("\n")
+                val stockAlert = if (med.stockCount <= med.lowStockThreshold) "⚠️ LOW STOCK REFILL NEEDED!" else "OK"
+                builder.append("[${index + 1}] ${med.name.uppercase()} — ${med.dosage}\n")
+                if (med.notes.isNotBlank()) builder.append("    Clinical Notes  : ${med.notes}\n")
+                builder.append("    Daily Frequency : ${med.timesPerDay} intake(s)/day\n")
+                builder.append("    Current Inventory: ${med.stockCount} pills (Threshold: ${med.lowStockThreshold}) [$stockAlert]\n\n")
             }
         }
 
-        builder.append("--- TODAY'S INTAKE LOGS (${todayLogs.size}/${schedules.size}) ---\n")
+        builder.append("-----------------------------------------------------\n")
+        builder.append(" 2. TODAY'S SCHEDULE & COMPLIANCE LOG\n")
+        builder.append("-----------------------------------------------------\n")
         if (schedules.isEmpty()) {
-            builder.append("No scheduled doses for today.\n")
+            builder.append("No medication doses scheduled for today.\n\n")
         } else {
             schedules.forEach { sch ->
-                val isTaken = todayLogs.any { it.scheduleId == sch.scheduleId }
+                val matchingLog = todayLogs.find { it.scheduleId == sch.scheduleId }
+                val isTaken = matchingLog != null
                 val timeFormatted = String.format("%02d:%02d", sch.timeHour, sch.timeMinute)
-                val status = if (isTaken) "✓ TAKEN" else "✗ PENDING"
-                builder.append("• $timeFormatted - ${sch.name} (${sch.dosage}) -> $status\n")
+                val statusSymbol = if (isTaken) "✓ TAKEN" else "✗ PENDING"
+                
+                builder.append("• $timeFormatted - ${sch.name} (${sch.dosage}) -> $statusSymbol")
+                if (matchingLog != null && matchingLog.sideEffectNote.isNotBlank()) {
+                    builder.append(" [Side Effect Logged: ${matchingLog.sideEffectNote}]")
+                }
+                builder.append("\n")
             }
+            builder.append("\n")
         }
 
-        builder.append("\n=========================================\n")
-        builder.append("Generated by PillTracker App\n")
+        val sideEffectLogs = todayLogs.filter { it.sideEffectNote.isNotBlank() }
+        if (sideEffectLogs.isNotEmpty()) {
+            builder.append("-----------------------------------------------------\n")
+            builder.append(" 3. PATIENT REPORTED SIDE EFFECTS & SYMPTOMS\n")
+            builder.append("-----------------------------------------------------\n")
+            sideEffectLogs.forEach { log ->
+                builder.append("• ${log.name}: ${log.sideEffectNote}\n")
+            }
+            builder.append("\n")
+        }
+
+        builder.append("-----------------------------------------------------\n")
+        builder.append(" 4. PHYSICIAN / CLINICIAN OBSERVATIONS & NOTES\n")
+        builder.append("-----------------------------------------------------\n")
+        builder.append("Notes: _______________________________________________\n")
+        builder.append("_____________________________________________________\n")
+        builder.append("_____________________________________________________\n\n")
+        builder.append("Attending Physician Signature: _______________________\n")
+        builder.append("Date: _____________________\n\n")
+
+        builder.append("=====================================================\n")
+        builder.append("  Generated securely by PillTracker Mobile Health    \n")
+        builder.append("=====================================================\n")
 
         val reportText = builder.toString()
 

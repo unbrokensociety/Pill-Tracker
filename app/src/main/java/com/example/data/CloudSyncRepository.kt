@@ -228,65 +228,158 @@ class CloudSyncRepository(
 
     suspend fun restoreFromCloud(): Result<String> = withContext(Dispatchers.IO) {
         try {
-            if (!backupFile.exists() || backupFile.length() == 0L) {
-                return@withContext Result.failure(Exception("No cloud backup found for this account."))
+            val userEmail = settingsRepository.userEmailFlow.first()
+            val authUser = FirebaseAuth.getInstance().currentUser
+            val userId = authUser?.uid ?: userEmail.ifBlank { "guest_user" }.replace(".", "_").replace("@", "_")
+
+            // 1. First try fetching from live Firebase Firestore
+            var restoredMeds = mutableListOf<Medication>()
+            var restoredScheds = mutableListOf<Schedule>()
+            var restoredLogs = mutableListOf<IntakeLog>()
+            var fetchedFromFirestore = false
+
+            try {
+                val db = FirebaseFirestore.getInstance()
+                val userRef = db.collection("users").document(userId)
+
+                val medsDoc = userRef.collection("data").document("medications").get().await()
+                val schedsDoc = userRef.collection("data").document("schedules").get().await()
+                val logsDoc = userRef.collection("data").document("logs").get().await()
+
+                val medsItems = medsDoc.get("items") as? List<Map<String, Any>>
+                val schedsItems = schedsDoc.get("items") as? List<Map<String, Any>>
+                val logsItems = logsDoc.get("items") as? List<Map<String, Any>>
+
+                if (medsItems != null) {
+                    medsItems.forEach { m ->
+                        val id = (m["id"] as? Long)?.toInt() ?: 0
+                        val name = m["name"] as? String ?: ""
+                        val dosage = m["dosage"] as? String ?: ""
+                        val notes = m["notes"] as? String ?: ""
+                        val color = (m["color"] as? Long)?.toInt() ?: 0
+                        val timesPerDay = (m["timesPerDay"] as? Long)?.toInt() ?: 1
+                        val startDate = (m["startDate"] as? Long) ?: System.currentTimeMillis()
+                        val endDate = (m["endDate"] as? Long)
+                        val stockCount = (m["stockCount"] as? Long)?.toInt() ?: 30
+                        val lowStockThreshold = (m["lowStockThreshold"] as? Long)?.toInt() ?: 5
+
+                        if (name.isNotBlank()) {
+                            restoredMeds.add(
+                                Medication(
+                                    id = id,
+                                    name = name,
+                                    dosage = dosage,
+                                    notes = notes,
+                                    color = color,
+                                    timesPerDay = timesPerDay,
+                                    startDate = startDate,
+                                    endDate = if (endDate == 0L) null else endDate,
+                                    stockCount = stockCount,
+                                    lowStockThreshold = lowStockThreshold
+                                )
+                            )
+                        }
+                    }
+                }
+
+                if (schedsItems != null) {
+                    schedsItems.forEach { s ->
+                        restoredScheds.add(
+                            Schedule(
+                                id = (s["id"] as? Long)?.toInt() ?: 0,
+                                medicationId = (s["medicationId"] as? Long)?.toInt() ?: 0,
+                                timeHour = (s["timeHour"] as? Long)?.toInt() ?: 8,
+                                timeMinute = (s["timeMinute"] as? Long)?.toInt() ?: 0
+                            )
+                        )
+                    }
+                }
+
+                if (logsItems != null) {
+                    logsItems.forEach { l ->
+                        restoredLogs.add(
+                            IntakeLog(
+                                id = (l["id"] as? Long)?.toInt() ?: 0,
+                                medicationId = (l["medicationId"] as? Long)?.toInt() ?: 0,
+                                scheduleId = (l["scheduleId"] as? Long)?.toInt() ?: 0,
+                                scheduledDateEpoch = (l["scheduledDateEpoch"] as? Long) ?: System.currentTimeMillis(),
+                                timestampTaken = (l["timestampTaken"] as? Long) ?: System.currentTimeMillis(),
+                                name = l["name"] as? String ?: "",
+                                dosage = l["dosage"] as? String ?: "",
+                                timeHour = (l["timeHour"] as? Long)?.toInt() ?: 8,
+                                timeMinute = (l["timeMinute"] as? Long)?.toInt() ?: 0,
+                                sideEffectNote = l["sideEffectNote"] as? String ?: ""
+                            )
+                        )
+                    }
+                }
+
+                if (restoredMeds.isNotEmpty()) {
+                    fetchedFromFirestore = true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            val jsonString = backupFile.readText()
-            val rootJson = JSONObject(jsonString)
+            // 2. Fallback to local JSON backup file if Firestore didn't yield meds
+            if (!fetchedFromFirestore && backupFile.exists() && backupFile.length() > 0L) {
+                val jsonString = backupFile.readText()
+                val rootJson = JSONObject(jsonString)
 
-            val medsArray = rootJson.optJSONArray("medications") ?: JSONArray()
-            val restoredMeds = mutableListOf<Medication>()
-            for (i in 0 until medsArray.length()) {
-                val obj = medsArray.getJSONObject(i)
-                restoredMeds.add(
-                    Medication(
-                        id = obj.getInt("id"),
-                        name = obj.getString("name"),
-                        dosage = obj.getString("dosage"),
-                        notes = obj.optString("notes", ""),
-                        color = obj.optInt("color", 0),
-                        timesPerDay = obj.optInt("timesPerDay", 1),
-                        startDate = obj.getLong("startDate"),
-                        endDate = if (obj.optLong("endDate", 0L) == 0L) null else obj.getLong("endDate"),
-                        stockCount = obj.optInt("stockCount", 30),
-                        lowStockThreshold = obj.optInt("lowStockThreshold", 5)
+                val medsArray = rootJson.optJSONArray("medications") ?: JSONArray()
+                for (i in 0 until medsArray.length()) {
+                    val obj = medsArray.getJSONObject(i)
+                    restoredMeds.add(
+                        Medication(
+                            id = obj.getInt("id"),
+                            name = obj.getString("name"),
+                            dosage = obj.getString("dosage"),
+                            notes = obj.optString("notes", ""),
+                            color = obj.optInt("color", 0),
+                            timesPerDay = obj.optInt("timesPerDay", 1),
+                            startDate = obj.getLong("startDate"),
+                            endDate = if (obj.optLong("endDate", 0L) == 0L) null else obj.getLong("endDate"),
+                            stockCount = obj.optInt("stockCount", 30),
+                            lowStockThreshold = obj.optInt("lowStockThreshold", 5)
+                        )
                     )
-                )
+                }
+
+                val schedArray = rootJson.optJSONArray("schedules") ?: JSONArray()
+                for (i in 0 until schedArray.length()) {
+                    val obj = schedArray.getJSONObject(i)
+                    restoredScheds.add(
+                        Schedule(
+                            id = obj.getInt("id"),
+                            medicationId = obj.getInt("medicationId"),
+                            timeHour = obj.getInt("timeHour"),
+                            timeMinute = obj.getInt("timeMinute")
+                        )
+                    )
+                }
+
+                val logsArray = rootJson.optJSONArray("logs") ?: JSONArray()
+                for (i in 0 until logsArray.length()) {
+                    val obj = logsArray.getJSONObject(i)
+                    restoredLogs.add(
+                        IntakeLog(
+                            id = obj.getInt("id"),
+                            medicationId = obj.getInt("medicationId"),
+                            scheduleId = obj.getInt("scheduleId"),
+                            scheduledDateEpoch = obj.optLong("scheduledDateEpoch", System.currentTimeMillis()),
+                            timestampTaken = obj.optLong("timestampTaken", System.currentTimeMillis()),
+                            name = obj.getString("name"),
+                            dosage = obj.getString("dosage"),
+                            timeHour = obj.getInt("timeHour"),
+                            timeMinute = obj.getInt("timeMinute"),
+                            sideEffectNote = obj.optString("sideEffectNote", "")
+                        )
+                    )
+                }
             }
 
-            val schedArray = rootJson.optJSONArray("schedules") ?: JSONArray()
-            val restoredScheds = mutableListOf<Schedule>()
-            for (i in 0 until schedArray.length()) {
-                val obj = schedArray.getJSONObject(i)
-                restoredScheds.add(
-                    Schedule(
-                        id = obj.getInt("id"),
-                        medicationId = obj.getInt("medicationId"),
-                        timeHour = obj.getInt("timeHour"),
-                        timeMinute = obj.getInt("timeMinute")
-                    )
-                )
-            }
-
-            val logsArray = rootJson.optJSONArray("logs") ?: JSONArray()
-            val restoredLogs = mutableListOf<IntakeLog>()
-            for (i in 0 until logsArray.length()) {
-                val obj = logsArray.getJSONObject(i)
-                restoredLogs.add(
-                    IntakeLog(
-                        id = obj.getInt("id"),
-                        medicationId = obj.getInt("medicationId"),
-                        scheduleId = obj.getInt("scheduleId"),
-                        scheduledDateEpoch = obj.optLong("scheduledDateEpoch", System.currentTimeMillis()),
-                        timestampTaken = obj.optLong("timestampTaken", System.currentTimeMillis()),
-                        name = obj.getString("name"),
-                        dosage = obj.getString("dosage"),
-                        timeHour = obj.getInt("timeHour"),
-                        timeMinute = obj.getInt("timeMinute"),
-                        sideEffectNote = obj.optString("sideEffectNote", "")
-                    )
-                )
+            if (restoredMeds.isEmpty()) {
+                return@withContext Result.failure(Exception("Никаких данных в облаке не найдено."))
             }
 
             // Write into database
@@ -295,7 +388,8 @@ class CloudSyncRepository(
             restoredLogs.forEach { medicationDao.insertIntakeLog(it) }
 
             settingsRepository.updateLastSyncTimestamp()
-            Result.success("Restored ${restoredMeds.size} medications from cloud backup!")
+            val sourceText = if (fetchedFromFirestore) "Cloud Firestore" else "локального кэша"
+            Result.success("Восстановлено ${restoredMeds.size} препаратов из $sourceText!")
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)

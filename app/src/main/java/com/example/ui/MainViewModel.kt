@@ -175,12 +175,14 @@ class MainViewModel(
     fun toggleLog(schedule: DailyScheduleView, isTaken: Boolean, sideEffectNote: String = "") {
         viewModelScope.launch {
             repository.toggleIntake(schedule, _selectedDate.value, isTaken, sideEffectNote)
+            cloudSyncRepository.syncToCloud()
         }
     }
 
     fun refillStock(medicationId: Int, amount: Int) {
         viewModelScope.launch {
             repository.refillStock(medicationId, amount)
+            cloudSyncRepository.syncToCloud()
         }
     }
 
@@ -190,6 +192,7 @@ class MainViewModel(
             createdSchedules.forEach { schedule ->
                 alarmScheduler.scheduleAlarm(schedule, medication.name)
             }
+            cloudSyncRepository.syncToCloud()
         }
     }
 
@@ -200,6 +203,7 @@ class MainViewModel(
                 alarmScheduler.cancelAlarm(schedule)
             }
             repository.deleteMedication(medication)
+            cloudSyncRepository.syncToCloud()
         }
     }
 

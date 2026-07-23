@@ -162,5 +162,14 @@
     <string name="auth_verification_skip">Continue to App (Offline Mode)</string>
     <string name="auth_privacy_checkbox">I accept the Privacy Policy and Legal Terms</string>
     <string name="auth_privacy_required_error">You must accept the Privacy Policy to register.</string>
+    <string name="auth_forgot_password">Forgot Password?</string>
+    <string name="auth_reset_password_title">Reset Password</string>
+    <string name="auth_reset_password_desc">Enter your email address and we will send you a password reset link.</string>
+    <string name="auth_btn_send_reset">Send Reset Link</string>
+    <string name="auth_reset_email_sent">Password reset email sent to %1$s!</string>
+    <string name="auth_invalid_credentials">Invalid email or password.</string>
+    <string name="auth_user_not_found">No account found with this email.</string>
+    <string name="barcode_format_qr">QR Code</string>
+    <string name="barcode_format_1d">Barcode (Code 128)</string>
 
 </resources>

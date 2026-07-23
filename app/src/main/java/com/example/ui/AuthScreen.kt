@@ -63,6 +63,7 @@ fun AuthScreen(
 
     // Email Verification state
     var showVerificationDialog by remember { mutableStateOf(false) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var privacyAccepted by remember { mutableStateOf(false) }
     var privacyError by remember { mutableStateOf<String?>(null) }
     var pendingAccountName by remember { mutableStateOf("") }
@@ -389,6 +390,30 @@ fun AuthScreen(
                         )
                     )
 
+                    // Forgot Password Button for SIGN_IN
+                    AnimatedVisibility(
+                        visible = activeTab == AuthTab.SIGN_IN,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            TextButton(
+                                onClick = { showForgotPasswordDialog = true },
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.auth_forgot_password),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
                     // Mandatory Privacy Policy Consent Checkbox for Registration
                     AnimatedVisibility(
                         visible = activeTab == AuthTab.SIGN_UP,
@@ -434,6 +459,7 @@ fun AuthScreen(
                     val invalidEmailMsg = stringResource(R.string.auth_error_invalid_email)
                     val shortPassMsg = stringResource(R.string.auth_error_short_password)
                     val privacyReqMsg = stringResource(R.string.auth_privacy_required_error)
+                    val invalidCredsMsg = stringResource(R.string.auth_invalid_credentials)
 
                     Button(
                         onClick = {
@@ -483,22 +509,55 @@ fun AuthScreen(
                                     e.printStackTrace()
                                 }
                             } else {
+                                isLoading = true
+                                passwordError = null
+                                emailError = null
+
                                 try {
                                     val auth = FirebaseAuth.getInstance()
                                     auth.useAppLanguage()
                                     auth.signInWithEmailAndPassword(email, password)
-                                    Toast.makeText(context, context.getString(R.string.welcome_back_message, accountName), Toast.LENGTH_LONG).show()
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
+                                        .addOnSuccessListener { authResult ->
+                                            isLoading = false
+                                            val user = authResult.user
+                                            val displayName = if (!user?.displayName.isNullOrBlank()) user!!.displayName!! else accountName
+                                            Toast.makeText(context, context.getString(R.string.welcome_back_message, displayName), Toast.LENGTH_LONG).show()
 
-                                viewModel.loginOrRegister(
-                                    name = accountName,
-                                    email = email,
-                                    provider = "EMAIL",
-                                    passwordHash = password
-                                )
-                                onCompleteAuth()
+                                            viewModel.loginOrRegister(
+                                                name = displayName,
+                                                email = email,
+                                                provider = "EMAIL",
+                                                passwordHash = password
+                                            )
+                                            viewModel.triggerCloudRestore { }
+                                            onCompleteAuth()
+                                        }
+                                        .addOnFailureListener { e ->
+                                            // Fallback check against saved local users for offline mode
+                                            val localUser = viewModel.allSavedUsers.value.find { it.email.equals(email, ignoreCase = true) }
+                                            if (localUser != null && localUser.passwordHash == password) {
+                                                isLoading = false
+                                                Toast.makeText(context, context.getString(R.string.welcome_back_message, localUser.name), Toast.LENGTH_LONG).show()
+                                                viewModel.loginOrRegister(
+                                                    name = localUser.name,
+                                                    email = email,
+                                                    provider = localUser.authProvider,
+                                                    passwordHash = password
+                                                )
+                                                viewModel.triggerCloudRestore { }
+                                                onCompleteAuth()
+                                            } else {
+                                                isLoading = false
+                                                val errMsg = if (localUser != null) invalidCredsMsg else (e.localizedMessage ?: invalidCredsMsg)
+                                                passwordError = errMsg
+                                                Toast.makeText(context, errMsg, Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                } catch (e: Exception) {
+                                    isLoading = false
+                                    e.printStackTrace()
+                                    passwordError = e.localizedMessage ?: invalidCredsMsg
+                                }
                             }
                         },
                         modifier = Modifier
@@ -734,5 +793,99 @@ fun AuthScreen(
             }
         }
     }
+
+    if (showForgotPasswordDialog) {
+        ForgotPasswordDialog(
+            initialEmail = email,
+            onDismiss = { showForgotPasswordDialog = false }
+        )
+    }
+}
+
+@Composable
+fun ForgotPasswordDialog(
+    initialEmail: String,
+    onDismiss: () -> Unit
+) {
+    var resetEmail by remember { mutableStateOf(initialEmail) }
+    var isLoading by remember { mutableStateOf(false) }
+    var statusMsg by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.auth_reset_password_title),
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.auth_reset_password_desc),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = resetEmail,
+                    onValueChange = { resetEmail = it },
+                    label = { Text(stringResource(R.string.auth_field_email)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                statusMsg?.let { msg ->
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (resetEmail.contains("@") && resetEmail.contains(".")) {
+                        isLoading = true
+                        try {
+                            val auth = FirebaseAuth.getInstance()
+                            auth.useAppLanguage()
+                            auth.sendPasswordResetEmail(resetEmail)
+                                .addOnSuccessListener {
+                                    isLoading = false
+                                    val msg = context.getString(R.string.auth_reset_email_sent, resetEmail)
+                                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                    onDismiss()
+                                }
+                                .addOnFailureListener { e ->
+                                    isLoading = false
+                                    val msg = e.localizedMessage ?: "Error sending reset email"
+                                    statusMsg = msg
+                                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                }
+                        } catch (e: Exception) {
+                            isLoading = false
+                            statusMsg = e.localizedMessage
+                        }
+                    } else {
+                        statusMsg = context.getString(R.string.auth_error_invalid_email)
+                    }
+                },
+                enabled = !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.auth_btn_send_reset))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }
 

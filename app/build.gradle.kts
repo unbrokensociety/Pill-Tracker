@@ -28,7 +28,7 @@ android {
     getByName("debug") {
       val ksFile = file("${rootDir}/debug.keystore")
       val ksBase64File = file("${rootDir}/debug.keystore.base64")
-      if (!ksFile.exists() && ksBase64File.exists()) {
+      if ((!ksFile.exists() || ksFile.length() == 0L) && ksBase64File.exists()) {
         try {
           val decoded = Base64.getDecoder().decode(ksBase64File.readText().trim())
           ksFile.writeBytes(decoded)
@@ -36,7 +36,7 @@ android {
           e.printStackTrace()
         }
       }
-      if (ksFile.exists()) {
+      if (ksFile.exists() && ksFile.length() > 0L) {
         storeFile = ksFile
         storePassword = "android"
         keyAlias = "androiddebugkey"
@@ -53,7 +53,16 @@ android {
         keyPassword = System.getenv("KEY_PASSWORD")
       } else {
         val ksFile = file("${rootDir}/debug.keystore")
-        if (ksFile.exists()) {
+        val ksBase64File = file("${rootDir}/debug.keystore.base64")
+        if ((!ksFile.exists() || ksFile.length() == 0L) && ksBase64File.exists()) {
+          try {
+            val decoded = Base64.getDecoder().decode(ksBase64File.readText().trim())
+            ksFile.writeBytes(decoded)
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
+        }
+        if (ksFile.exists() && ksFile.length() > 0L) {
           storeFile = ksFile
           storePassword = "android"
           keyAlias = "androiddebugkey"

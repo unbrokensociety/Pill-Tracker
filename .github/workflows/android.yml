@@ -26,12 +26,24 @@ jobs:
         cache: gradle
 
     - name: Accept Android SDK Licenses
-      run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+      run: |
+        mkdir -p "$ANDROID_HOME/licenses"
+        echo -e "\n8933902d075f4b3826b566165d513be473804393\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+        if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+        elif [ -f "$ANDROID_HOME/tools/bin/sdkmanager" ]; then
+          yes | "$ANDROID_HOME/tools/bin/sdkmanager" --licenses || true
+        fi
 
     - name: Setup environment variables
       run: |
-        if [ ! -f ".env" ] && [ -f ".env.example" ]; then
-          cp .env.example .env
+        if [ ! -f ".env" ]; then
+          if [ -f ".env.example" ]; then
+            cp .env.example .env
+          else
+            touch .env
+          fi
         fi
 
     - name: Grant execute permission for gradlew
@@ -40,7 +52,7 @@ jobs:
     - name: Decode Debug Keystore
       run: |
         if [ -f "debug.keystore.base64" ]; then
-          python3 -c "import base64; open('debug.keystore','wb').write(base64.b64decode(open('debug.keystore.base64').read().strip()))"
+          python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
         fi
 
     - name: Build Debug APK
@@ -48,7 +60,7 @@ jobs:
 
     - name: Prepare Named APK
       run: |
-        cp app/build/outputs/apk/debug/*.apk pill-tracker.apk
+        cp app/build/outputs/apk/debug/app-debug.apk pill-tracker.apk
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -76,4 +88,5 @@ jobs:
         body_path: RELEASE_NOTES.md
         files: pill-tracker.apk
         overwrite: true
+        fail_on_unmatched_files: false
 

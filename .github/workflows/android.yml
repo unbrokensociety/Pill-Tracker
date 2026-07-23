@@ -49,12 +49,13 @@ jobs:
 
     - name: Generate Release Changelog
       run: |
-        echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
-        echo "" >> RELEASE_NOTES.md
-        echo "- 🔥 **Intake Streak & Flame Badge**: Clean motivational flame streak widget tracking consecutive medication intake days." >> RELEASE_NOTES.md
-        echo "- 🎯 **Ultra-Smooth Navigation**: Refined sliding pill capsule navigation with zero-lag spring physics and layout stability." >> RELEASE_NOTES.md
-        echo "- 📅 **Calendar Formatting**: Corrected Russian month names in calendar header to nominative standalone case (\"Июль\" instead of \"Июля\")." >> RELEASE_NOTES.md
-        echo "- ⚡ **144Hz Refresh Rate Support**: Optimized high refresh rate rendering for fluid screen transitions and list scrolling." >> RELEASE_NOTES.md
+        if [ ! -s "RELEASE_NOTES.md" ]; then
+          echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "- 🔐 **Seamless Email Verification**: Automatic verification link polling and account activation." >> RELEASE_NOTES.md
+          echo "- 🚀 **Instant Offline Mode**: Continue using the app immediately while waiting for verification." >> RELEASE_NOTES.md
+          echo "- 📜 **Legal Privacy Consent**: Mandatory privacy policy agreement and immutable audit record." >> RELEASE_NOTES.md
+        fi
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2

@@ -126,16 +126,32 @@ fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
     
     val currentBackStack by navController.currentBackStackEntryAsState()
-    val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState()
+    val isOnboardingCompletedState by viewModel.isOnboardingCompleted.collectAsState()
 
-    LaunchedEffect(isOnboardingCompleted) {
-        if (!isOnboardingCompleted) {
-            navController.navigate("auth") {
-                popUpTo("home") { inclusive = false }
+    if (isOnboardingCompletedState == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        )
+        return
+    }
+
+    val isOnboardingCompleted = isOnboardingCompletedState == true
+    val startDestination = remember { if (isOnboardingCompleted) "home" else "auth" }
+
+    LaunchedEffect(isOnboardingCompletedState) {
+        if (isOnboardingCompletedState == false) {
+            val currentRoute = navController.currentDestination?.route
+            if (currentRoute != null && currentRoute != "auth") {
+                navController.navigate("auth") {
+                    popUpTo(0) { inclusive = true }
+                }
             }
         }
     }
-    val currentDestination = currentBackStack?.destination?.route ?: "home"
+
+    val currentDestination = currentBackStack?.destination?.route ?: startDestination
     
     val showBottomBar = currentDestination in listOf("home", "calendar", "meds", "settings")
 
@@ -173,7 +189,7 @@ fun MainScreen(viewModel: MainViewModel) {
 
             NavHost(
                 navController = navController,
-                startDestination = "home",
+                startDestination = startDestination,
                 modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
                 enterTransition = {
                     val targetRoute = targetState.destination.route

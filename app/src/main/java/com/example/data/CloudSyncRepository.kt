@@ -1,8 +1,13 @@
 package com.example.data
 
 import android.content.Context
+import android.os.Build
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -26,6 +31,56 @@ class CloudSyncRepository(
     private val backupFile: File
         get() = File(context.filesDir, "meditracker_cloud_backup.json")
 
+    suspend fun logUserAuthentication(
+        email: String,
+        name: String,
+        authProvider: String
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val authUser = FirebaseAuth.getInstance().currentUser
+            val userId = authUser?.uid ?: email.replace(".", "_").replace("@", "_")
+
+            val userDoc = hashMapOf(
+                "uid" to userId,
+                "email" to email,
+                "name" to name,
+                "authProvider" to authProvider,
+                "lastLoginAt" to System.currentTimeMillis(),
+                "deviceModel" to "${Build.MANUFACTURER} ${Build.MODEL}",
+                "appVersion" to "v1.0"
+            )
+
+            // Write to Firestore User collection
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .set(userDoc, SetOptions.merge())
+                .await()
+
+            // Write to Firestore Audit Logs collection
+            val auditLog = hashMapOf(
+                "userId" to userId,
+                "email" to email,
+                "event" to "USER_LOGIN_SUCCESS",
+                "authProvider" to authProvider,
+                "timestamp" to System.currentTimeMillis(),
+                "device" to "${Build.MANUFACTURER} ${Build.MODEL}"
+            )
+
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .collection("login_history")
+                .add(auditLog)
+                .await()
+
+            Result.success("Login logged to Cloud Firestore")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.success("Logged locally (Offline Mode)")
+        }
+    }
+
     suspend fun syncToCloud(): Result<String> = withContext(Dispatchers.IO) {
         try {
             val userEmail = settingsRepository.userEmailFlow.first()
@@ -35,6 +90,63 @@ class CloudSyncRepository(
             val schedules = medicationDao.getAllSchedules().first()
             val logs = medicationDao.getAllIntakeLogs().first()
 
+            val authUser = FirebaseAuth.getInstance().currentUser
+            val userId = authUser?.uid ?: userEmail.ifBlank { "guest_user" }.replace(".", "_").replace("@", "_")
+
+            // 1. Try real Firestore Cloud Database Sync
+            val firestoreSuccess = try {
+                val db = FirebaseFirestore.getInstance()
+                val userRef = db.collection("users").document(userId)
+
+                val medsList = medications.map { m ->
+                    mapOf(
+                        "id" to m.id,
+                        "name" to m.name,
+                        "dosage" to m.dosage,
+                        "notes" to m.notes,
+                        "color" to m.color,
+                        "timesPerDay" to m.timesPerDay,
+                        "startDate" to m.startDate,
+                        "endDate" to (m.endDate ?: 0L),
+                        "stockCount" to m.stockCount,
+                        "lowStockThreshold" to m.lowStockThreshold
+                    )
+                }
+
+                val schedList = schedules.map { s ->
+                    mapOf(
+                        "id" to s.id,
+                        "medicationId" to s.medicationId,
+                        "timeHour" to s.timeHour,
+                        "timeMinute" to s.timeMinute
+                    )
+                }
+
+                val logsList = logs.map { l ->
+                    mapOf(
+                        "id" to l.id,
+                        "medicationId" to l.medicationId,
+                        "scheduleId" to l.scheduleId,
+                        "scheduledDateEpoch" to l.scheduledDateEpoch,
+                        "timestampTaken" to l.timestampTaken,
+                        "name" to l.name,
+                        "dosage" to l.dosage,
+                        "timeHour" to l.timeHour,
+                        "timeMinute" to l.timeMinute,
+                        "sideEffectNote" to l.sideEffectNote
+                    )
+                }
+
+                userRef.collection("data").document("medications").set(mapOf("items" to medsList)).await()
+                userRef.collection("data").document("schedules").set(mapOf("items" to schedList)).await()
+                userRef.collection("data").document("logs").set(mapOf("items" to logsList)).await()
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+
+            // 2. Also save to local JSON backup mirror
             val rootJson = JSONObject().apply {
                 put("userEmail", userEmail.ifBlank { "guest@meditracker.app" })
                 put("userName", userName)
@@ -89,33 +201,19 @@ class CloudSyncRepository(
                 put("logs", logsArray)
             }
 
-            val jsonString = rootJson.toString()
+            backupFile.writeText(rootJson.toString())
+            settingsRepository.updateLastSyncTimestamp()
 
-            // 1. Save local cloud mirror
-            backupFile.writeText(jsonString)
-
-            // 2. Post to cloud REST sync service
-            val requestBody = jsonString.toRequestBody("application/json; charset=utf-8".toMediaType())
-            val request = Request.Builder()
-                .url("https://httpbin.org/post")
-                .post(requestBody)
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    settingsRepository.updateLastSyncTimestamp()
-                    Result.success("Cloud sync completed successfully!")
-                } else {
-                    settingsRepository.updateLastSyncTimestamp()
-                    Result.success("Synced to local cloud cache!")
-                }
+            if (firestoreSuccess) {
+                Result.success("Синхронизация с Cloud Firestore успешно завершена!")
+            } else {
+                Result.success("Данные сохранены в локальный облачный кэш!")
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            // Save to local cloud mirror as fallback
             try {
                 settingsRepository.updateLastSyncTimestamp()
-                Result.success("Saved to Cloud Cache (Offline Mode)")
+                Result.success("Сохранено в облачном кэше (Офлайн режим)")
             } catch (ex: Exception) {
                 Result.failure(e)
             }

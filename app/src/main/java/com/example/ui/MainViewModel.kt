@@ -76,11 +76,13 @@ class MainViewModel(
         initialValue = true
     )
 
-    val isOnboardingCompleted: StateFlow<Boolean> = settingsRepository.isOnboardingCompletedFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true // Default true to prevent flicker, will update on initial collection
-    )
+    val isOnboardingCompleted: StateFlow<Boolean?> = settingsRepository.isOnboardingCompletedFlow
+        .map<Boolean, Boolean?> { it }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 
     val isGuestMode: StateFlow<Boolean> = settingsRepository.isGuestModeFlow.stateIn(
         scope = viewModelScope,
@@ -217,6 +219,8 @@ class MainViewModel(
                 email = email,
                 onboardingDone = true
             )
+            cloudSyncRepository.logUserAuthentication(email, name, provider)
+            cloudSyncRepository.syncToCloud()
         }
     }
 
@@ -236,6 +240,8 @@ class MainViewModel(
                 email = email,
                 onboardingDone = true
             )
+            cloudSyncRepository.logUserAuthentication(email, name, "GOOGLE")
+            cloudSyncRepository.syncToCloud()
         }
     }
 
@@ -267,6 +273,11 @@ class MainViewModel(
 
     fun signOutToGuest() {
         viewModelScope.launch {
+            try {
+                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             settingsRepository.signOutToGuest()
         }
     }

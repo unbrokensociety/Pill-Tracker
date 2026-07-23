@@ -95,7 +95,7 @@
     <string name="streak_achievement_30">Незгасне полум\'я (30 днів)</string>
 
     <!-- Auth & Database Onboarding strings -->
-    <string name="auth_welcome_title">Ласкаво просимо в MediTracker</string>
+    <string name="auth_welcome_title">Ласкаво просимо в PillTracker</string>
     <string name="auth_welcome_subtitle">Контролюйте здоров\'я та прийом ліків безпечно</string>
     <string name="auth_tab_signin">Вхід</string>
     <string name="auth_tab_signup">Реєстрація</string>
@@ -118,10 +118,10 @@
 
     <string name="auth_btn_google">Увійти через Google</string>
     <string name="auth_google_select_account">Оберіть акаунт Google</string>
-    <string name="auth_google_simulated_subtitle">Оберіть профіль Google для входу та синхронізації з MediTracker</string>
+    <string name="auth_google_simulated_subtitle">Оберіть профіль Google для входу та синхронізації з PillTracker</string>
     <string name="auth_registered_users">Збережені профілі в БД Room</string>
     <string name="auth_error_invalid_email">Введіть коректну адресу електронної пошти</string>
-    <string name="auth_error_short_password">Пароль має містити щонайменше 4 символи</string>
+    <string name="auth_error_short_password">Пароль має містити щонайменше 6 символів</string>
     <string name="auth_provider_google">Акаунт Google</string>
     <string name="auth_provider_email">Email / Пароль</string>
 
@@ -143,5 +143,22 @@
     <string name="ai_advisor_title">Gemini AI Консультант</string>
     <string name="ai_advisor_desc">Поставити запитання про прийом ліків, сумісність та поради</string>
     <string name="ai_advisor_prompt_hint">Задайте запитання про здоров\'я або прийом...</string>
+
+    <string name="privacy_policy_title">Політика конфіденційності та HIPAA</string>
+    <string name="privacy_policy_desc">Захист персональних даних, умови Firestore та скасування доступу</string>
+
+    <string name="welcome_message">Ласкаво просимо до PillTracker, %1$s! 🎉</string>
+    <string name="welcome_back_message">З поверненням, %1$s! 👋</string>
+    <string name="account_created_message">Ласкаво просимо до PillTracker, %1$s! 🎉 Акаунт створено.</string>
+    <string name="verification_email_sent">Посилання для підтвердження надіслано на %1$s! (Перевірте папку СПАМ)</string>
+
+    <string name="auth_verification_title">Підтвердження пошти</string>
+    <string name="auth_verification_desc">Посилання для підтвердження надіслано на %1$s. Перейдіть за посиланням у листі (Обов\'язково перевірте папку СПАМ!) або введіть код із посилання нижче:</string>
+    <string name="auth_verification_code_hint">Код із посилання або залиште порожнім</string>
+    <string name="auth_verification_confirm">Підтвердити та увійти</string>
+    <string name="auth_verification_wrong_code">Пошту ще не підтверджено. Перевірте папку СПАМ і натисніть посилання в листі.</string>
+    <string name="auth_verification_check_link">Я перейшов за посиланням з листа</string>
+    <string name="auth_verification_resend">Надіслати лист повторно</string>
+    <string name="auth_verification_skip">Продовжити в застосунок (Локальний режим)</string>
 
 </resources>

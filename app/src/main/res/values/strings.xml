@@ -95,7 +95,7 @@
     <string name="streak_achievement_30">Unstoppable Fire (30 Days)</string>
 
     <!-- Auth & Database Onboarding strings -->
-    <string name="auth_welcome_title">Welcome to MediTracker</string>
+    <string name="auth_welcome_title">Welcome to PillTracker</string>
     <string name="auth_welcome_subtitle">Keep track of your health and medications safely</string>
     <string name="auth_tab_signin">Sign In</string>
     <string name="auth_tab_signup">Register</string>
@@ -118,10 +118,10 @@
 
     <string name="auth_btn_google">Continue with Google</string>
     <string name="auth_google_select_account">Choose a Google Account</string>
-    <string name="auth_google_simulated_subtitle">Select your account to sign in and sync with MediTracker</string>
+    <string name="auth_google_simulated_subtitle">Select your account to sign in and sync with PillTracker</string>
     <string name="auth_registered_users">Saved Profiles in Local DB</string>
     <string name="auth_error_invalid_email">Please enter a valid email address</string>
-    <string name="auth_error_short_password">Password must be at least 4 characters</string>
+    <string name="auth_error_short_password">Password must be at least 6 characters</string>
     <string name="auth_provider_google">Google Account</string>
     <string name="auth_provider_email">Email Account</string>
 
@@ -143,5 +143,22 @@
     <string name="ai_advisor_title">Gemini AI Health Advisor</string>
     <string name="ai_advisor_desc">Ask AI about medication rules, food precautions &amp; advice</string>
     <string name="ai_advisor_prompt_hint">Type your health or medication question...</string>
+
+    <string name="privacy_policy_title">Privacy Policy &amp; HIPAA</string>
+    <string name="privacy_policy_desc">Data protection, Firestore rules &amp; access revocation</string>
+
+    <string name="welcome_message">Welcome to PillTracker, %1$s! 🎉</string>
+    <string name="welcome_back_message">Welcome back, %1$s! 👋</string>
+    <string name="account_created_message">Welcome to PillTracker, %1$s! 🎉 Account created.</string>
+    <string name="verification_email_sent">Verification link sent to %1$s! (Please check SPAM folder)</string>
+
+    <string name="auth_verification_title">Email Verification</string>
+    <string name="auth_verification_desc">A confirmation link was sent to %1$s. Click the link in your email (check SPAM folder!) or enter the code from the link below:</string>
+    <string name="auth_verification_code_hint">Code from email link or leave blank</string>
+    <string name="auth_verification_confirm">Verify &amp; Continue</string>
+    <string name="auth_verification_wrong_code">Email not verified yet or code invalid. Please check your SPAM folder and click the link in email.</string>
+    <string name="auth_verification_check_link">I Clicked Link in Email</string>
+    <string name="auth_verification_resend">Resend Email</string>
+    <string name="auth_verification_skip">Continue to App (Offline Mode)</string>
 
 </resources>

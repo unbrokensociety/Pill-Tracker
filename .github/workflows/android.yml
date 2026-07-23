@@ -18,12 +18,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
         cache: gradle
+
+    - name: Setup environment variables
+      run: |
+        if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+          cp .env.example .env
+        fi
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
@@ -31,11 +37,11 @@ jobs:
     - name: Decode Debug Keystore
       run: |
         if [ -f "debug.keystore.base64" ]; then
-          base64 -d debug.keystore.base64 > debug.keystore
+          base64 -d debug.keystore.base64 > debug.keystore || base64 --decode debug.keystore.base64 > debug.keystore
         fi
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon || gradle assembleDebug
+      run: ./gradlew assembleDebug --no-daemon
 
     - name: Prepare Named APK
       run: |

@@ -46,8 +46,11 @@ class CloudSyncRepository(
                 "name" to name,
                 "authProvider" to authProvider,
                 "lastLoginAt" to System.currentTimeMillis(),
+                "privacyConsentAccepted" to true,
+                "privacyConsentTimestamp" to System.currentTimeMillis(),
+                "privacyPolicyVersion" to "v1.22",
                 "deviceModel" to "${Build.MANUFACTURER} ${Build.MODEL}",
-                "appVersion" to "v1.0"
+                "appVersion" to "v1.22"
             )
 
             // Write to Firestore User collection
@@ -57,20 +60,23 @@ class CloudSyncRepository(
                 .set(userDoc, SetOptions.merge())
                 .await()
 
-            // Write to Firestore Audit Logs collection
+            // Write to Firestore Consent & Audit Logs collection
             val auditLog = hashMapOf(
                 "userId" to userId,
                 "email" to email,
-                "event" to "USER_LOGIN_SUCCESS",
+                "event" to "USER_REGISTRATION_AND_CONSENT",
                 "authProvider" to authProvider,
+                "privacyConsentAccepted" to true,
+                "privacyPolicyVersion" to "v1.22",
                 "timestamp" to System.currentTimeMillis(),
-                "device" to "${Build.MANUFACTURER} ${Build.MODEL}"
+                "device" to "${Build.MANUFACTURER} ${Build.MODEL}",
+                "legalNotice" to "User explicitly accepted Privacy Policy & Terms of Service."
             )
 
             FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(userId)
-                .collection("login_history")
+                .collection("consent_audit")
                 .add(auditLog)
                 .await()
 

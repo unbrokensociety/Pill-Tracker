@@ -152,13 +152,15 @@
     <string name="account_created_message">Welcome to PillTracker, %1$s! 🎉 Account created.</string>
     <string name="verification_email_sent">Verification link sent to %1$s! (Please check SPAM folder)</string>
 
-    <string name="auth_verification_title">Email Verification</string>
-    <string name="auth_verification_desc">A confirmation link was sent to %1$s. Click the link in your email (check SPAM folder!) or enter the code from the link below:</string>
-    <string name="auth_verification_code_hint">Code from email link or leave blank</string>
+    <string name="auth_verification_title">Check Your Email Inbox</string>
+    <string name="auth_verification_desc">An activation link has been sent to %1$s.\n\n1. Open your Email app\n2. Tap the verification link in the message\n3. Check your SPAM folder if delayed\n\nWe will automatically log you in the moment your email is verified!</string>
+    <string name="auth_verification_auto_checking">Auto-checking verification status…</string>
     <string name="auth_verification_confirm">Verify &amp; Continue</string>
-    <string name="auth_verification_wrong_code">Email not verified yet or code invalid. Please check your SPAM folder and click the link in email.</string>
-    <string name="auth_verification_check_link">I Clicked Link in Email</string>
-    <string name="auth_verification_resend">Resend Email</string>
+    <string name="auth_verification_wrong_code">Email not verified yet. Please check your SPAM folder and click the link in your email.</string>
+    <string name="auth_verification_check_link">I\'ve Clicked the Link</string>
+    <string name="auth_verification_resend">Resend Verification Email</string>
     <string name="auth_verification_skip">Continue to App (Offline Mode)</string>
+    <string name="auth_privacy_checkbox">I accept the Privacy Policy and Legal Terms</string>
+    <string name="auth_privacy_required_error">You must accept the Privacy Policy to register.</string>
 
 </resources>

@@ -152,13 +152,15 @@
     <string name="account_created_message">Ласкаво просимо до PillTracker, %1$s! 🎉 Акаунт створено.</string>
     <string name="verification_email_sent">Посилання для підтвердження надіслано на %1$s! (Перевірте папку СПАМ)</string>
 
-    <string name="auth_verification_title">Підтвердження пошти</string>
-    <string name="auth_verification_desc">Посилання для підтвердження надіслано на %1$s. Перейдіть за посиланням у листі (Обов\'язково перевірте папку СПАМ!) або введіть код із посилання нижче:</string>
-    <string name="auth_verification_code_hint">Код із посилання або залиште порожнім</string>
+    <string name="auth_verification_title">Перевірте вашу пошту</string>
+    <string name="auth_verification_desc">Посилання для активації надіслано на %1$s.\n\n1. Відкрийте застосунок пошти\n2. Перейдіть за посиланням у листі\n3. Перевірте папку СПАМ, якщо лист затримується\n\nЗастосунок автоматично увійде в акаунт, щойно пошту буде підтверджено!</string>
+    <string name="auth_verification_auto_checking">Авто-перевірка статусу посилання…</string>
     <string name="auth_verification_confirm">Підтвердити та увійти</string>
     <string name="auth_verification_wrong_code">Пошту ще не підтверджено. Перевірте папку СПАМ і натисніть посилання в листі.</string>
     <string name="auth_verification_check_link">Я перейшов за посиланням з листа</string>
     <string name="auth_verification_resend">Надіслати лист повторно</string>
     <string name="auth_verification_skip">Продовжити в застосунок (Локальний режим)</string>
+    <string name="auth_privacy_checkbox">Я приймаю Політику конфіденційності та юридичні умови</string>
+    <string name="auth_privacy_required_error">Для реєстрації необхідно прийняти Політику конфіденційності.</string>
 
 </resources>

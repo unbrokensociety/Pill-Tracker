@@ -61,16 +61,47 @@ fun AuthScreen(
     var isLoading by remember { mutableStateOf(false) }
     var showPrivacyPolicy by remember { mutableStateOf(false) }
 
-    // Email Verification Code state
+    // Email Verification state
     var showVerificationDialog by remember { mutableStateOf(false) }
-    var enteredCode by remember { mutableStateOf("") }
-    var codeError by remember { mutableStateOf<String?>(null) }
+    var privacyAccepted by remember { mutableStateOf(false) }
+    var privacyError by remember { mutableStateOf<String?>(null) }
     var pendingAccountName by remember { mutableStateOf("") }
     var pendingEmail by remember { mutableStateOf("") }
     var pendingPassword by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
     val primaryColor = MaterialTheme.colorScheme.primary
+
+    // Auto-polling for email link verification
+    LaunchedEffect(showVerificationDialog) {
+        while (showVerificationDialog) {
+            try {
+                val user = FirebaseAuth.getInstance().currentUser
+                if (user != null) {
+                    user.reload().addOnCompleteListener { task ->
+                        if (task.isSuccessful && user.isEmailVerified) {
+                            viewModel.loginOrRegister(
+                                name = pendingAccountName,
+                                email = pendingEmail,
+                                provider = "EMAIL",
+                                passwordHash = pendingPassword
+                            )
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.account_created_message, pendingAccountName),
+                                Toast.LENGTH_LONG
+                            ).show()
+                            showVerificationDialog = false
+                            onCompleteAuth()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            kotlinx.coroutines.delay(2500)
+        }
+    }
 
     if (showPrivacyPolicy) {
         com.example.ui.components.PrivacyPolicyDialog(
@@ -358,9 +389,51 @@ fun AuthScreen(
                         )
                     )
 
+                    // Mandatory Privacy Policy Consent Checkbox for Registration
+                    AnimatedVisibility(
+                        visible = activeTab == AuthTab.SIGN_UP,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        privacyAccepted = !privacyAccepted
+                                        if (privacyAccepted) privacyError = null
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = privacyAccepted,
+                                    onCheckedChange = {
+                                        privacyAccepted = it
+                                        if (it) privacyError = null
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(R.string.auth_privacy_checkbox),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            privacyError?.let { err ->
+                                Text(
+                                    text = err,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            }
+                        }
+                    }
+
                     // Email/Password Submit Button
                     val invalidEmailMsg = stringResource(R.string.auth_error_invalid_email)
                     val shortPassMsg = stringResource(R.string.auth_error_short_password)
+                    val privacyReqMsg = stringResource(R.string.auth_privacy_required_error)
 
                     Button(
                         onClick = {
@@ -372,6 +445,10 @@ fun AuthScreen(
                                 passwordError = shortPassMsg
                                 return@Button
                             }
+                            if (activeTab == AuthTab.SIGN_UP && !privacyAccepted) {
+                                privacyError = privacyReqMsg
+                                return@Button
+                            }
 
                             val accountName = if (name.isNotBlank()) name else email.substringBefore("@")
                             
@@ -379,8 +456,6 @@ fun AuthScreen(
                                 pendingAccountName = accountName
                                 pendingEmail = email
                                 pendingPassword = password
-                                enteredCode = ""
-                                codeError = null
                                 isLoading = true
 
                                 try {
@@ -549,85 +624,36 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    OutlinedTextField(
-                        value = enteredCode,
-                        onValueChange = {
-                            enteredCode = it
-                            codeError = null
-                        },
-                        label = { Text(stringResource(R.string.auth_verification_code_hint)) },
-                        leadingIcon = { Icon(Icons.Filled.Lock, null) },
-                        isError = codeError != null,
-                        supportingText = codeError?.let { err -> { Text(err) } },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // Auto-verification active indicator
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth().height(4.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.auth_verification_auto_checking),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = {
-                            val trimmed = enteredCode.trim()
-                            if (trimmed.isNotBlank()) {
-                                // Try applying action code from email link via Firebase Auth
-                                FirebaseAuth.getInstance().applyActionCode(trimmed)
-                                    .addOnSuccessListener {
-                                        viewModel.loginOrRegister(
-                                            name = pendingAccountName,
-                                            email = pendingEmail,
-                                            provider = "EMAIL",
-                                            passwordHash = pendingPassword
-                                        )
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.account_created_message, pendingAccountName),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        showVerificationDialog = false
-                                        onCompleteAuth()
-                                    }
-                                    .addOnFailureListener {
-                                        // If applyActionCode failed, check if user is already verified via link
-                                        val user = FirebaseAuth.getInstance().currentUser
-                                        user?.reload()?.addOnCompleteListener {
-                                            if (user.isEmailVerified) {
-                                                viewModel.loginOrRegister(
-                                                    name = pendingAccountName,
-                                                    email = pendingEmail,
-                                                    provider = "EMAIL",
-                                                    passwordHash = pendingPassword
-                                                )
-                                                Toast.makeText(
-                                                    context,
-                                                    context.getString(R.string.account_created_message, pendingAccountName),
-                                                    Toast.LENGTH_LONG
-                                                ).show()
-                                                showVerificationDialog = false
-                                                onCompleteAuth()
-                                            } else {
-                                                codeError = context.getString(R.string.auth_verification_wrong_code)
-                                            }
-                                        }
-                                    }
-                            } else {
-                                codeError = context.getString(R.string.auth_verification_wrong_code)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.auth_verification_confirm),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedButton(
                         onClick = {
                             val user = FirebaseAuth.getInstance().currentUser
                             user?.reload()?.addOnCompleteListener { task ->
@@ -654,13 +680,33 @@ fun AuthScreen(
                                 }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text(text = stringResource(R.string.auth_verification_check_link))
+                        Text(
+                            text = stringResource(R.string.auth_verification_check_link),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = {
+                            FirebaseAuth.getInstance().currentUser?.sendEmailVerification()
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.verification_email_sent, pendingEmail),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    ) {
+                        Text(text = stringResource(R.string.auth_verification_resend))
+                    }
+
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     TextButton(
                         onClick = {
@@ -679,22 +725,10 @@ fun AuthScreen(
                             onCompleteAuth()
                         }
                     ) {
-                        Text(text = stringResource(R.string.auth_verification_skip))
-                    }
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    TextButton(
-                        onClick = {
-                            FirebaseAuth.getInstance().currentUser?.sendEmailVerification()
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.verification_email_sent, pendingEmail),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    ) {
-                        Text(text = stringResource(R.string.auth_verification_resend))
+                        Text(
+                            text = stringResource(R.string.auth_verification_skip),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

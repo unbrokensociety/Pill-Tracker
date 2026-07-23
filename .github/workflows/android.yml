@@ -84,6 +84,13 @@ jobs:
 EOF
         fi
 
+    - name: Ensure Valid Gradle Wrapper
+      run: |
+        if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
+          echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper with Gradle 9.3.1..."
+          gradle wrapper --gradle-version 9.3.1
+        fi
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
 
@@ -93,15 +100,8 @@ EOF
           python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
         fi
 
-    - name: Ensure Valid Gradle Wrapper
-      run: |
-        if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
-          echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper with Gradle 9.3.1..."
-          gradle wrapper --gradle-version 9.3.1 || true
-        fi
-
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon || gradle assembleDebug
+      run: ./gradlew assembleDebug --no-daemon
 
     - name: Prepare Named APK
       run: |

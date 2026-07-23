@@ -46,6 +46,44 @@ jobs:
           fi
         fi
 
+    - name: Ensure google-services.json
+      run: |
+        if [ ! -f "app/google-services.json" ]; then
+          echo "⚠️ app/google-services.json is missing. Creating fallback mock file for CI build..."
+          mkdir -p app
+          cat << 'EOF' > app/google-services.json
+{
+  "project_info": {
+    "project_number": "86011733059",
+    "project_id": "pill-tracker-d0c0a",
+    "storage_bucket": "pill-tracker-d0c0a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:86011733059:android:12103b376fb9ab90fd20f6",
+        "android_client_info": {
+          "package_name": "com.aistudio.meditracker.zqxpr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC05bSy0urKxCrHcMcCQH-214DiAj_8S64"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+EOF
+        fi
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew || true
 
@@ -58,8 +96,8 @@ jobs:
     - name: Ensure Valid Gradle Wrapper
       run: |
         if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
-          echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper..."
-          gradle wrapper --gradle-version 8.11.1 || true
+          echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper with Gradle 9.3.1..."
+          gradle wrapper --gradle-version 9.3.1 || true
         fi
 
     - name: Build Debug APK

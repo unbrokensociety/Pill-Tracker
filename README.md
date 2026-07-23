@@ -19,7 +19,7 @@
 <p align="center">
   <a href="#english"><b>🇬🇧 English</b></a> &nbsp;|&nbsp;
   <a href="#ukrainian"><b>🇺🇦 Українська</b></a> &nbsp;|&nbsp;
-  <a href="#russian"><b>[RU] Русский</b></a>
+  <a href="#russian"><b>[ru]</b></a>
 </p>
 
 ---

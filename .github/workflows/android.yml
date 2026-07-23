@@ -1,8 +1,12 @@
-name: Android CI
+name: Android CI/CD
 
 on:
   push:
+    branches:
+      - '**'
   pull_request:
+    branches:
+      - '**'
   workflow_dispatch:
 
 permissions:
@@ -10,11 +14,11 @@ permissions:
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build & Release APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
@@ -33,13 +37,8 @@ jobs:
           mkdir -p "$ANDROID_HOME/licenses"
           echo -e "\n8933902d075f4b3826b566165d513be473804393\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
           echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
-          if [ -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          elif [ -f "$ANDROID_HOME/tools/bin/sdkmanager" ]; then
-            yes | "$ANDROID_HOME/tools/bin/sdkmanager" --licenses || true
-          fi
 
-      - name: Setup environment variables
+      - name: Prepare Environment File
         run: |
           if [ ! -f ".env" ]; then
             if [ -f ".env.example" ]; then
@@ -49,30 +48,42 @@ jobs:
             fi
           fi
 
-      - name: Ensure google-services.json
+      - name: Ensure Google Services Configuration
         run: |
-          python3 -c '
-          import os, json
-          if not os.path.exists("app/google-services.json"):
-              os.makedirs("app", exist_ok=True)
-              data = {
-                  "project_info": {"project_number": "86011733059", "project_id": "pill-tracker-d0c0a", "storage_bucket": "pill-tracker-d0c0a.firebasestorage.app"},
-                  "client": [{"client_info": {"mobilesdk_app_id": "1:86011733059:android:12103b376fb9ab90fd20f6", "android_client_info": {"package_name": "com.aistudio.meditracker.zqxpr"}}, "oauth_client": [], "api_key": [{"current_key": "AIzaSyC05bSy0urKxCrHcMcCQH-214DiAj_8S64"}], "services": {"appinvite_service": {"other_platform_oauth_client": []}}}],
-                  "configuration_version": "1"
+          if [ ! -f "app/google-services.json" ]; then
+            mkdir -p app
+            cat << 'EOF' > app/google-services.json
+          {
+            "project_info": {
+              "project_number": "86011733059",
+              "project_id": "pill-tracker-d0c0a",
+              "storage_bucket": "pill-tracker-d0c0a.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:86011733059:android:12103b376fb9ab90fd20f6",
+                  "android_client_info": {
+                    "package_name": "com.aistudio.meditracker.zqxpr"
+                  }
+                },
+                "oauth_client": [],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyC05bSy0urKxCrHcMcCQH-214DiAj_8S64"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": []
+                  }
+                }
               }
-              with open("app/google-services.json", "w") as f:
-                  json.dump(data, f, indent=2)
-          '
-
-      - name: Ensure Valid Gradle Wrapper
-        run: |
-          if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
-            echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper with Gradle 9.3.1..."
-            gradle wrapper --gradle-version 9.3.1
+            ],
+            "configuration_version": "1"
+          }
+          EOF
           fi
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew || true
 
       - name: Decode Debug Keystore
         run: |
@@ -80,12 +91,14 @@ jobs:
             python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
           fi
 
+      - name: Make Gradlew Executable
+        run: chmod +x gradlew || true
+
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Prepare Named APK
-        run: |
-          cp app/build/outputs/apk/debug/app-debug.apk pill-tracker.apk
+      - name: Copy Built APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk pill-tracker.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -93,7 +106,7 @@ jobs:
           name: pill-tracker
           path: pill-tracker.apk
 
-      - name: Generate Release Changelog
+      - name: Ensure Release Notes
         run: |
           if [ ! -s "RELEASE_NOTES.md" ]; then
             echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
@@ -114,4 +127,3 @@ jobs:
           files: pill-tracker.apk
           overwrite: true
           fail_on_unmatched_files: false
-

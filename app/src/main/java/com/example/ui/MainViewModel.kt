@@ -43,6 +43,16 @@ class MainViewModel(
         initialValue = 0L
     )
 
+    init {
+        autoSync()
+    }
+
+    fun autoSync() {
+        viewModelScope.launch {
+            cloudSyncRepository.autoSync()
+        }
+    }
+
     fun triggerCloudSync(onResult: (String) -> Unit) {
         viewModelScope.launch {
             val result = cloudSyncRepository.syncToCloud()
@@ -175,14 +185,14 @@ class MainViewModel(
     fun toggleLog(schedule: DailyScheduleView, isTaken: Boolean, sideEffectNote: String = "") {
         viewModelScope.launch {
             repository.toggleIntake(schedule, _selectedDate.value, isTaken, sideEffectNote)
-            cloudSyncRepository.syncToCloud()
+            cloudSyncRepository.autoSync()
         }
     }
 
     fun refillStock(medicationId: Int, amount: Int) {
         viewModelScope.launch {
             repository.refillStock(medicationId, amount)
-            cloudSyncRepository.syncToCloud()
+            cloudSyncRepository.autoSync()
         }
     }
 
@@ -192,7 +202,7 @@ class MainViewModel(
             createdSchedules.forEach { schedule ->
                 alarmScheduler.scheduleAlarm(schedule, medication.name)
             }
-            cloudSyncRepository.syncToCloud()
+            cloudSyncRepository.autoSync()
         }
     }
 
@@ -203,7 +213,7 @@ class MainViewModel(
                 alarmScheduler.cancelAlarm(schedule)
             }
             repository.deleteMedication(medication)
-            cloudSyncRepository.syncToCloud()
+            cloudSyncRepository.autoSync()
         }
     }
 
@@ -224,7 +234,7 @@ class MainViewModel(
                 onboardingDone = true
             )
             cloudSyncRepository.logUserAuthentication(email, name, provider)
-            cloudSyncRepository.syncToCloud()
+            cloudSyncRepository.autoSync()
         }
     }
 
@@ -245,7 +255,7 @@ class MainViewModel(
                 onboardingDone = true
             )
             cloudSyncRepository.logUserAuthentication(email, name, "GOOGLE")
-            cloudSyncRepository.syncToCloud()
+            cloudSyncRepository.autoSync()
         }
     }
 
@@ -260,6 +270,7 @@ class MainViewModel(
                     email = user.email,
                     onboardingDone = true
                 )
+                cloudSyncRepository.autoSync()
             }
         }
     }

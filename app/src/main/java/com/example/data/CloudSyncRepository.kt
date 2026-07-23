@@ -18,6 +18,22 @@ import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+private fun Any?.toIntSafe(default: Int = 0): Int {
+    return when (this) {
+        is Number -> this.toInt()
+        is String -> this.toIntOrNull() ?: default
+        else -> default
+    }
+}
+
+private fun Any?.toLongSafe(default: Long = 0L): Long {
+    return when (this) {
+        is Number -> this.toLong()
+        is String -> this.toLongOrNull() ?: default
+        else -> default
+    }
+}
+
 class CloudSyncRepository(
     private val context: Context,
     private val medicationDao: MedicationDao,
@@ -30,6 +46,17 @@ class CloudSyncRepository(
 
     private val backupFile: File
         get() = File(context.filesDir, "meditracker_cloud_backup.json")
+
+    suspend fun autoSync(): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            restoreFromCloud()
+            val syncRes = syncToCloud()
+            syncRes
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
 
     suspend fun logUserAuthentication(
         email: String,
@@ -252,16 +279,16 @@ class CloudSyncRepository(
 
                 if (medsItems != null) {
                     medsItems.forEach { m ->
-                        val id = (m["id"] as? Long)?.toInt() ?: 0
+                        val id = m["id"].toIntSafe(0)
                         val name = m["name"] as? String ?: ""
                         val dosage = m["dosage"] as? String ?: ""
                         val notes = m["notes"] as? String ?: ""
-                        val color = (m["color"] as? Long)?.toInt() ?: 0
-                        val timesPerDay = (m["timesPerDay"] as? Long)?.toInt() ?: 1
-                        val startDate = (m["startDate"] as? Long) ?: System.currentTimeMillis()
-                        val endDate = (m["endDate"] as? Long)
-                        val stockCount = (m["stockCount"] as? Long)?.toInt() ?: 30
-                        val lowStockThreshold = (m["lowStockThreshold"] as? Long)?.toInt() ?: 5
+                        val color = m["color"].toIntSafe(0)
+                        val timesPerDay = m["timesPerDay"].toIntSafe(1)
+                        val startDate = m["startDate"].toLongSafe(System.currentTimeMillis())
+                        val endDate = m["endDate"].toLongSafe(0L)
+                        val stockCount = m["stockCount"].toIntSafe(30)
+                        val lowStockThreshold = m["lowStockThreshold"].toIntSafe(5)
 
                         if (name.isNotBlank()) {
                             restoredMeds.add(
@@ -286,10 +313,10 @@ class CloudSyncRepository(
                     schedsItems.forEach { s ->
                         restoredScheds.add(
                             Schedule(
-                                id = (s["id"] as? Long)?.toInt() ?: 0,
-                                medicationId = (s["medicationId"] as? Long)?.toInt() ?: 0,
-                                timeHour = (s["timeHour"] as? Long)?.toInt() ?: 8,
-                                timeMinute = (s["timeMinute"] as? Long)?.toInt() ?: 0
+                                id = s["id"].toIntSafe(0),
+                                medicationId = s["medicationId"].toIntSafe(0),
+                                timeHour = s["timeHour"].toIntSafe(8),
+                                timeMinute = s["timeMinute"].toIntSafe(0)
                             )
                         )
                     }
@@ -299,15 +326,15 @@ class CloudSyncRepository(
                     logsItems.forEach { l ->
                         restoredLogs.add(
                             IntakeLog(
-                                id = (l["id"] as? Long)?.toInt() ?: 0,
-                                medicationId = (l["medicationId"] as? Long)?.toInt() ?: 0,
-                                scheduleId = (l["scheduleId"] as? Long)?.toInt() ?: 0,
-                                scheduledDateEpoch = (l["scheduledDateEpoch"] as? Long) ?: System.currentTimeMillis(),
-                                timestampTaken = (l["timestampTaken"] as? Long) ?: System.currentTimeMillis(),
+                                id = l["id"].toIntSafe(0),
+                                medicationId = l["medicationId"].toIntSafe(0),
+                                scheduleId = l["scheduleId"].toIntSafe(0),
+                                scheduledDateEpoch = l["scheduledDateEpoch"].toLongSafe(System.currentTimeMillis()),
+                                timestampTaken = l["timestampTaken"].toLongSafe(System.currentTimeMillis()),
                                 name = l["name"] as? String ?: "",
                                 dosage = l["dosage"] as? String ?: "",
-                                timeHour = (l["timeHour"] as? Long)?.toInt() ?: 8,
-                                timeMinute = (l["timeMinute"] as? Long)?.toInt() ?: 0,
+                                timeHour = l["timeHour"].toIntSafe(8),
+                                timeMinute = l["timeMinute"].toIntSafe(0),
                                 sideEffectNote = l["sideEffectNote"] as? String ?: ""
                             )
                         )

@@ -113,11 +113,28 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Register network callback for instant auto-sync when internet becomes available
+        try {
+            val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            cm?.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) {
+                    viewModel.autoSync()
+                }
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         setContent {
             MyAppThemeWrapper(viewModel) {
                 MainScreen(viewModel)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.autoSync()
     }
 }
 

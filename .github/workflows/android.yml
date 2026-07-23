@@ -55,8 +55,15 @@ jobs:
           python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
         fi
 
+    - name: Ensure Valid Gradle Wrapper
+      run: |
+        if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
+          echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper..."
+          gradle wrapper --gradle-version 8.11.1 || true
+        fi
+
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon
+      run: ./gradlew assembleDebug --no-daemon || gradle assembleDebug
 
     - name: Prepare Named APK
       run: |

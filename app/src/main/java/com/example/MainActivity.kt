@@ -40,6 +40,7 @@ import com.example.ui.CalendarScreen
 import com.example.ui.HomeScreen
 import com.example.ui.MedicationsListScreen
 import com.example.ui.SettingsScreen
+import com.example.ui.ProfileScreen
 import com.example.ui.MainViewModel
 import com.example.ui.MainViewModelFactory
 import com.example.ui.theme.MyApplicationTheme
@@ -257,17 +258,39 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                 }
             ) {
-                composable("home") { HomeScreen(viewModel, 120.dp) }
+                composable("home") { 
+                    HomeScreen(
+                        viewModel = viewModel, 
+                        bottomPadding = 120.dp,
+                        onOpenProfile = { navController.navigate("profile") }
+                    ) 
+                }
                 composable("calendar") { 
-                    CalendarScreen(viewModel, 120.dp)
+                    CalendarScreen(
+                        viewModel = viewModel, 
+                        bottomPadding = 120.dp,
+                        onOpenProfile = { navController.navigate("profile") }
+                    )
                 }
                 composable("meds") { 
-                    MedicationsListScreen(viewModel, 120.dp)
+                    MedicationsListScreen(
+                        viewModel = viewModel, 
+                        bottomPadding = 120.dp,
+                        onOpenProfile = { navController.navigate("profile") }
+                    )
                 }
                 composable("settings") { 
                     SettingsScreen(
                         viewModel = viewModel,
                         bottomPadding = 120.dp,
+                        onNavigateToAuth = { navController.navigate("auth") },
+                        onOpenProfile = { navController.navigate("profile") }
+                    )
+                }
+                composable("profile") {
+                    ProfileScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() },
                         onNavigateToAuth = { navController.navigate("auth") }
                     )
                 }

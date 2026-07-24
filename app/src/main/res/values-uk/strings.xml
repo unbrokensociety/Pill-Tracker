@@ -172,4 +172,23 @@
     <string name="barcode_format_qr">QR-код</string>
     <string name="barcode_format_1d">Штрихкод (Code 128)</string>
 
+    <string name="settings_cloud_sync_title">Хмарна синхронізація</string>
+    <string name="settings_cloud_sync_enabled">Синхронізація увімкнена</string>
+    <string name="settings_cloud_sync_disabled">Синхронізацію вимкнено</string>
+    <string name="settings_alarm_clock_title">Режим будильника</string>
+    <string name="settings_alarm_clock_loud">Гучний сигнал та вібрація</string>
+    <string name="settings_alarm_clock_standard">Стандартні нагадування</string>
+    <string name="settings_alarm_repeat_title">Повтор нагадувань</string>
+    <string name="settings_alarm_repeat_1">1 раз</string>
+    <string name="settings_alarm_repeat_2">2 рази</string>
+    <string name="settings_alarm_repeat_3">3 рази</string>
+    <string name="settings_delete_account_btn">Видалити обліковий запис та дані</string>
+    <string name="terms_of_service_title">Умови використання</string>
+    <string name="terms_of_service_desc">Правила сервісу та умови надання послуг</string>
+    <string name="edit_profile_title">Редагувати профіль</string>
+    <string name="edit_profile_nickname">Ім\'я / Нікнейм</string>
+    <string name="edit_profile_change_photo">Натисніть на аватар, щоб змінити фото</string>
+    <string name="edit_profile_camera">Зробити фото з камери</string>
+    <string name="edit_profile_gallery">Обрати з галереї</string>
+
 </resources>

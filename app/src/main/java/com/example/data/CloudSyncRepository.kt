@@ -2,6 +2,7 @@ package com.example.data
 
 import android.content.Context
 import android.os.Build
+import com.example.util.EncryptionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -49,9 +50,34 @@ class CloudSyncRepository(
 
     suspend fun autoSync(): Result<String> = withContext(Dispatchers.IO) {
         try {
-            restoreFromCloud()
             val syncRes = syncToCloud()
+            val currentMeds = medicationDao.getAllMedications().first()
+            if (currentMeds.isEmpty()) {
+                restoreFromCloud()
+            }
             syncRes
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun purgeUserDataFromCloud(email: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val authUser = FirebaseAuth.getInstance().currentUser
+            val userId = authUser?.uid ?: email.ifBlank { "guest_user" }.replace(".", "_").replace("@", "_")
+
+            try {
+                val db = FirebaseFirestore.getInstance()
+                db.collection("users").document(userId).delete().await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            if (backupFile.exists()) {
+                backupFile.delete()
+            }
+            Result.success("Данные успешно удалены из облака и локального кэша.")
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)
@@ -134,9 +160,9 @@ class CloudSyncRepository(
                 val medsList = medications.map { m ->
                     mapOf(
                         "id" to m.id,
-                        "name" to m.name,
-                        "dosage" to m.dosage,
-                        "notes" to m.notes,
+                        "name" to EncryptionManager.encrypt(m.name),
+                        "dosage" to EncryptionManager.encrypt(m.dosage),
+                        "notes" to EncryptionManager.encrypt(m.notes),
                         "color" to m.color,
                         "timesPerDay" to m.timesPerDay,
                         "startDate" to m.startDate,
@@ -162,11 +188,11 @@ class CloudSyncRepository(
                         "scheduleId" to l.scheduleId,
                         "scheduledDateEpoch" to l.scheduledDateEpoch,
                         "timestampTaken" to l.timestampTaken,
-                        "name" to l.name,
-                        "dosage" to l.dosage,
+                        "name" to EncryptionManager.encrypt(l.name),
+                        "dosage" to EncryptionManager.encrypt(l.dosage),
                         "timeHour" to l.timeHour,
                         "timeMinute" to l.timeMinute,
-                        "sideEffectNote" to l.sideEffectNote
+                        "sideEffectNote" to EncryptionManager.encrypt(l.sideEffectNote)
                     )
                 }
 
@@ -280,9 +306,10 @@ class CloudSyncRepository(
                 if (medsItems != null) {
                     medsItems.forEach { m ->
                         val id = m["id"].toIntSafe(0)
-                        val name = m["name"] as? String ?: ""
-                        val dosage = m["dosage"] as? String ?: ""
-                        val notes = m["notes"] as? String ?: ""
+                        val rawName = m["name"] as? String ?: ""
+                        val name = EncryptionManager.decrypt(rawName)
+                        val dosage = EncryptionManager.decrypt(m["dosage"] as? String ?: "")
+                        val notes = EncryptionManager.decrypt(m["notes"] as? String ?: "")
                         val color = m["color"].toIntSafe(0)
                         val timesPerDay = m["timesPerDay"].toIntSafe(1)
                         val startDate = m["startDate"].toLongSafe(System.currentTimeMillis())
@@ -331,11 +358,11 @@ class CloudSyncRepository(
                                 scheduleId = l["scheduleId"].toIntSafe(0),
                                 scheduledDateEpoch = l["scheduledDateEpoch"].toLongSafe(System.currentTimeMillis()),
                                 timestampTaken = l["timestampTaken"].toLongSafe(System.currentTimeMillis()),
-                                name = l["name"] as? String ?: "",
-                                dosage = l["dosage"] as? String ?: "",
+                                name = EncryptionManager.decrypt(l["name"] as? String ?: ""),
+                                dosage = EncryptionManager.decrypt(l["dosage"] as? String ?: ""),
                                 timeHour = l["timeHour"].toIntSafe(8),
                                 timeMinute = l["timeMinute"].toIntSafe(0),
-                                sideEffectNote = l["sideEffectNote"] as? String ?: ""
+                                sideEffectNote = EncryptionManager.decrypt(l["sideEffectNote"] as? String ?: "")
                             )
                         )
                     }
@@ -359,9 +386,9 @@ class CloudSyncRepository(
                     restoredMeds.add(
                         Medication(
                             id = obj.getInt("id"),
-                            name = obj.getString("name"),
-                            dosage = obj.getString("dosage"),
-                            notes = obj.optString("notes", ""),
+                            name = EncryptionManager.decrypt(obj.getString("name")),
+                            dosage = EncryptionManager.decrypt(obj.getString("dosage")),
+                            notes = EncryptionManager.decrypt(obj.optString("notes", "")),
                             color = obj.optInt("color", 0),
                             timesPerDay = obj.optInt("timesPerDay", 1),
                             startDate = obj.getLong("startDate"),
@@ -395,11 +422,11 @@ class CloudSyncRepository(
                             scheduleId = obj.getInt("scheduleId"),
                             scheduledDateEpoch = obj.optLong("scheduledDateEpoch", System.currentTimeMillis()),
                             timestampTaken = obj.optLong("timestampTaken", System.currentTimeMillis()),
-                            name = obj.getString("name"),
-                            dosage = obj.getString("dosage"),
+                            name = EncryptionManager.decrypt(obj.getString("name")),
+                            dosage = EncryptionManager.decrypt(obj.getString("dosage")),
                             timeHour = obj.getInt("timeHour"),
                             timeMinute = obj.getInt("timeMinute"),
-                            sideEffectNote = obj.optString("sideEffectNote", "")
+                            sideEffectNote = EncryptionManager.decrypt(obj.optString("sideEffectNote", ""))
                         )
                     )
                 }

@@ -43,13 +43,76 @@ class MainViewModel(
         initialValue = 0L
     )
 
+    val cloudSyncEnabled: StateFlow<Boolean> = settingsRepository.cloudSyncEnabledFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val pendingDeletionTimestamp: StateFlow<Long> = settingsRepository.pendingDeletionTimestampFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 0L
+    )
+
     init {
+        checkAccountDeletionGracePeriod()
         autoSync()
+    }
+
+    fun checkAccountDeletionGracePeriod() {
+        viewModelScope.launch {
+            settingsRepository.pendingDeletionTimestampFlow.collect { timestamp ->
+                if (timestamp > 0L && System.currentTimeMillis() >= timestamp) {
+                    purgeAllUserData()
+                }
+            }
+        }
+    }
+
+    fun requestAccountDeletion(graceDays: Int = 30) {
+        viewModelScope.launch {
+            settingsRepository.requestAccountDeletion(graceDays)
+            cloudSyncRepository.logUserAuthentication(userEmail.value, userName.value, "DELETION_REQUESTED_30_DAYS")
+        }
+    }
+
+    fun cancelAccountDeletion() {
+        viewModelScope.launch {
+            settingsRepository.cancelAccountDeletion()
+            cloudSyncRepository.logUserAuthentication(userEmail.value, userName.value, "DELETION_CANCELED")
+        }
+    }
+
+    fun purgeAllUserData(onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            try {
+                cloudSyncRepository.purgeUserDataFromCloud(userEmail.value)
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.delete()
+                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            settingsRepository.signOutToGuest()
+            settingsRepository.cancelAccountDeletion()
+            onComplete?.invoke()
+        }
     }
 
     fun autoSync() {
         viewModelScope.launch {
-            cloudSyncRepository.autoSync()
+            if (cloudSyncEnabled.value) {
+                cloudSyncRepository.autoSync()
+            }
+        }
+    }
+
+    fun setCloudSyncEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setCloudSyncEnabled(enabled)
+            if (enabled) {
+                cloudSyncRepository.autoSync()
+            }
         }
     }
 
@@ -111,6 +174,44 @@ class MainViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = ""
     )
+
+    val userAvatarUri: StateFlow<String> = settingsRepository.userAvatarUriFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
+    )
+
+    val alarmClockMode: StateFlow<Boolean> = settingsRepository.alarmClockModeFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val alarmRepeatCount: StateFlow<Int> = settingsRepository.alarmRepeatCountFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 1
+    )
+
+    fun updateUserProfile(name: String, avatarUri: String) {
+        viewModelScope.launch {
+            settingsRepository.updateUserProfile(name, avatarUri)
+            userRepository.updateUserName(userEmail.value, name)
+            cloudSyncRepository.autoSync()
+        }
+    }
+
+    fun setAlarmClockMode(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAlarmClockMode(enabled)
+        }
+    }
+
+    fun setAlarmRepeatCount(count: Int) {
+        viewModelScope.launch {
+            settingsRepository.setAlarmRepeatCount(count)
+        }
+    }
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()

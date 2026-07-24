@@ -36,11 +36,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.ui.components.GlassCard
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.GoogleAuthProvider
 
 enum class AuthTab { SIGN_IN, SIGN_UP }
 
@@ -60,10 +56,14 @@ fun AuthScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var showPrivacyPolicy by remember { mutableStateOf(false) }
+    var showTermsOfService by remember { mutableStateOf(false) }
 
     // Email Verification state
     var showVerificationDialog by remember { mutableStateOf(false) }
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var showGuestTermsDialog by remember { mutableStateOf(false) }
+    var guestTermsAccepted by remember { mutableStateOf(false) }
+    var guestTermsError by remember { mutableStateOf<String?>(null) }
     var privacyAccepted by remember { mutableStateOf(false) }
     var privacyError by remember { mutableStateOf<String?>(null) }
     var pendingAccountName by remember { mutableStateOf("") }
@@ -110,51 +110,128 @@ fun AuthScreen(
         )
     }
 
-    // Real Google Sign-In setup
-    val gso = remember {
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
-            .requestProfile()
-            .build()
+    if (showTermsOfService) {
+        com.example.ui.components.TermsOfServiceDialog(
+            onDismiss = { showTermsOfService = false }
+        )
     }
-    val googleSignInClient = remember(context) { GoogleSignIn.getClient(context, gso) }
 
-    val googleLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        isLoading = false
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(ApiException::class.java)
-            if (account != null) {
-                val userEmail = account.email ?: "user@gmail.com"
-                val userName = account.displayName ?: userEmail.substringBefore("@")
-                val avatarUrl = account.photoUrl?.toString() ?: ""
-
-                // Firebase Auth Sign-In if ID Token available
-                try {
-                    val auth = FirebaseAuth.getInstance()
-                    auth.useAppLanguage()
-                    if (account.idToken != null) {
-                        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-                        auth.signInWithCredential(credential)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+    if (showGuestTermsDialog) {
+        AlertDialog(
+            onDismissRequest = { showGuestTermsDialog = false },
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Security,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Умови для гостьового режиму",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Для продовження роботи в гостьовому режимі без реєстрації акаунту необхідно підтвердити згоду з Умовами використання та Політикою конфіденційності.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                viewModel.loginWithGoogle(
-                    email = userEmail,
-                    name = userName,
-                    avatarUrl = avatarUrl
-                )
-                Toast.makeText(context, context.getString(R.string.welcome_message, userName), Toast.LENGTH_LONG).show()
-                onCompleteAuth()
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "• Усі дані ліків зберігаються лише на цьому пристрої.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "• Хмарна резервна копія вимкнена до створення акаунту.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                guestTermsAccepted = !guestTermsAccepted
+                                guestTermsError = null
+                            }
+                    ) {
+                        Checkbox(
+                            checked = guestTermsAccepted,
+                            onCheckedChange = {
+                                guestTermsAccepted = it
+                                guestTermsError = null
+                            }
+                        )
+                        Text(
+                            text = "Я приймаю Умови використання та Політику конфіденційності",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    if (guestTermsError != null) {
+                        Text(
+                            text = guestTermsError!!,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        TextButton(onClick = { showPrivacyPolicy = true }) {
+                            Text("Політика", style = MaterialTheme.typography.labelMedium)
+                        }
+                        TextButton(onClick = { showTermsOfService = true }) {
+                            Text("Умови", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (!guestTermsAccepted) {
+                            guestTermsError = "Будь ласка, погодьтеся з умовами для продовження"
+                            return@Button
+                        }
+                        showGuestTermsDialog = false
+                        viewModel.skipAuthAsGuest()
+                        onCompleteAuth()
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Продовжити як гість", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGuestTermsDialog = false }) {
+                    Text("Скасувати")
+                }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, "Google Sign-In canceled or unavailable", Toast.LENGTH_SHORT).show()
-        }
+        )
     }
 
     Box(
@@ -229,76 +306,7 @@ fun AuthScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Native Google Sign-In Button (Triggers system Google Account Chooser)
-                    OutlinedButton(
-                        onClick = {
-                            isLoading = true
-                            try {
-                                googleSignInClient.signOut().addOnCompleteListener {
-                                    googleLauncher.launch(googleSignInClient.signInIntent)
-                                }
-                            } catch (e: Exception) {
-                                googleLauncher.launch(googleSignInClient.signInIntent)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.5.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFF4285F4),
-                                modifier = Modifier.size(22.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "G",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = stringResource(R.string.auth_btn_google),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        HorizontalDivider(
-                            modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                        Text(
-                            text = " OR ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                    }
-
-                    // Tab Switcher (Sign In vs Register)
+                    // Primary Auth Tab Switcher (Sign In vs Register)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -320,12 +328,12 @@ fun AuthScreen(
                                         emailError = null
                                         passwordError = null
                                     }
-                                    .padding(vertical = 8.dp),
+                                    .padding(vertical = 10.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = if (tab == AuthTab.SIGN_IN) stringResource(R.string.auth_tab_signin) else stringResource(R.string.auth_tab_signup),
-                                    style = MaterialTheme.typography.labelLarge,
+                                    style = MaterialTheme.typography.titleSmall,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -585,8 +593,7 @@ fun AuthScreen(
             // Skip / Guest Mode
             OutlinedButton(
                 onClick = {
-                    viewModel.skipAuthAsGuest()
-                    onCompleteAuth()
+                    showGuestTermsDialog = true
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -614,20 +621,29 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            TextButton(
-                onClick = { showPrivacyPolicy = true }
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Security,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = stringResource(R.string.privacy_policy_title),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                TextButton(
+                    onClick = { showPrivacyPolicy = true }
+                ) {
+                    Text(
+                        text = stringResource(R.string.privacy_policy_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Text(" • ", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(
+                    onClick = { showTermsOfService = true }
+                ) {
+                    Text(
+                        text = "Terms of Service",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

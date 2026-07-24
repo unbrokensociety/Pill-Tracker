@@ -28,11 +28,19 @@ import com.example.R
 import com.example.data.Medication
 
 import com.example.ui.components.GlassCard
+import com.example.ui.components.ProfileAvatarCircle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit.Dp) {
+fun MedicationsListScreen(
+    viewModel: MainViewModel,
+    bottomPadding: androidx.compose.ui.unit.Dp,
+    onOpenProfile: () -> Unit = {}
+) {
     val medications by viewModel.allMedications.collectAsState()
+    val userName by viewModel.userName.collectAsState()
+    val userAvatarUri by viewModel.userAvatarUri.collectAsState()
+    val isGuestMode by viewModel.isGuestMode.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
 
     if (medicationToDelete != null) {
@@ -82,6 +90,16 @@ fun MedicationsListScreen(viewModel: MainViewModel, bottomPadding: androidx.comp
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
+                },
+                actions = {
+                    ProfileAvatarCircle(
+                        userName = userName,
+                        userAvatarUri = userAvatarUri,
+                        isGuestMode = isGuestMode,
+                        onClick = onOpenProfile,
+                        modifier = Modifier.padding(end = 16.dp),
+                        size = 38.dp
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent

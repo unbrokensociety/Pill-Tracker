@@ -16,13 +16,16 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,43 +33,46 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.ThemeMode
-import com.example.ui.components.DoctorQrDialog
 import com.example.ui.components.GlassCard
+import com.example.ui.components.ProfileAvatarCircle
 import com.example.ui.locale.LocaleHelper
 import com.example.ui.locale.findActivity
 import com.example.ui.util.ReportExportHelper
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
     bottomPadding: androidx.compose.ui.unit.Dp,
-    onNavigateToAuth: () -> Unit = {}
+    onNavigateToAuth: () -> Unit = {},
+    onOpenProfile: () -> Unit = {}
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val isGuestMode by viewModel.isGuestMode.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val userEmail by viewModel.userEmail.collectAsState()
+    val userAvatarUri by viewModel.userAvatarUri.collectAsState()
+    val alarmClockMode by viewModel.alarmClockMode.collectAsState()
+    val alarmRepeatCount by viewModel.alarmRepeatCount.collectAsState()
+    val cloudSyncEnabled by viewModel.cloudSyncEnabled.collectAsState()
     val lastSyncTimestamp by viewModel.lastSyncTimestamp.collectAsState()
+    val pendingDeletionTimestamp by viewModel.pendingDeletionTimestamp.collectAsState()
 
     val medications by viewModel.allMedications.collectAsState()
     val schedules by viewModel.dailySchedules.collectAsState()
     val logs by viewModel.todayIntakeLogs.collectAsState()
     val streakDays by viewModel.streakDays.collectAsState()
 
-    var showDoctorQr by remember { mutableStateOf(false) }
     var showPrivacyPolicy by remember { mutableStateOf(false) }
-    var isSyncing by remember { mutableStateOf(false) }
+    var showTermsOfService by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -76,11 +82,9 @@ fun SettingsScreen(
         )
     }
 
-    if (showDoctorQr) {
-        DoctorQrDialog(
-            userAccountName = userName,
-            medications = medications,
-            onDismiss = { showDoctorQr = false }
+    if (showTermsOfService) {
+        com.example.ui.components.TermsOfServiceDialog(
+            onDismiss = { showTermsOfService = false }
         )
     }
 
@@ -106,6 +110,16 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
+                },
+                actions = {
+                    ProfileAvatarCircle(
+                        userName = userName,
+                        userAvatarUri = userAvatarUri,
+                        isGuestMode = isGuestMode,
+                        onClick = onOpenProfile,
+                        modifier = Modifier.padding(end = 16.dp),
+                        size = 38.dp
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -197,7 +211,7 @@ fun SettingsScreen(
                 }
             }
 
-            // User Profile & Account Glass Card
+            // Cloud Sync & Backup Glass Card
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth()
@@ -205,107 +219,31 @@ fun SettingsScreen(
                     Column(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isGuestMode) MaterialTheme.colorScheme.surfaceVariant
-                                        else MaterialTheme.colorScheme.primaryContainer
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (!isGuestMode && userName.isNotBlank()) {
-                                    Text(
-                                        text = userName.take(1).uppercase(),
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                } else {
-                                    Icon(
-                                        imageVector = if (isGuestMode) Icons.Filled.Person else Icons.Filled.AccountCircle,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                }
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(
-                                        text = if (isGuestMode) stringResource(R.string.auth_guest_title) else userName.ifBlank { stringResource(R.string.settings_my_profile) },
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                        Text(
+                            text = stringResource(R.string.settings_cloud_sync_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
 
-                                    if (!isGuestMode) {
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                            modifier = Modifier.padding(start = 4.dp)
-                                        ) {
-                                            Text(
-                                                text = if (userEmail.contains("gmail")) stringResource(R.string.auth_provider_google) else stringResource(R.string.auth_provider_email),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Text(
-                                    text = if (isGuestMode) stringResource(R.string.auth_guest_subtitle) else userEmail.ifBlank { stringResource(R.string.auth_cloud_subtitle) },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
-                        // Automatic Cloud Storage & Sync status indicator
-                        val formattedLastSync = remember(lastSyncTimestamp) {
-                            if (lastSyncTimestamp <= 0L) {
-                                "Автосинхронизация активна"
-                            } else {
-                                try {
-                                    val time = Instant.ofEpochMilli(lastSyncTimestamp)
-                                        .atZone(ZoneId.systemDefault())
-                                        .format(DateTimeFormatter.ofPattern("HH:mm, dd MMM"))
-                                    "Синхронизировано в $time"
-                                } catch (e: Exception) {
-                                    "Синхронизировано"
-                                }
-                            }
-                        }
-
+                        // Cloud Sync Switch
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f))
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                                .clickable { viewModel.setCloudSyncEnabled(!cloudSyncEnabled) }
+                                .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(
+                                modifier = Modifier.weight(1f),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(32.dp)
+                                        .size(36.dp)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                                     contentAlignment = Alignment.Center
@@ -319,72 +257,32 @@ fun SettingsScreen(
                                 }
                                 Column {
                                     Text(
-                                        text = "Облачная синхронизация",
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        text = if (cloudSyncEnabled) stringResource(R.string.settings_cloud_sync_enabled) else stringResource(R.string.settings_cloud_sync_disabled),
+                                        style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = formattedLastSync,
+                                        text = if (cloudSyncEnabled) "Автоматична резервна копія ввімкнена" else "Дані зберігаються локально на пристрої",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
 
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primary
-                            ) {
-                                Text(
-                                    text = "АВТО",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        if (isGuestMode) {
-                            Button(
-                                onClick = onNavigateToAuth,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.auth_action_link_account),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { viewModel.signOutToGuest() },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.auth_action_sign_out),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
+                            Switch(
+                                checked = cloudSyncEnabled,
+                                onCheckedChange = { viewModel.setCloudSyncEnabled(it) }
+                            )
                         }
                     }
                 }
             }
 
-            // Health & Doctor Tools
+            // Health Export & Legal Glass Card
             item {
                 Text(
-                    text = "Doctor & Health Export",
+                    text = "Експорт та Документи",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -395,46 +293,6 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Doctor QR Code Item
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { showDoctorQr = true }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.QrCode,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.qr_doctor_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = stringResource(R.string.qr_doctor_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
                         // Export Report Item
                         Row(
                             modifier = Modifier
@@ -522,6 +380,46 @@ fun SettingsScreen(
                                 )
                             }
                         }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                        // Terms of Service Row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { showTermsOfService = true }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.terms_of_service_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = stringResource(R.string.terms_of_service_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -592,6 +490,88 @@ fun SettingsScreen(
                                 checked = notificationsEnabled,
                                 onCheckedChange = { viewModel.setNotifications(it) }
                             )
+                        }
+
+                        if (notificationsEnabled) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                            // Alarm Clock Mode Switch
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { viewModel.setAlarmClockMode(!alarmClockMode) }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.NotificationsActive,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = stringResource(R.string.settings_alarm_clock_title),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = if (alarmClockMode) stringResource(R.string.settings_alarm_clock_loud) else stringResource(R.string.settings_alarm_clock_standard),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                }
+                                Switch(
+                                    checked = alarmClockMode,
+                                    onCheckedChange = { viewModel.setAlarmClockMode(it) }
+                                )
+                            }
+
+                            // Repeat Reminders Count Selection
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = stringResource(R.string.settings_alarm_repeat_title),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf(
+                                        1 to stringResource(R.string.settings_alarm_repeat_1),
+                                        2 to stringResource(R.string.settings_alarm_repeat_2),
+                                        3 to stringResource(R.string.settings_alarm_repeat_3)
+                                    ).forEach { (count, label) ->
+                                        val isSelected = count == alarmRepeatCount
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { viewModel.setAlarmRepeatCount(count) },
+                                            label = { Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -805,4 +785,60 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+@Composable
+fun DeleteAccountDialog(
+    onConfirm: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+                Text(
+                    text = "Запит на видалення даних",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Відповідно до ст. 15 Закону України «Про захист персональних даних» (№ 2297-VI), ви маєте право на знищення своїх персональних даних та медичних записів.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "При підтвердженні запиту буде активовано 30-денний відкладений період (Право на забуття). Протягом цього часу ви зможете у будь-який момент повернутися до додатка та скасувати видалення. Після закінчення 30 днів акаунт та всі дані будуть безповоротно вилучені з облака та баз даних.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(30) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Text("Підтвердити видалення (30 днів)", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Скасувати")
+            }
+        }
+    )
 }

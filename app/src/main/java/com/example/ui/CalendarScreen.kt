@@ -31,13 +31,21 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 import com.example.ui.components.GlassCard
+import com.example.ui.components.ProfileAvatarCircle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.unit.Dp) {
+fun CalendarScreen(
+    viewModel: MainViewModel,
+    bottomPadding: androidx.compose.ui.unit.Dp,
+    onOpenProfile: () -> Unit = {}
+) {
     val selectedDate by viewModel.selectedDate.collectAsState()
     val dailySchedules by viewModel.dailySchedules.collectAsState()
     val logs by viewModel.todayIntakeLogs.collectAsState()
+    val userName by viewModel.userName.collectAsState()
+    val userAvatarUri by viewModel.userAvatarUri.collectAsState()
+    val isGuestMode by viewModel.isGuestMode.collectAsState()
     
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
     
@@ -51,6 +59,16 @@ fun CalendarScreen(viewModel: MainViewModel, bottomPadding: androidx.compose.ui.
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
+                },
+                actions = {
+                    ProfileAvatarCircle(
+                        userName = userName,
+                        userAvatarUri = userAvatarUri,
+                        isGuestMode = isGuestMode,
+                        onClick = onOpenProfile,
+                        modifier = Modifier.padding(end = 16.dp),
+                        size = 38.dp
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent

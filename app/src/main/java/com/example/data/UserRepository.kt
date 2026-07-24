@@ -17,6 +17,10 @@ class UserRepository(private val userDao: UserDao) {
         userDao.updateLastLogin(email, System.currentTimeMillis())
     }
 
+    suspend fun updateUserName(email: String, name: String) {
+        userDao.updateUserName(email, name)
+    }
+
     suspend fun deleteUser(email: String) {
         userDao.deleteUser(email)
     }

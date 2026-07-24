@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,23 +7,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PrivacyPolicyDialog(
+fun TermsOfServiceDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -43,9 +39,9 @@ fun PrivacyPolicyDialog(
                     title = {
                         Text(
                             text = when (currentLang) {
-                                "uk" -> "Політика Конфіденційності"
-                                "ru" -> "Политика Конфиденциальности"
-                                else -> "Privacy Policy & Data Rights"
+                                "uk" -> "Умови Використання"
+                                "ru" -> "Условия Использования"
+                                else -> "Terms of Service"
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
@@ -89,9 +85,9 @@ fun PrivacyPolicyDialog(
                                 Icon(Icons.Filled.Check, null)
                                 Text(
                                     text = when (currentLang) {
-                                        "uk" -> "Я погоджуюсь та приймаю"
-                                        "ru" -> "Я соглашаюсь и принимаю"
-                                        else -> "I Understand & Agree"
+                                        "uk" -> "Зрозуміло та Приймаю"
+                                        "ru" -> "Понятно и Принимаю"
+                                        else -> "I Understand & Accept"
                                     },
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.titleMedium
@@ -129,7 +125,7 @@ fun PrivacyPolicyDialog(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Filled.Shield,
+                                    imageVector = Icons.Filled.Gavel,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(26.dp)
@@ -138,16 +134,16 @@ fun PrivacyPolicyDialog(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "GLOBAL DATA PROTECTION STANDARDS",
+                                text = "LEGAL SERVICE AGREEMENT",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 text = when (currentLang) {
-                                    "uk" -> "Захист здоров'я за законами України (№ 2297-VI), ЄС (EU GDPR) та США (HIPAA / CCPA)"
-                                    "ru" -> "Защита здоровья по законам Украины (№ 2297-VI), ЕС (EU GDPR) и США (HIPAA / CCPA)"
-                                    else -> "Health data protection under Ukraine Law № 2297-VI, EU GDPR & US HIPAA / CCPA"
+                                    "uk" -> "Офіційні правила використання сервісу PillTracker (Україна, ЄС, США)"
+                                    "ru" -> "Официальные правила использования сервиса PillTracker (Украина, ЕС, США)"
+                                    else -> "Official PillTracker Service Agreement (Ukraine, EU, USA)"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
@@ -158,9 +154,9 @@ fun PrivacyPolicyDialog(
                 }
 
                 when (currentLang) {
-                    "uk" -> UkrainianPolicyContent()
-                    "ru" -> RussianPolicyContent()
-                    else -> EnglishPolicyContent()
+                    "uk" -> UkrainianTermsContent()
+                    "ru" -> RussianTermsContent()
+                    else -> EnglishTermsContent()
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -170,94 +166,94 @@ fun PrivacyPolicyDialog(
 }
 
 @Composable
-private fun UkrainianPolicyContent() {
-    PolicyCardSection(
+private fun UkrainianTermsContent() {
+    TermsCardSection(
         number = "1",
-        title = "Правова база та глобальна відповідність",
-        body = "Політика розроблена відповідно до Закону України «Про захист персональних даних» № 2297-VI, Регламенту ЄС EU GDPR (2016/679) та стандартів конфіденційності США (HIPAA Privacy Standards / CCPA). Обробка даних проводиться лише з вашої добровільної згоди."
+        title = "Предмет Угоди та Сфера Застосування",
+        body = "Ця Угода регулює використання мобільного додатка PillTracker на території України, країн Європейського Союзу (ЄС) та США. Використовуючи додаток (як зареєстрований користувач чи в гостьовому режимі), ви беззастережно приймаєте ці умови."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "2",
-        title = "Шифрування даних (AES-256) та захист медичних записів",
-        body = "Усі медичні дані, назви препаратів, графіки прийому та примітки зберігаються в зашифрованому вигляді за допомогою стандарту AES-256-GCM як на пристрої, так і під час синхронізації з хмарою Cloud Firestore."
+        title = "Медичне застереження та Відповідальність",
+        body = "PillTracker є електронним нагадуванням та інструментом ведення щоденника прийому ліків. Сервіс не є медичним пристроєм, не надає лікарських приписів чи медичних діагнозів. Ви та ваш лікуючий лікар несуть повну відповідальність за дозування та схему лікування."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "3",
-        title = "Право на видалення даних та 30-денний період (GDPR Art. 17 & Закон № 2297-VI)",
-        body = "Ви маєте повне право на видалення облікового запису та даних. Запит створює 30-денний відкладений період, протягом якого видалення можна скасувати в додатку. Після 30 днів усі дані знищуються остаточно без можливості відновлення."
+        title = "Гостьовий режим та Хмарна синхронізація",
+        body = "При використанні гостьового режиму ваші дані зберігаються суворо локально на вашому пристрої. При створенні облікового запису та увімкненні синхронізації дані захищаються шифруванням AES-256 та передаються через безпечне з'єднання SSL/TLS."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "4",
-        title = "Конфіденційність та відсутність продажу даних",
-        body = "Ваші персональні та медичні дані є суворо приватними. Ми ніколи не продаємо, не передаємо та не використовуємо вашу інформацію для рекламного таргетингу третьою стороною."
+        title = "Припинення використання та Видалення даних",
+        body = "Ви можете в будь-який момент видалити обліковий запис. Запит активації видалення діє 30 днів (відповідно до ст. 15 Закону України № 2297-VI та GDPR Art. 17). Протягом цього часу процедуру можна скасувати."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "5",
-        title = "Медичне застереження (Medical Disclaimer)",
-        body = "PillTracker є інструментом самоконтролю та нагадування про прийом ліків. Сервіс не встановлює діагнозів і не замінює консультації професійного лікаря чи екстрену медичну допомогу."
+        title = "Зміни до Умов",
+        body = "Адміністрація залишає за собою право оновлювати ці Умови. Оновлена версія набуває чинності з моменту її публікації в додатку."
     )
 }
 
 @Composable
-private fun RussianPolicyContent() {
-    PolicyCardSection(
+private fun RussianTermsContent() {
+    TermsCardSection(
         number = "1",
-        title = "Правовая база и глобальное соответствие",
-        body = "Политика разработана в соответствии с Законом Украины «О защите персональных данных» № 2297-VI, Регламентом ЕС EU GDPR (2016/679) и стандартами США (HIPAA / CCPA). Обработка данных проводится исключительно с вашего согласия."
+        title = "Предмет Соглашения и Область Действия",
+        body = "Настоящее Соглашение регулирует использование приложения PillTracker на территории Украины, стран ЕС и США. Используя приложение (включая гостевой режим), вы принимаете данные условия."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "2",
-        title = "Шифрование данных (AES-256) и защита медикаментов",
-        body = "Все медицинские данные, названия препаратов и графики зашифрованы стандартом AES-256-GCM на вашем устройстве и при передаче в облако Cloud Firestore."
+        title = "Медицинская оговорка и Ответственность",
+        body = "PillTracker является цифровым органайзером и напоминанием о приёме лекарств. Сервис не является медицинским устройством и не ставит диагнозы. За правильность графика и дозировок отвечает пользователь и его лечащий врач."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "3",
-        title = "Право на удаление и 30-дневный период (GDPR Art. 17 & Закон № 2297-VI)",
-        body = "Вы имеете право на полное удаление аккаунта и данных. Запрос активирует 30-дневный льготный период, в течение которого удаление можно отменить. По истечении 30 дней данные уничтожаются безвозвратно."
+        title = "Гостевой режим и Облачная синхронизация",
+        body = "В гостевом режиме данные хранятся локально на устройстве. При регистрации и включении синхронизации данные зашифрованы стандартом AES-256 и передаются по защищённому каналу SSL/TLS."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "4",
-        title = "Конфиденциальность и запрет передачи третьим лицам",
-        body = "Ваши личные и медицинские данные конфиденциальны. Мы никогда не продаём и не передаём ваши данные сторонним организациям или рекламодателям."
+        title = "Прекращение использования и Удаление аккаунта",
+        body = "Вы можете запросить удаление аккаунта в любой момент. Запрос действует 30 дней (согласно ст. 15 Закона Украины № 2297-VI и GDPR Art. 17) и может быть отменён в течение этого периода."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "5",
-        title = "Медицинская оговорка (Medical Disclaimer)",
-        body = "PillTracker является органайзером приёма лекарств и не заменяет профессиональную медицинскую консультацию, диагноз или скорую помощь."
+        title = "Изменение Условий",
+        body = "Мы оставляет за собой право обновлять данные Условия. Новая версия вступает в силу с момента публикации в приложении."
     )
 }
 
 @Composable
-private fun EnglishPolicyContent() {
-    PolicyCardSection(
+private fun EnglishTermsContent() {
+    TermsCardSection(
         number = "1",
-        title = "Legal Basis & Global Compliance",
-        body = "Established pursuant to Law of Ukraine 'On Protection of Personal Data' No. 2297-VI, European Union GDPR (Regulation 2016/679), and US Health & State Privacy Standards (HIPAA Privacy Principles / CCPA). Data is processed solely based on consent."
+        title = "Scope of Agreement & Jurisdiction",
+        body = "This Agreement governs the use of PillTracker across Ukraine, the European Union, and the United States. By using the application (registered or guest mode), you agree to these legal terms."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "2",
-        title = "Data Scope & End-to-End Encryption (AES-256)",
-        body = "All personal health records, prescription schedules, and dosage notes are encrypted using AES-256-GCM ciphers both locally on-device and during encrypted cloud sync."
+        title = "Medical Disclaimer & Limitation of Liability",
+        body = "PillTracker is a digital reminder and health log tool. It is not a certified medical software, does not prescribe medication, and cannot substitute for professional physician judgment or emergency response."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "3",
-        title = "Right to Erasure & 30-Day Grace Period (GDPR Art. 17)",
-        body = "You hold full rights to request complete deletion of your account and data. Requests trigger a 30-day grace period during which deletion can be instantly canceled in app. After 30 days, records are irreversibly purged."
+        title = "Guest Mode & Cloud Synchronization",
+        body = "In Guest Mode, records remain stored locally on device. Upon account creation and sync enablement, health records are encrypted using hardware AES-256-GCM and transferred securely over TLS."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "4",
-        title = "Strict Confidentiality & Zero Data Sale",
-        body = "Your personal and health information is strictly confidential. We never sell, monetize, or transfer your personal data to third parties or advertising networks."
+        title = "Account Termination & Right to be Forgotten",
+        body = "You may request complete account erasure anytime. A 30-day grace period is granted pursuant to Ukraine Law No. 2297-VI and EU GDPR Art. 17, during which deletion can be revoked in app."
     )
-    PolicyCardSection(
+    TermsCardSection(
         number = "5",
-        title = "Medical Disclaimer",
-        body = "PillTracker is an automated reminder organizer. It is not a clinical diagnostic system and does not replace licensed medical practitioners or emergency healthcare dispatch."
+        title = "Amendments to Terms",
+        body = "We reserve the right to revise these Terms of Service. Revisions become binding upon publication within the application."
     )
 }
 
 @Composable
-private fun PolicyCardSection(
+private fun TermsCardSection(
     number: String,
     title: String,
     body: String
@@ -304,4 +300,3 @@ private fun PolicyCardSection(
         }
     }
 }
-

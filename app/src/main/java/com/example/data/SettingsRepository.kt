@@ -22,7 +22,70 @@ class SettingsRepository(private val context: Context) {
         val IS_GUEST_MODE = booleanPreferencesKey("is_guest_mode")
         val USER_NAME = stringPreferencesKey("user_name")
         val USER_EMAIL = stringPreferencesKey("user_email")
+        val USER_AVATAR_URI = stringPreferencesKey("user_avatar_uri")
+        val ALARM_CLOCK_MODE = booleanPreferencesKey("alarm_clock_mode")
+        val ALARM_REPEAT_COUNT = androidx.datastore.preferences.core.intPreferencesKey("alarm_repeat_count")
+        val CLOUD_SYNC_ENABLED = booleanPreferencesKey("cloud_sync_enabled")
         val LAST_SYNC_TIMESTAMP = androidx.datastore.preferences.core.longPreferencesKey("last_sync_timestamp")
+        val PENDING_DELETION_TIMESTAMP = androidx.datastore.preferences.core.longPreferencesKey("pending_deletion_timestamp")
+    }
+
+    val userAvatarUriFlow: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[USER_AVATAR_URI] ?: ""
+    }
+
+    val cloudSyncEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[CLOUD_SYNC_ENABLED] ?: true
+    }
+
+    suspend fun setCloudSyncEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[CLOUD_SYNC_ENABLED] = enabled
+        }
+    }
+
+    val alarmClockModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[ALARM_CLOCK_MODE] ?: false
+    }
+
+    val alarmRepeatCountFlow: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[ALARM_REPEAT_COUNT] ?: 1
+    }
+
+    suspend fun updateUserProfile(name: String, avatarUri: String) {
+        context.dataStore.edit { preferences ->
+            preferences[USER_NAME] = name
+            preferences[USER_AVATAR_URI] = avatarUri
+        }
+    }
+
+    suspend fun setAlarmClockMode(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[ALARM_CLOCK_MODE] = enabled
+        }
+    }
+
+    suspend fun setAlarmRepeatCount(count: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[ALARM_REPEAT_COUNT] = count
+        }
+    }
+
+    val pendingDeletionTimestampFlow: Flow<Long> = context.dataStore.data.map { preferences ->
+        preferences[PENDING_DELETION_TIMESTAMP] ?: 0L
+    }
+
+    suspend fun requestAccountDeletion(graceDays: Int = 30) {
+        val targetTime = System.currentTimeMillis() + (graceDays.toLong() * 24 * 60 * 60 * 1000L)
+        context.dataStore.edit { preferences ->
+            preferences[PENDING_DELETION_TIMESTAMP] = targetTime
+        }
+    }
+
+    suspend fun cancelAccountDeletion() {
+        context.dataStore.edit { preferences ->
+            preferences[PENDING_DELETION_TIMESTAMP] = 0L
+        }
     }
 
     val lastSyncTimestampFlow: Flow<Long> = context.dataStore.data.map { preferences ->

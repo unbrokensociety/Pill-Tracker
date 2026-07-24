@@ -52,13 +52,25 @@ class AlarmReceiver : BroadcastReceiver() {
         val notificationManager = localizedContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "medication_channel"
 
+        val alarmUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+            ?: android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val audioAttributes = android.media.AudioAttributes.Builder()
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .build()
+
             val channel = NotificationChannel(
                 channelId,
                 localizedContext.getString(R.string.alarm_channel_name),
                 NotificationManager.IMPORTANCE_HIGH
-            )
-            channel.description = localizedContext.getString(R.string.alarm_channel_desc)
+            ).apply {
+                description = localizedContext.getString(R.string.alarm_channel_desc)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 500)
+                setSound(alarmUri, audioAttributes)
+            }
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -79,7 +91,10 @@ class AlarmReceiver : BroadcastReceiver() {
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
             .setContentTitle(localizedContext.getString(R.string.alarm_title, finalMedName))
             .setContentText(localizedContext.getString(R.string.alarm_text))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setSound(alarmUri)
+            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
 

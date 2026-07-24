@@ -172,4 +172,23 @@
     <string name="barcode_format_qr">QR Code</string>
     <string name="barcode_format_1d">Barcode (Code 128)</string>
 
+    <string name="settings_cloud_sync_title">Cloud Sync</string>
+    <string name="settings_cloud_sync_enabled">Sync enabled</string>
+    <string name="settings_cloud_sync_disabled">Sync disabled</string>
+    <string name="settings_alarm_clock_title">Alarm Clock Mode</string>
+    <string name="settings_alarm_clock_loud">Loud sound &amp; vibration</string>
+    <string name="settings_alarm_clock_standard">Standard notifications</string>
+    <string name="settings_alarm_repeat_title">Reminder Repeats</string>
+    <string name="settings_alarm_repeat_1">1 time</string>
+    <string name="settings_alarm_repeat_2">2 times</string>
+    <string name="settings_alarm_repeat_3">3 times</string>
+    <string name="settings_delete_account_btn">Delete Account &amp; Data</string>
+    <string name="terms_of_service_title">Terms of Service</string>
+    <string name="terms_of_service_desc">Service rules &amp; terms of use</string>
+    <string name="edit_profile_title">Edit Profile</string>
+    <string name="edit_profile_nickname">Name / Nickname</string>
+    <string name="edit_profile_change_photo">Tap avatar to change photo</string>
+    <string name="edit_profile_camera">Take Photo with Camera</string>
+    <string name="edit_profile_gallery">Choose from Gallery</string>
+
 </resources>

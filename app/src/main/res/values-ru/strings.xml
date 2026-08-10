@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">Pill Tracker</string>
-    <string name="nav_today">Сегодня</string>
+    <string name="nav_today">Главная</string>
     <string name="nav_calendar">Календарь</string>
     <string name="nav_meds">Лекарства</string>
-    <string name="nav_settings">Опции</string>
+    <string name="nav_settings">Настройки</string>
     
     <string name="home_no_schedules">Нет расписаний на этот день</string>
     
@@ -190,5 +190,38 @@
     <string name="edit_profile_change_photo">Нажмите на аватар, чтобы изменить фото</string>
     <string name="edit_profile_camera">Сделать фото с камеры</string>
     <string name="edit_profile_gallery">Выбрать из галереи</string>
+
+    <!-- Profile Screen strings -->
+    <string name="profile_sync_active">Синхронизация активна</string>
+    <string name="profile_synced_at">Синхронизировано в %1$s</string>
+    <string name="profile_synced">Синхронизировано</string>
+    <string name="profile_guest_user">Гостевой Пользователь</string>
+    <string name="profile_default_user">Пользователь</string>
+    <string name="profile_guest_mode_local">Гостевой режим (Локальные данные)</string>
+    <string name="profile_authorized_account">Авторизованный аккаунт</string>
+    <string name="profile_edit_name_photo">Редактировать имя и фото</string>
+    <string name="profile_account_info">Информация об аккаунте</string>
+    <string name="profile_account_status">Статус аккаунта</string>
+    <string name="profile_status_guest">ГОСТЬ</string>
+    <string name="profile_status_authorized">АВТОРИЗОВАН</string>
+    <string name="profile_cloud_status">Облачный статус</string>
+    <string name="profile_account_management">Управление аккаунтом</string>
+    <string name="profile_deletion_scheduled">⚠️ Аккаунт запланирован к удалению через %1$d дней (30-дневный отложенный период)</string>
+    <string name="profile_cancel_deletion">Отменить удаление аккаунта</string>
+    <string name="profile_signin_or_register">Войти или зарегистрироваться</string>
+
+    <!-- Auth Guest Terms strings -->
+    <string name="auth_guest_terms_title">Условия для гостевого режима</string>
+    <string name="auth_guest_terms_desc">Для продолжения работы в гостевом режиме без регистрации аккаунта необходимо подтвердить согласие с Условиями использования и Политикой конфиденциальности.</string>
+    <string name="auth_guest_terms_bullet1">• Все данные лекарств хранятся только на этом устройстве.</string>
+    <string name="auth_guest_terms_bullet2">• Облачная резервная копия отключена до создания аккаунта.</string>
+    <string name="auth_guest_terms_checkbox">Я принимаю Условия использования и Политику конфиденциальности</string>
+    <string name="auth_guest_terms_error">Пожалуйста, согласитесь с условиями для продолжения</string>
+    <string name="auth_guest_terms_continue">Продолжить как гость</string>
+
+    <!-- Settings section extensions -->
+    <string name="settings_cloud_sync_auto">Автоматическая резервная копия включена</string>
+    <string name="settings_cloud_sync_local">Данные хранятся локально на устройстве</string>
+    <string name="settings_export_and_docs">Экспорт и Документы</string>
 
 </resources>

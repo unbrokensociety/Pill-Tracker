@@ -49,17 +49,30 @@ fun ProfileScreen(
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
-    val formattedLastSync = remember(lastSyncTimestamp) {
-        if (lastSyncTimestamp <= 0L) {
-            "Синхронізація активна"
+    val cloudSyncEnabled by viewModel.cloudSyncEnabled.collectAsState()
+
+    val activeSyncText = stringResource(R.string.profile_sync_active)
+    val syncDisabledText = stringResource(R.string.settings_cloud_sync_disabled)
+    val syncedAtPrefix = stringResource(R.string.profile_synced_at)
+    val syncedText = stringResource(R.string.profile_synced)
+    val guestUserText = stringResource(R.string.profile_guest_user)
+    val defaultUserText = stringResource(R.string.profile_default_user)
+    val guestModeLocalText = stringResource(R.string.profile_guest_mode_local)
+    val authorizedAccountText = stringResource(R.string.profile_authorized_account)
+
+    val formattedLastSync = remember(lastSyncTimestamp, cloudSyncEnabled, isGuestMode, activeSyncText, syncDisabledText, syncedAtPrefix, syncedText) {
+        if (isGuestMode || !cloudSyncEnabled) {
+            syncDisabledText
+        } else if (lastSyncTimestamp <= 0L) {
+            activeSyncText
         } else {
             try {
                 val time = Instant.ofEpochMilli(lastSyncTimestamp)
                     .atZone(ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("HH:mm, dd MMM yyyy"))
-                "Синхронізовано о $time"
+                String.format(syncedAtPrefix, time)
             } catch (e: Exception) {
-                "Синхронізовано"
+                syncedText
             }
         }
     }
@@ -168,14 +181,14 @@ fun ProfileScreen(
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = if (!isGuestMode && userName.isNotBlank()) userName else if (isGuestMode) "Гостьовий Користувач" else "Користувач",
+                            text = if (!isGuestMode && userName.isNotBlank()) userName else if (isGuestMode) guestUserText else defaultUserText,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
-                            text = if (isGuestMode) "Гостьовий режим (Локальні дані)" else userEmail.ifBlank { "Авторизований акаунт" },
+                            text = if (isGuestMode) guestModeLocalText else userEmail.ifBlank { authorizedAccountText },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -191,7 +204,7 @@ fun ProfileScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Редагувати ім'я та фото", fontWeight = FontWeight.SemiBold)
+                        Text(text = stringResource(R.string.profile_edit_name_photo), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -200,7 +213,7 @@ fun ProfileScreen(
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(
-                        text = "Інформація про акаунт",
+                        text = stringResource(R.string.profile_account_info),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -216,7 +229,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Icon(Icons.Filled.Badge, null, tint = MaterialTheme.colorScheme.primary)
-                            Text("Статус акаунту", style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.profile_account_status), style = MaterialTheme.typography.bodyMedium)
                         }
 
                         Surface(
@@ -224,7 +237,7 @@ fun ProfileScreen(
                             color = if (isGuestMode) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                text = if (isGuestMode) "ГОСТЬ" else "АВТОРИЗОВАНО",
+                                text = if (isGuestMode) stringResource(R.string.profile_status_guest) else stringResource(R.string.profile_status_authorized),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isGuestMode) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
@@ -245,7 +258,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Icon(Icons.Filled.CloudDone, null, tint = MaterialTheme.colorScheme.primary)
-                            Text("Хмарний статус", style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.profile_cloud_status), style = MaterialTheme.typography.bodyMedium)
                         }
 
                         Text(
@@ -261,7 +274,7 @@ fun ProfileScreen(
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(
-                        text = "Керування обліковим записом",
+                        text = stringResource(R.string.profile_account_management),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -271,11 +284,9 @@ fun ProfileScreen(
                         val isPendingDeletion = pendingDeletionTimestamp > 0L
                         if (isPendingDeletion) {
                             val daysLeft = remember(pendingDeletionTimestamp) {
-                                val thirtyDaysMs = 30L * 24 * 60 * 60 * 1000
-                                val elapsed = System.currentTimeMillis() - pendingDeletionTimestamp
-                                val remainingMs = thirtyDaysMs - elapsed
-                                val days = (remainingMs / (1000 * 60 * 60 * 24)).coerceAtLeast(0)
-                                days
+                                val remainingMs = pendingDeletionTimestamp - System.currentTimeMillis()
+                                val days = (remainingMs / (1000L * 60 * 60 * 24)).coerceAtLeast(0)
+                                days.toInt()
                             }
 
                             Card(
@@ -289,7 +300,7 @@ fun ProfileScreen(
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Text(
-                                        text = "⚠️ Акаунт заплановано до видалення через $daysLeft днів (30-денний відкладений період)",
+                                        text = stringResource(R.string.profile_deletion_scheduled, daysLeft),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onErrorContainer
@@ -305,7 +316,7 @@ fun ProfileScreen(
                                         shape = RoundedCornerShape(10.dp)
                                     ) {
                                         Text(
-                                            text = "Скасувати видалення акаунту",
+                                            text = stringResource(R.string.profile_cancel_deletion),
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
@@ -357,7 +368,7 @@ fun ProfileScreen(
                             Icon(Icons.Filled.Login, null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Увійти або зареєструватися",
+                                text = stringResource(R.string.profile_signin_or_register),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold
                             )

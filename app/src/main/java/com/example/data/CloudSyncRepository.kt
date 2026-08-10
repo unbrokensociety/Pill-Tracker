@@ -84,6 +84,33 @@ class CloudSyncRepository(
         }
     }
 
+    suspend fun recordAccountDeletionStatus(email: String, name: String, isPending: Boolean, graceDays: Int = 30): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val authUser = FirebaseAuth.getInstance().currentUser
+            val userId = authUser?.uid ?: email.ifBlank { "guest_user" }.replace(".", "_").replace("@", "_")
+
+            val targetTime = if (isPending) System.currentTimeMillis() + (graceDays.toLong() * 24 * 60 * 60 * 1000) else 0L
+
+            val statusDoc = hashMapOf<String, Any>(
+                "accountStatus" to if (isPending) "PENDING_DELETION" else "ACTIVE",
+                "pendingDeletionTargetTimestamp" to targetTime,
+                "deletionRequestTimestamp" to if (isPending) System.currentTimeMillis() else 0L,
+                "lastUpdated" to System.currentTimeMillis()
+            )
+
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .set(statusDoc, SetOptions.merge())
+                .await()
+
+            Result.success("Account deletion status updated in Cloud DB")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
     suspend fun logUserAuthentication(
         email: String,
         name: String,

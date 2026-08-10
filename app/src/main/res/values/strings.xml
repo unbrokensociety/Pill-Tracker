@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Pill Tracker</string>
-    <string name="nav_today">Today</string>
+    <string name="nav_today">Home</string>
     <string name="nav_calendar">Calendar</string>
     <string name="nav_meds">Meds</string>
     <string name="nav_settings">Settings</string>
@@ -190,5 +190,38 @@
     <string name="edit_profile_change_photo">Tap avatar to change photo</string>
     <string name="edit_profile_camera">Take Photo with Camera</string>
     <string name="edit_profile_gallery">Choose from Gallery</string>
+
+    <!-- Profile Screen strings -->
+    <string name="profile_sync_active">Sync active</string>
+    <string name="profile_synced_at">Synced at %1$s</string>
+    <string name="profile_synced">Synced</string>
+    <string name="profile_guest_user">Guest User</string>
+    <string name="profile_default_user">User</string>
+    <string name="profile_guest_mode_local">Guest mode (Local data)</string>
+    <string name="profile_authorized_account">Authorized account</string>
+    <string name="profile_edit_name_photo">Edit name and photo</string>
+    <string name="profile_account_info">Account Information</string>
+    <string name="profile_account_status">Account Status</string>
+    <string name="profile_status_guest">GUEST</string>
+    <string name="profile_status_authorized">AUTHORIZED</string>
+    <string name="profile_cloud_status">Cloud Status</string>
+    <string name="profile_account_management">Account Management</string>
+    <string name="profile_deletion_scheduled">⚠️ Account scheduled for deletion in %1$d days (30-day grace period)</string>
+    <string name="profile_cancel_deletion">Cancel Account Deletion</string>
+    <string name="profile_signin_or_register">Sign In or Register</string>
+
+    <!-- Auth Guest Terms strings -->
+    <string name="auth_guest_terms_title">Terms for Guest Mode</string>
+    <string name="auth_guest_terms_desc">To continue in guest mode without account registration, you must agree to the Terms of Service and Privacy Policy.</string>
+    <string name="auth_guest_terms_bullet1">• All medication data is stored only on this device.</string>
+    <string name="auth_guest_terms_bullet2">• Cloud backup is disabled until account creation.</string>
+    <string name="auth_guest_terms_checkbox">I accept the Terms of Service and Privacy Policy</string>
+    <string name="auth_guest_terms_error">Please accept the terms to continue</string>
+    <string name="auth_guest_terms_continue">Continue as Guest</string>
+
+    <!-- Settings section extensions -->
+    <string name="settings_cloud_sync_auto">Automatic cloud backup enabled</string>
+    <string name="settings_cloud_sync_local">Data is stored locally on device</string>
+    <string name="settings_export_and_docs">Export &amp; Documents</string>
 
 </resources>

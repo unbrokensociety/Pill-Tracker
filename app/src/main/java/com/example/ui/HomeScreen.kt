@@ -34,6 +34,9 @@ import java.util.Locale
 
 import com.example.ui.components.GlassCard
 import com.example.ui.components.ProfileAvatarCircle
+import com.example.ui.components.liquidGlass
+import com.example.ui.components.GlassCircleIcon
+import com.example.ui.components.GlassChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -210,28 +213,19 @@ fun DateItem(
 ) {
     val isToday = remember(date) { date == LocalDate.now() }
     
-    val animatedBg by animateColorAsState(
-        targetValue = when {
-            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-            isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-        },
-        label = "dateBg"
-    )
-
     val animatedContentColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.onPrimary
-            isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+            isToday -> MaterialTheme.colorScheme.primary
             else -> MaterialTheme.colorScheme.onSurface
         },
         label = "dateText"
     )
 
-    val borderStroke = when {
-        isSelected -> androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-        isToday -> androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
-        else -> androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
+    val customGlassColor = when {
+        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+        isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+        else -> null
     }
 
     // Fully localized short day initials (e.g. Пн, Вт, Ср, Mon, Tue etc.)
@@ -240,25 +234,26 @@ fun DateItem(
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     }
 
-    Card(
+    Box(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = animatedBg),
-        border = borderStroke,
-        shape = RoundedCornerShape(20.dp)
+            .liquidGlass(
+                shape = RoundedCornerShape(22.dp),
+                customGlassColor = customGlassColor,
+                elevation = if (isSelected) 10.dp else 4.dp
+            )
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = localizedDay,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = animatedContentColor.copy(alpha = if (isSelected) 0.8f else 0.6f)
+                color = animatedContentColor.copy(alpha = if (isSelected) 0.9f else 0.65f)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -277,42 +272,6 @@ fun MedicationCard(
     isTaken: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
-    val animatedColor by animateColorAsState(
-        targetValue = if (isTaken) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-        },
-        label = "cardColor"
-    )
-
-    val animatedBorderColor by animateColorAsState(
-        targetValue = if (isTaken) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-        } else {
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-        },
-        label = "borderColor"
-    )
-
-    val animatedIconColor by animateColorAsState(
-        targetValue = if (isTaken) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.primary
-        },
-        label = "iconColor"
-    )
-
-    val animatedIconBg by animateColorAsState(
-        targetValue = if (isTaken) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-        },
-        label = "iconBg"
-    )
-
     val cardScale by animateFloatAsState(
         targetValue = if (isTaken) 0.98f else 1.0f,
         animationSpec = spring(
@@ -335,48 +294,44 @@ fun MedicationCard(
         String.format("%02d:%02d", schedule.timeHour, schedule.timeMinute)
     }
 
-    Card(
+    val medColor = remember(schedule.color, schedule.name) {
+        val predefinedColors = listOf(
+            Color(0xFFE57373), // Coral Red
+            Color(0xFF42A5F5), // Sky Blue
+            Color(0xFF66BB6A), // Fresh Green
+            Color(0xFFFFA726), // Sunset Orange
+            Color(0xFFAB47BC), // Rich Purple
+            Color(0xFF26A69A), // Teal Green
+            Color(0xFFEC407A), // Rose Pink
+            Color(0xFFFFCA28)  // Sunflower Yellow
+        )
+        val cVal = schedule.color
+        if (cVal >= 0 && cVal < predefinedColors.size) {
+            predefinedColors[cVal]
+        } else {
+            val idx = Math.abs(schedule.name.hashCode()) % predefinedColors.size
+            predefinedColors[idx]
+        }
+    }
+
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(cardScale)
-            .clip(RoundedCornerShape(24.dp))
-            .clickable { onToggle(!isTaken) },
+            .scale(cardScale),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = animatedColor),
-        border = androidx.compose.foundation.BorderStroke(1.dp, animatedBorderColor)
+        onClick = { onToggle(!isTaken) },
+        glassAlpha = if (isTaken) 0.85f else 1.0f,
+        elevation = if (isTaken) 6.dp else 12.dp
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // High fidelity beautifully color-coded pill capsule
-            val medColor = remember(schedule.color, schedule.name) {
-                val predefinedColors = listOf(
-                    Color(0xFFE57373), // Coral Red
-                    Color(0xFF42A5F5), // Sky Blue
-                    Color(0xFF66BB6A), // Fresh Green
-                    Color(0xFFFFA726), // Sunset Orange
-                    Color(0xFFAB47BC), // Rich Purple
-                    Color(0xFF26A69A), // Teal Green
-                    Color(0xFFEC407A), // Rose Pink
-                    Color(0xFFFFCA28)  // Sunflower Yellow
-                )
-                val cVal = schedule.color
-                if (cVal >= 0 && cVal < predefinedColors.size) {
-                    predefinedColors[cVal]
-                } else {
-                    val idx = Math.abs(schedule.name.hashCode()) % predefinedColors.size
-                    predefinedColors[idx]
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(medColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+            // Liquid Glass Circle badge housing color pill icon
+            GlassCircleIcon(
+                size = 54.dp,
+                tintColor = medColor
             ) {
                 Box(
                     modifier = Modifier
@@ -395,29 +350,40 @@ fun MedicationCard(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .background(Color.White.copy(alpha = 0.7f))
+                                .background(Color.White.copy(alpha = 0.8f))
                         )
                     }
                 }
             }
 
             Column(modifier = Modifier.weight(1f)) {
-                // Time Indicator Pill
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (isTaken) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            else MaterialTheme.colorScheme.secondaryContainer
-                        )
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
+                    // Glass Time Pill
+                    GlassChip(
                         text = formattedTime,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
+
+                    // Status Chip
+                    if (isTaken) {
+                        GlassChip(
+                            text = stringResource(R.string.status_taken),
+                            containerColor = Color(0xFF66BB6A),
+                            contentColor = Color(0xFF2E7D32),
+                            icon = {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = Color(0xFF2E7D32)
+                                )
+                            }
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -436,25 +402,17 @@ fun MedicationCard(
                 )
             }
             
-            // Check Circle Toggle representation
-            IconButton(
-                onClick = { onToggle(!isTaken) },
-                modifier = Modifier
-                    .scale(checkButtonScale)
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(animatedIconBg)
-                    .border(
-                        width = if (isTaken) 0.dp else 2.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                        shape = CircleShape
-                    )
+            // Interactive Glass Check Circle Button
+            GlassCircleIcon(
+                size = 48.dp,
+                tintColor = if (isTaken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                modifier = Modifier.scale(checkButtonScale)
             ) {
                 if (isTaken) {
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = stringResource(R.string.status_taken),
-                        tint = animatedIconColor,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 } else {
@@ -462,7 +420,7 @@ fun MedicationCard(
                         modifier = Modifier
                             .size(12.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                     )
                 }
             }
@@ -495,35 +453,25 @@ fun StreakBanner(streakDays: Int) {
         stringResource(R.string.streak_sub_zero)
     }
 
-    Card(
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-        )
+        shape = RoundedCornerShape(22.dp),
+        elevation = 8.dp,
+        contentPadding = 12.dp
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+            GlassCircleIcon(
+                size = 44.dp,
+                tintColor = Color(0xFFFF9800)
             ) {
                 Text(
                     text = "🔥",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
 
@@ -552,20 +500,15 @@ fun LowStockBanner(
     lowStockMeds: List<com.example.data.Medication>,
     onRefill: (Int) -> Unit
 ) {
-    Card(
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f)
-        )
+        shape = RoundedCornerShape(20.dp),
+        elevation = 8.dp,
+        contentPadding = 12.dp
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -575,7 +518,7 @@ fun LowStockBanner(
                     text = stringResource(R.string.stock_low_warning),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.error
                 )
             }
 
@@ -593,17 +536,17 @@ fun LowStockBanner(
                         text = "${med.name}: ${stringResource(R.string.stock_remaining, med.stockCount)}",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Button(
                         onClick = { onRefill(med.id) },
                         modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.onErrorContainer,
-                            contentColor = MaterialTheme.colorScheme.errorContainer
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
                         )
                     ) {
                         Text(

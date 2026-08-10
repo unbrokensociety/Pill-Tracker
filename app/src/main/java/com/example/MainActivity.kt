@@ -43,6 +43,8 @@ import com.example.ui.SettingsScreen
 import com.example.ui.ProfileScreen
 import com.example.ui.MainViewModel
 import com.example.ui.MainViewModelFactory
+import com.example.ui.components.liquidGlass
+import com.example.ui.components.GlassFAB
 import com.example.ui.theme.MyApplicationTheme
 import com.example.data.ThemeMode
 
@@ -182,15 +184,13 @@ fun MainScreen(viewModel: MainViewModel) {
             containerColor = Color.Transparent,
             floatingActionButton = {
                 if (showBottomBar) {
-                    FloatingActionButton(
+                    GlassFAB(
                         onClick = { navController.navigate("add") },
-                        modifier = Modifier.padding(bottom = 100.dp), // Float elegantly above the hovering floating navigation bar
+                        modifier = Modifier.padding(bottom = 104.dp), // Float elegantly above the hovering floating liquid glass navigation bar
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
-                        Icon(Icons.Filled.Add, stringResource(R.string.action_add))
+                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_add), modifier = Modifier.size(26.dp))
                     }
                 }
             }
@@ -208,7 +208,7 @@ fun MainScreen(viewModel: MainViewModel) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
-                modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
+                modifier = Modifier.fillMaxSize(),
                 enterTransition = {
                     val targetRoute = targetState.destination.route
                     val initialRoute = initialState.destination.route
@@ -322,24 +322,17 @@ fun MainScreen(viewModel: MainViewModel) {
                 else -> 0
             }
 
-            // Clean floating navigation capsule with smooth sliding indicator pill
+            // Floating Liquid Glass Navigation Capsule withSpecular Edge Rim & Backdrop Blur
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 14.dp)
-                    .shadow(
-                        elevation = 12.dp,
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .liquidGlass(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
-                        clip = false
-                    )
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
+                        blurRadius = 24.dp,
+                        elevation = 16.dp
                     )
             ) {
                 BoxWithConstraints(
@@ -357,15 +350,19 @@ fun MainScreen(viewModel: MainViewModel) {
                         label = "indicatorOffsetAnim"
                     )
 
-                    // Smooth sliding active tab pill indicator
+                    // Smooth sliding Liquid Glass active tab pill indicator with specular edge
                     Box(
                         modifier = Modifier
                             .offset(x = indicatorOffset)
                             .width(tabWidth)
                             .height(52.dp)
                             .padding(horizontal = 4.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f))
+                            .liquidGlass(
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                                blurRadius = 12.dp,
+                                customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
+                                elevation = 4.dp
+                            )
                     )
 
                     Row(

@@ -76,9 +76,9 @@ fun DeleteAccountDialog(
 
                 Text(
                     text = when (currentLang) {
-                        "uk" -> "Право на забуття (ст. 15 Закону України «Про захист персональних даних»)"
-                        "ru" -> "Право на забвение (ст. 15 Закона Украины «О защите персональных данных»)"
-                        else -> "Right to Erasure (Art. 15 Ukrainian Law № 2297-VI & GDPR)"
+                        "uk" -> "Право на забуття (Закон України № 2297-VI, ЄС GDPR Art. 17, США HIPAA/CCPA)"
+                        "ru" -> "Право на забвение (Закон Украины № 2297-VI, ЕС GDPR Art. 17, США HIPAA/CCPA)"
+                        else -> "Right to Erasure (Ukrainian Law № 2297-VI, EU GDPR Art. 17, US HIPAA/CCPA)"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,

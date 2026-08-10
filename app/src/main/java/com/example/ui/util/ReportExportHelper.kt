@@ -124,7 +124,7 @@ object ReportExportHelper {
 
             val fileUri = FileProvider.getUriForFile(
                 context,
-                "${context.packageName}.fileprovider",
+                "${com.example.BuildConfig.APPLICATION_ID}.fileprovider",
                 reportFile
             )
 
@@ -135,19 +135,35 @@ object ReportExportHelper {
                 putExtra(Intent.EXTRA_STREAM, fileUri)
                 type = "text/plain"
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
 
-            val shareIntent = Intent.createChooser(sendIntent, if (isUk) "Поділитися медичним звітом" else "Share Medical Report")
+            val shareIntent = Intent.createChooser(sendIntent, if (isUk) "Поділитися медичним звітом" else "Share Medical Report").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
             context.startActivity(shareIntent)
         } catch (e: Exception) {
             e.printStackTrace()
-            val sendIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_SUBJECT, "PillTracker Report - ${userAccountName.ifBlank { "Patient" }} ($dateStr)")
-                putExtra(Intent.EXTRA_TEXT, reportText)
-                type = "text/plain"
+            try {
+                val sendIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_SUBJECT, "PillTracker Report - ${userAccountName.ifBlank { "Patient" }} ($dateStr)")
+                    putExtra(Intent.EXTRA_TEXT, reportText)
+                    type = "text/plain"
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                val shareIntent = Intent.createChooser(sendIntent, if (isUk) "Поділитися медичним звітом" else "Share Medical Report").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(shareIntent)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                android.widget.Toast.makeText(
+                    context,
+                    if (isUk) "Не вдалося відкрити меню поширення. Звіт скопійовано" else "Could not share report.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
             }
-            context.startActivity(Intent.createChooser(sendIntent, if (isUk) "Поділитися медичним звітом" else "Share Medical Report"))
         }
     }
 }

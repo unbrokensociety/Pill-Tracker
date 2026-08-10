@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -79,39 +80,66 @@ fun AddMedicationScreen(
                 )
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    if (isFormValid) {
-                        val startOfDayMillis = selectedStartDate
-                            .atStartOfDay(ZoneId.systemDefault())
-                            .toInstant()
-                            .toEpochMilli()
+        bottomBar = {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp,
+                shadowElevation = 8.dp
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            if (isFormValid) {
+                                val startOfDayMillis = selectedStartDate
+                                    .atStartOfDay(ZoneId.systemDefault())
+                                    .toInstant()
+                                    .toEpochMilli()
 
-                        val newMed = com.example.data.Medication(
-                            name = name,
-                            dosage = dosage,
-                            color = selectedColorIdx,
-                            timesPerDay = times.size,
-                            startDate = startOfDayMillis
+                                val newMed = com.example.data.Medication(
+                                    name = name,
+                                    dosage = dosage,
+                                    color = selectedColorIdx,
+                                    timesPerDay = times.size,
+                                    startDate = startOfDayMillis
+                                )
+                                viewModel.addMedication(newMed, times.map { it.hour to it.minute })
+                                onNavigateBack()
+                            }
+                        },
+                        enabled = isFormValid,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
-                        viewModel.addMedication(newMed, times.map { it.hour to it.minute })
-                        onNavigateBack()
+                    ) {
+                        Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.action_save),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                },
-                containerColor = if (isFormValid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = if (isFormValid) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(24.dp),
-                icon = { Icon(Icons.Filled.Check, stringResource(R.string.action_save)) },
-                text = { Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold) }
-            )
+                }
+            }
         }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // General Info Glass Card
@@ -283,6 +311,100 @@ fun AddMedicationScreen(
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Alarm Mode & Repeat Reminders Glass Card
+            item {
+                val alarmClockMode by viewModel.alarmClockMode.collectAsState()
+                val alarmRepeatCount by viewModel.alarmRepeatCount.collectAsState()
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_alarm_clock_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { viewModel.setAlarmClockMode(!alarmClockMode) }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.NotificationsActive,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = if (alarmClockMode) stringResource(R.string.settings_alarm_clock_loud) else stringResource(R.string.settings_alarm_clock_standard),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = alarmClockMode,
+                                onCheckedChange = { viewModel.setAlarmClockMode(it) }
+                            )
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = stringResource(R.string.settings_alarm_repeat_title),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf(
+                                    1 to stringResource(R.string.settings_alarm_repeat_1),
+                                    2 to stringResource(R.string.settings_alarm_repeat_2),
+                                    3 to stringResource(R.string.settings_alarm_repeat_3)
+                                ).forEach { (count, label) ->
+                                    val isSelected = count == alarmRepeatCount
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { viewModel.setAlarmRepeatCount(count) },
+                                        label = { Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
                             }
                         }

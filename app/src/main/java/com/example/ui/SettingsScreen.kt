@@ -211,69 +211,71 @@ fun SettingsScreen(
                 }
             }
 
-            // Cloud Sync & Backup Glass Card
-            item {
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+            // Cloud Sync & Backup Glass Card (Authorized users only)
+            if (!isGuestMode) {
+                item {
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = stringResource(R.string.settings_cloud_sync_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        // Cloud Sync Switch
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { viewModel.setCloudSyncEnabled(!cloudSyncEnabled) }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.CloudSync,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = if (cloudSyncEnabled) stringResource(R.string.settings_cloud_sync_enabled) else stringResource(R.string.settings_cloud_sync_disabled),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = if (cloudSyncEnabled) "Автоматична резервна копія ввімкнена" else "Дані зберігаються локально на пристрої",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            Switch(
-                                checked = cloudSyncEnabled,
-                                onCheckedChange = { viewModel.setCloudSyncEnabled(it) }
+                            Text(
+                                text = stringResource(R.string.settings_cloud_sync_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
                             )
+
+                            // Cloud Sync Switch
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { viewModel.setCloudSyncEnabled(!cloudSyncEnabled) }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.CloudSync,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = if (cloudSyncEnabled) stringResource(R.string.settings_cloud_sync_enabled) else stringResource(R.string.settings_cloud_sync_disabled),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = if (cloudSyncEnabled) stringResource(R.string.settings_cloud_sync_auto) else stringResource(R.string.settings_cloud_sync_local),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Switch(
+                                    checked = cloudSyncEnabled,
+                                    onCheckedChange = { viewModel.setCloudSyncEnabled(it) }
+                                )
+                            }
                         }
                     }
                 }
@@ -282,7 +284,7 @@ fun SettingsScreen(
             // Health Export & Legal Glass Card
             item {
                 Text(
-                    text = "Експорт та Документи",
+                    text = stringResource(R.string.settings_export_and_docs),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -492,183 +494,6 @@ fun SettingsScreen(
                             )
                         }
 
-                        if (notificationsEnabled) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
-                            // Alarm Clock Mode Switch
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { viewModel.setAlarmClockMode(!alarmClockMode) }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.NotificationsActive,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    Column {
-                                        Text(
-                                            text = stringResource(R.string.settings_alarm_clock_title),
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = if (alarmClockMode) stringResource(R.string.settings_alarm_clock_loud) else stringResource(R.string.settings_alarm_clock_standard),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                        )
-                                    }
-                                }
-                                Switch(
-                                    checked = alarmClockMode,
-                                    onCheckedChange = { viewModel.setAlarmClockMode(it) }
-                                )
-                            }
-
-                            // Repeat Reminders Count Selection
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = stringResource(R.string.settings_alarm_repeat_title),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    listOf(
-                                        1 to stringResource(R.string.settings_alarm_repeat_1),
-                                        2 to stringResource(R.string.settings_alarm_repeat_2),
-                                        3 to stringResource(R.string.settings_alarm_repeat_3)
-                                    ).forEach { (count, label) ->
-                                        val isSelected = count == alarmRepeatCount
-                                        FilterChip(
-                                            selected = isSelected,
-                                            onClick = { viewModel.setAlarmRepeatCount(count) },
-                                            label = { Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
-                        // Theme Section
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Settings,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                                Text(
-                                    text = stringResource(R.string.settings_theme),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            
-                            val themesList1 = listOf(
-                                ThemeMode.SYSTEM to stringResource(R.string.settings_theme_system),
-                                ThemeMode.LIGHT to stringResource(R.string.settings_theme_light)
-                            )
-                            val themesList2 = listOf(
-                                ThemeMode.DARK to stringResource(R.string.settings_theme_dark),
-                                ThemeMode.BRAND to stringResource(R.string.settings_theme_brand)
-                            )
-
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                listOf(themesList1, themesList2).forEach { rowThemes ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        rowThemes.forEach { (mode, label) ->
-                                            val isSelected = (mode == themeMode)
-                                            val chipBgColor by animateColorAsState(
-                                                targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-                                                              else MaterialTheme.colorScheme.surfaceVariant,
-                                                animationSpec = tween(durationMillis = 200),
-                                                label = "chipBgColorAnim"
-                                            )
-                                            val chipContentColor by animateColorAsState(
-                                                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                                              else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                animationSpec = tween(durationMillis = 200),
-                                                label = "chipContentColorAnim"
-                                            )
-                                            val chipScale by animateFloatAsState(
-                                                targetValue = if (isSelected) 1.02f else 1.0f,
-                                                animationSpec = spring(
-                                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                    stiffness = Spring.StiffnessMedium
-                                                ),
-                                                label = "chipScaleAnim"
-                                            )
-
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .scale(chipScale)
-                                                    .clip(RoundedCornerShape(16.dp))
-                                                    .background(chipBgColor)
-                                                    .clickable { viewModel.setTheme(mode) }
-                                                    .padding(horizontal = 12.dp, vertical = 14.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    text = label,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                    maxLines = 1,
-                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                                    color = chipContentColor
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
                         // Language Selector Section
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
@@ -686,33 +511,42 @@ fun SettingsScreen(
                             )
                             val currentLanguage = LocaleHelper.getLanguage(context)
 
-                            languages.forEach { (code, label) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .selectable(
-                                            selected = (code == currentLanguage),
-                                            onClick = {
-                                                if (code != currentLanguage) {
-                                                    LocaleHelper.setLanguage(context, code)
-                                                    context.findActivity()?.recreate()
-                                                }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                languages.take(2).forEach { (code, label) ->
+                                    val isSelected = code == currentLanguage
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            if (code != currentLanguage) {
+                                                LocaleHelper.setLanguage(context, code)
+                                                context.findActivity()?.recreate()
                                             }
-                                        )
-                                        .padding(vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = (code == currentLanguage),
-                                        onClick = null
+                                        },
+                                        label = { Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                        modifier = Modifier.weight(1f)
                                     )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = if (code == currentLanguage) FontWeight.Bold else FontWeight.Normal,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                languages.drop(2).forEach { (code, label) ->
+                                    val isSelected = code == currentLanguage
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            if (code != currentLanguage) {
+                                                LocaleHelper.setLanguage(context, code)
+                                                context.findActivity()?.recreate()
+                                            }
+                                        },
+                                        label = { Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
@@ -785,60 +619,4 @@ fun SettingsScreen(
             }
         }
     }
-}
-
-@Composable
-fun DeleteAccountDialog(
-    onConfirm: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-                Text(
-                    text = "Запит на видалення даних",
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "Відповідно до ст. 15 Закону України «Про захист персональних даних» (№ 2297-VI), ви маєте право на знищення своїх персональних даних та медичних записів.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "При підтвердженні запиту буде активовано 30-денний відкладений період (Право на забуття). Протягом цього часу ви зможете у будь-який момент повернутися до додатка та скасувати видалення. Після закінчення 30 днів акаунт та всі дані будуть безповоротно вилучені з облака та баз даних.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(30) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
-            ) {
-                Text("Підтвердити видалення (30 днів)", fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Скасувати")
-            }
-        }
-    )
 }

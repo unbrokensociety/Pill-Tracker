@@ -73,13 +73,16 @@ class MainViewModel(
     fun requestAccountDeletion(graceDays: Int = 30) {
         viewModelScope.launch {
             settingsRepository.requestAccountDeletion(graceDays)
+            cloudSyncRepository.recordAccountDeletionStatus(userEmail.value, userName.value, isPending = true, graceDays = graceDays)
             cloudSyncRepository.logUserAuthentication(userEmail.value, userName.value, "DELETION_REQUESTED_30_DAYS")
+            signOutToGuest()
         }
     }
 
     fun cancelAccountDeletion() {
         viewModelScope.launch {
             settingsRepository.cancelAccountDeletion()
+            cloudSyncRepository.recordAccountDeletionStatus(userEmail.value, userName.value, isPending = false)
             cloudSyncRepository.logUserAuthentication(userEmail.value, userName.value, "DELETION_CANCELED")
         }
     }

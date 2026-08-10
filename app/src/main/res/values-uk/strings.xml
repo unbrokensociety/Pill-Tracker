@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">Pill Tracker</string>
-    <string name="nav_today">Сьогодні</string>
+    <string name="nav_today">Головна</string>
     <string name="nav_calendar">Календар</string>
     <string name="nav_meds">Ліки</string>
-    <string name="nav_settings">Опції</string>
+    <string name="nav_settings">Налаштування</string>
     
     <string name="home_no_schedules">Немає розкладу на цей день</string>
     
@@ -190,5 +190,38 @@
     <string name="edit_profile_change_photo">Натисніть на аватар, щоб змінити фото</string>
     <string name="edit_profile_camera">Зробити фото з камери</string>
     <string name="edit_profile_gallery">Обрати з галереї</string>
+
+    <!-- Profile Screen strings -->
+    <string name="profile_sync_active">Синхронізація активна</string>
+    <string name="profile_synced_at">Синхронізовано о %1$s</string>
+    <string name="profile_synced">Синхронізовано</string>
+    <string name="profile_guest_user">Гостьовий Користувач</string>
+    <string name="profile_default_user">Користувач</string>
+    <string name="profile_guest_mode_local">Гостьовий режим (Локальні дані)</string>
+    <string name="profile_authorized_account">Авторизований акаунт</string>
+    <string name="profile_edit_name_photo">Редагувати ім\'я та фото</string>
+    <string name="profile_account_info">Інформація про акаунт</string>
+    <string name="profile_account_status">Статус акаунту</string>
+    <string name="profile_status_guest">ГІСТЬ</string>
+    <string name="profile_status_authorized">АВТОРИЗОВАНО</string>
+    <string name="profile_cloud_status">Хмарний статус</string>
+    <string name="profile_account_management">Керування обліковим записом</string>
+    <string name="profile_deletion_scheduled">⚠️ Акаунт заплановано до видалення через %1$d днів (30-денний відкладений період)</string>
+    <string name="profile_cancel_deletion">Скасувати видалення акаунту</string>
+    <string name="profile_signin_or_register">Увійти або зареєструватися</string>
+
+    <!-- Auth Guest Terms strings -->
+    <string name="auth_guest_terms_title">Умови для гостьового режиму</string>
+    <string name="auth_guest_terms_desc">Для продовження роботи в гостьовому режимі без реєстрації акаунту необхідно підтвердити згоду з Умовами використання та Політикою конфіденційності.</string>
+    <string name="auth_guest_terms_bullet1">• Усі дані ліків зберігаються лише на цьому пристрої.</string>
+    <string name="auth_guest_terms_bullet2">• Хмарна резервна копія вимкнена до створення акаунту.</string>
+    <string name="auth_guest_terms_checkbox">Я приймаю Умови використання та Політику конфіденційності</string>
+    <string name="auth_guest_terms_error">Будь ласка, погодьтеся з умовами для продовження</string>
+    <string name="auth_guest_terms_continue">Продовжити як гість</string>
+
+    <!-- Settings section extensions -->
+    <string name="settings_cloud_sync_auto">Автоматична резервна копія ввімкнена</string>
+    <string name="settings_cloud_sync_local">Дані зберігаються локально на пристрої</string>
+    <string name="settings_export_and_docs">Експорт та Документи</string>
 
 </resources>

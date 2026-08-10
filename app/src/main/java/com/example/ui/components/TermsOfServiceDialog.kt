@@ -64,7 +64,9 @@ fun TermsOfServiceDialog(
                 Surface(
                     tonalElevation = 6.dp,
                     color = MaterialTheme.colorScheme.surface,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
                 ) {
                     Box(
                         modifier = Modifier

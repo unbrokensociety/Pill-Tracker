@@ -131,7 +131,7 @@ fun AuthScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Умови для гостьового режиму",
+                        text = stringResource(R.string.auth_guest_terms_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -140,7 +140,7 @@ fun AuthScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Для продовження роботи в гостьовому режимі без реєстрації акаунту необхідно підтвердити згоду з Умовами використання та Політикою конфіденційності.",
+                        text = stringResource(R.string.auth_guest_terms_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -154,12 +154,12 @@ fun AuthScreen(
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = "• Усі дані ліків зберігаються лише на цьому пристрої.",
+                                text = stringResource(R.string.auth_guest_terms_bullet1),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "• Хмарна резервна копія вимкнена до створення акаунту.",
+                                text = stringResource(R.string.auth_guest_terms_bullet2),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -183,7 +183,7 @@ fun AuthScreen(
                             }
                         )
                         Text(
-                            text = "Я приймаю Умови використання та Політику конфіденційності",
+                            text = stringResource(R.string.auth_guest_terms_checkbox),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -202,19 +202,20 @@ fun AuthScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         TextButton(onClick = { showPrivacyPolicy = true }) {
-                            Text("Політика", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.privacy_policy_title), style = MaterialTheme.typography.labelMedium)
                         }
                         TextButton(onClick = { showTermsOfService = true }) {
-                            Text("Умови", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.terms_of_service_title), style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
             },
             confirmButton = {
+                val errMessage = stringResource(R.string.auth_guest_terms_error)
                 Button(
                     onClick = {
                         if (!guestTermsAccepted) {
-                            guestTermsError = "Будь ласка, погодьтеся з умовами для продовження"
+                            guestTermsError = errMessage
                             return@Button
                         }
                         showGuestTermsDialog = false
@@ -223,12 +224,12 @@ fun AuthScreen(
                     },
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Продовжити як гість", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.auth_guest_terms_continue), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showGuestTermsDialog = false }) {
-                    Text("Скасувати")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -250,12 +251,13 @@ fun AuthScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .verticalScroll(scrollState)
-                .padding(24.dp),
+                .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // App Logo Icon
             Box(
@@ -639,7 +641,7 @@ fun AuthScreen(
                     onClick = { showTermsOfService = true }
                 ) {
                     Text(
-                        text = "Terms of Service",
+                        text = stringResource(R.string.terms_of_service_title),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )

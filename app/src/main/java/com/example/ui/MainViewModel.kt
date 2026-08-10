@@ -88,21 +88,6 @@ class MainViewModel(
         }
     }
 
-    fun purgeAllUserData(onComplete: (() -> Unit)? = null) {
-        viewModelScope.launch {
-            try {
-                cloudSyncRepository.purgeUserDataFromCloud(userEmail.value)
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.delete()
-                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            settingsRepository.signOutToGuest()
-            settingsRepository.cancelAccountDeletion()
-            onComplete?.invoke()
-        }
-    }
-
     fun autoSync() {
         viewModelScope.launch {
             if (cloudSyncEnabled.value) {
@@ -431,6 +416,7 @@ class MainViewModel(
                     e.printStackTrace()
                 }
                 settingsRepository.signOutToGuest()
+                settingsRepository.cancelAccountDeletion()
             } catch (e: Exception) {
                 e.printStackTrace()
             }

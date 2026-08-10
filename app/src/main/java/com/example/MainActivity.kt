@@ -186,7 +186,9 @@ fun MainScreen(viewModel: MainViewModel) {
                 if (showBottomBar) {
                     GlassFAB(
                         onClick = { navController.navigate("add") },
-                        modifier = Modifier.padding(bottom = 104.dp), // Float elegantly above the hovering floating liquid glass navigation bar
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .padding(bottom = 80.dp),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
@@ -208,7 +210,9 @@ fun MainScreen(viewModel: MainViewModel) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
                 enterTransition = {
                     val targetRoute = targetState.destination.route
                     val initialRoute = initialState.destination.route

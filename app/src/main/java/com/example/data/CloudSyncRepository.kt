@@ -10,10 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -40,11 +36,6 @@ class CloudSyncRepository(
     private val medicationDao: MedicationDao,
     private val settingsRepository: SettingsRepository
 ) {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .build()
-
     private val backupFile: File
         get() = File(context.filesDir, "meditracker_cloud_backup.json")
 

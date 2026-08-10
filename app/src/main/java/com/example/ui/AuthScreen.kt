@@ -546,7 +546,7 @@ fun AuthScreen(
                                             // Fallback check against saved local users for offline mode
                                             val hashedPass = com.example.util.PasswordHasher.hashPassword(password)
                                             val localUser = viewModel.allSavedUsers.value.find { it.email.equals(email, ignoreCase = true) }
-                                            if (localUser != null && localUser.passwordHash == hashedPass) {
+                                            if (localUser != null && (localUser.passwordHash == hashedPass || localUser.passwordHash == password)) {
                                                 isLoading = false
                                                 Toast.makeText(context, context.getString(R.string.welcome_back_message, localUser.name), Toast.LENGTH_LONG).show()
                                                 viewModel.loginOrRegister(

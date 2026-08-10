@@ -12,14 +12,22 @@ import com.example.MainActivity
 import com.example.R
 import com.example.ui.locale.LocaleHelper
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val localizedContext = LocaleHelper.getLocalizedContext(context)
         val medicationName = intent?.getStringExtra("EXTRA_MEDICATION_NAME") ?: localizedContext.getString(R.string.alarm_default_med)
         val scheduleId = intent?.getIntExtra("EXTRA_SCHEDULE_ID", -1) ?: -1
+
+        val settingsRepo = com.example.data.SettingsRepository(context.applicationContext)
+        val isNotifEnabled = kotlinx.coroutines.runBlocking {
+            settingsRepo.notificationsFlow.first()
+        }
         
-        showNotification(context, medicationName, scheduleId)
+        if (isNotifEnabled) {
+            showNotification(context, medicationName, scheduleId)
+        }
 
         if (scheduleId != -1) {
             val pendingResult = goAsync()

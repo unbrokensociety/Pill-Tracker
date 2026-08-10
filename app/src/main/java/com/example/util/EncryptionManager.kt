@@ -80,7 +80,7 @@ object EncryptionManager {
             String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
         } catch (e: Exception) {
             e.printStackTrace()
-            cipherText.removePrefix("ENC:")
+            cipherText
         }
     }
 }

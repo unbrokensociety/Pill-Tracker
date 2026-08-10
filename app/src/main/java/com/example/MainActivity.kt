@@ -210,9 +210,7 @@ fun MainScreen(viewModel: MainViewModel) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 enterTransition = {
                     val targetRoute = targetState.destination.route
                     val initialRoute = initialState.destination.route

@@ -76,7 +76,6 @@ class MainViewModel(
             settingsRepository.requestAccountDeletion(graceDays)
             cloudSyncRepository.recordAccountDeletionStatus(userEmail.value, userName.value, isPending = true, graceDays = graceDays)
             cloudSyncRepository.logUserAuthentication(userEmail.value, userName.value, "DELETION_REQUESTED_30_DAYS")
-            signOutToGuest()
         }
     }
 

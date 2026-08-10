@@ -20,19 +20,17 @@ class AlarmReceiver : BroadcastReceiver() {
         val medicationName = intent?.getStringExtra("EXTRA_MEDICATION_NAME") ?: localizedContext.getString(R.string.alarm_default_med)
         val scheduleId = intent?.getIntExtra("EXTRA_SCHEDULE_ID", -1) ?: -1
 
-        val settingsRepo = com.example.data.SettingsRepository(context.applicationContext)
-        val isNotifEnabled = kotlinx.coroutines.runBlocking {
-            settingsRepo.notificationsFlow.first()
-        }
-        
-        if (isNotifEnabled) {
-            showNotification(context, medicationName, scheduleId)
-        }
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val settingsRepo = com.example.data.SettingsRepository(context.applicationContext)
+                val isNotifEnabled = settingsRepo.notificationsFlow.first()
+                
+                if (isNotifEnabled) {
+                    showNotification(context, medicationName, scheduleId)
+                }
 
-        if (scheduleId != -1) {
-            val pendingResult = goAsync()
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                try {
+                if (scheduleId != -1) {
                     val db = com.example.data.AppDatabase.getDatabase(context.applicationContext)
                     val dao = db.medicationDao()
                     val view = dao.getActiveScheduleViewByScheduleId(scheduleId)
@@ -59,11 +57,11 @@ class AlarmReceiver : BroadcastReceiver() {
                             scheduler.scheduleAlarm(schedule, view.name)
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                } finally {
-                    pendingResult.finish()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
         }
     }

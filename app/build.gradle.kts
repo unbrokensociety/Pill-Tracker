@@ -17,9 +17,9 @@ android {
     applicationId = "com.aistudio.meditracker.zqxpr"
     minSdk = 26
     targetSdk = 36
-    val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 6
+    val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 56
     versionCode = runNumber
-    versionName = "1.5.1"
+    versionName = "1.$runNumber"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

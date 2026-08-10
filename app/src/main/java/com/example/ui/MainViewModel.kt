@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -398,6 +399,41 @@ class MainViewModel(
                 e.printStackTrace()
             }
             settingsRepository.signOutToGuest()
+        }
+    }
+
+    fun purgeAllUserData() {
+        viewModelScope.launch {
+            try {
+                val email = settingsRepository.userEmailFlow.first()
+                val allActive = repository.getAllActiveScheduleViews()
+                allActive.forEach { view ->
+                    val sched = com.example.data.Schedule(
+                        id = view.scheduleId,
+                        medicationId = view.medicationId,
+                        timeHour = view.timeHour,
+                        timeMinute = view.timeMinute
+                    )
+                    alarmScheduler.cancelAlarm(sched)
+                }
+                repository.clearAllData()
+                userRepository.deleteAllUsers()
+                cloudSyncRepository.purgeUserDataFromCloud(email)
+                try {
+                    val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                    firebaseUser?.delete()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                try {
+                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                settingsRepository.signOutToGuest()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

@@ -53,6 +53,18 @@ interface MedicationDao {
 
     @Query("DELETE FROM intake_logs WHERE scheduleId = :scheduleId AND scheduledDateEpoch = :dateEpoch")
     suspend fun deleteIntakeLog(scheduleId: Int, dateEpoch: Long)
+
+    @Query("DELETE FROM intake_logs WHERE medicationId = :medicationId")
+    suspend fun deleteIntakeLogsForMedication(medicationId: Int)
+
+    @Query("DELETE FROM medications")
+    suspend fun deleteAllMedications()
+
+    @Query("DELETE FROM schedules")
+    suspend fun deleteAllSchedules()
+
+    @Query("DELETE FROM intake_logs")
+    suspend fun deleteAllIntakeLogs()
     
     @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND scheduledDateEpoch = :dateEpoch LIMIT 1")
     suspend fun getIntakeLog(scheduleId: Int, dateEpoch: Long): IntakeLog?

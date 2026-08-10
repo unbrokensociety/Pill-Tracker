@@ -85,7 +85,7 @@ fun AuthScreen(
                                 name = pendingAccountName,
                                 email = pendingEmail,
                                 provider = "EMAIL",
-                                passwordHash = pendingPassword
+                                passwordHash = com.example.util.PasswordHasher.hashPassword(pendingPassword)
                             )
                             Toast.makeText(
                                 context,
@@ -537,22 +537,23 @@ fun AuthScreen(
                                                 name = displayName,
                                                 email = email,
                                                 provider = "EMAIL",
-                                                passwordHash = password
+                                                passwordHash = com.example.util.PasswordHasher.hashPassword(password)
                                             )
                                             viewModel.triggerCloudRestore { }
                                             onCompleteAuth()
                                         }
                                         .addOnFailureListener { e ->
                                             // Fallback check against saved local users for offline mode
+                                            val hashedPass = com.example.util.PasswordHasher.hashPassword(password)
                                             val localUser = viewModel.allSavedUsers.value.find { it.email.equals(email, ignoreCase = true) }
-                                            if (localUser != null && localUser.passwordHash == password) {
+                                            if (localUser != null && localUser.passwordHash == hashedPass) {
                                                 isLoading = false
                                                 Toast.makeText(context, context.getString(R.string.welcome_back_message, localUser.name), Toast.LENGTH_LONG).show()
                                                 viewModel.loginOrRegister(
                                                     name = localUser.name,
                                                     email = email,
                                                     provider = localUser.authProvider,
-                                                    passwordHash = password
+                                                    passwordHash = hashedPass
                                                 )
                                                 viewModel.triggerCloudRestore { }
                                                 onCompleteAuth()

@@ -100,6 +100,10 @@ fun ProfileScreen(
                 viewModel.cancelAccountDeletion()
                 showDeleteAccountDialog = false
             },
+            onPurgeImmediately = {
+                viewModel.purgeAllUserData()
+                showDeleteAccountDialog = false
+            },
             onDismiss = { showDeleteAccountDialog = false }
         )
     }

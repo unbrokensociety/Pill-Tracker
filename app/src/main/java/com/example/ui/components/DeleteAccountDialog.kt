@@ -22,6 +22,7 @@ fun DeleteAccountDialog(
     pendingDeletionTimestamp: Long,
     onRequestDelete: () -> Unit,
     onCancelDelete: () -> Unit,
+    onPurgeImmediately: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -160,6 +161,27 @@ fun DeleteAccountDialog(
                                 else -> "Confirm Deletion Request (30 Days)"
                             },
                             fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = {
+                            onPurgeImmediately()
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = when (currentLang) {
+                                "uk" -> "Очистити всі мої дані негайно"
+                                "ru" -> "Очистить все мои данные немедленно"
+                                else -> "Purge All My Data Immediately"
+                            },
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
 

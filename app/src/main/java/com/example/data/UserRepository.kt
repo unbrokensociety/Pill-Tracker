@@ -24,4 +24,8 @@ class UserRepository(private val userDao: UserDao) {
     suspend fun deleteUser(email: String) {
         userDao.deleteUser(email)
     }
+
+    suspend fun deleteAllUsers() {
+        userDao.deleteAllUsers()
+    }
 }

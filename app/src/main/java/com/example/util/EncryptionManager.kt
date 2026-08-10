@@ -80,7 +80,8 @@ object EncryptionManager {
             String(cipher.doFinal(encryptedBytes), Charsets.UTF_8)
         } catch (e: Exception) {
             e.printStackTrace()
-            cipherText
+            val clean = cipherText.removePrefix("ENC:")
+            if (clean.length > 20) "Restored Item" else clean
         }
     }
 }

@@ -28,6 +28,10 @@ class BootReceiver : BroadcastReceiver() {
                     val scheduler = AlarmScheduler(context.applicationContext)
                     
                     for (view in activeSchedules) {
+                        val med = dao.getMedicationById(view.medicationId)
+                        if (med == null || (med.endDate != null && med.endDate > 0L && System.currentTimeMillis() > med.endDate)) {
+                            continue
+                        }
                         val schedule = Schedule(
                             id = view.scheduleId,
                             medicationId = view.medicationId,

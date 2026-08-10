@@ -29,14 +29,27 @@ class AlarmReceiver : BroadcastReceiver() {
                     val dao = db.medicationDao()
                     val view = dao.getActiveScheduleViewByScheduleId(scheduleId)
                     if (view != null) {
-                        val schedule = com.example.data.Schedule(
-                            id = view.scheduleId,
-                            medicationId = view.medicationId,
-                            timeHour = view.timeHour,
-                            timeMinute = view.timeMinute
-                        )
-                        val scheduler = AlarmScheduler(context.applicationContext)
-                        scheduler.scheduleAlarm(schedule, view.name)
+                        val med = dao.getMedicationById(view.medicationId)
+                        val now = java.time.LocalDateTime.now()
+                        var nextTime = now.withHour(view.timeHour).withMinute(view.timeMinute).withSecond(0).withNano(0)
+                        if (nextTime.isBefore(now.minusSeconds(5))) {
+                            nextTime = nextTime.plusDays(1)
+                        }
+                        val nextTimeMillis = nextTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+                        // Check if medication has expired end date
+                        if (med == null || (med.endDate != null && med.endDate > 0L && nextTimeMillis > med.endDate)) {
+                            // Medication expired or removed, do not reschedule
+                        } else {
+                            val schedule = com.example.data.Schedule(
+                                id = view.scheduleId,
+                                medicationId = view.medicationId,
+                                timeHour = view.timeHour,
+                                timeMinute = view.timeMinute
+                            )
+                            val scheduler = AlarmScheduler(context.applicationContext)
+                            scheduler.scheduleAlarm(schedule, view.name)
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

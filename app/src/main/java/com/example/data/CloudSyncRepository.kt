@@ -50,6 +50,8 @@ class CloudSyncRepository(
 
     suspend fun autoSync(): Result<String> = withContext(Dispatchers.IO) {
         try {
+            val isGuest = settingsRepository.isGuestModeFlow.first()
+            if (isGuest) return@withContext Result.success("Guest mode: auto-sync skipped.")
             val syncRes = syncToCloud()
             val currentMeds = medicationDao.getAllMedications().first()
             if (currentMeds.isEmpty()) {
@@ -64,20 +66,23 @@ class CloudSyncRepository(
 
     suspend fun purgeUserDataFromCloud(email: String): Result<String> = withContext(Dispatchers.IO) {
         try {
+            val isGuest = settingsRepository.isGuestModeFlow.first()
             val authUser = FirebaseAuth.getInstance().currentUser
-            val userId = authUser?.uid ?: email.ifBlank { "guest_user" }.replace(".", "_").replace("@", "_")
+            val userId = authUser?.uid ?: email.ifBlank { if (isGuest) "" else "user" }.replace(".", "_").replace("@", "_")
 
-            try {
-                val db = FirebaseFirestore.getInstance()
-                db.collection("users").document(userId).delete().await()
-            } catch (e: Exception) {
-                e.printStackTrace()
+            if (userId.isNotBlank()) {
+                try {
+                    val db = FirebaseFirestore.getInstance()
+                    db.collection("users").document(userId).delete().await()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
 
             if (backupFile.exists()) {
                 backupFile.delete()
             }
-            Result.success("Данные успешно удалены из облака и локального кэша.")
+            Result.success("Data successfully deleted from cloud and local cache.")
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)
@@ -169,6 +174,11 @@ class CloudSyncRepository(
 
     suspend fun syncToCloud(): Result<String> = withContext(Dispatchers.IO) {
         try {
+            val isGuest = settingsRepository.isGuestModeFlow.first()
+            if (isGuest) {
+                return@withContext Result.success("Guest mode: cloud sync skipped")
+            }
+
             val userEmail = settingsRepository.userEmailFlow.first()
             val userName = settingsRepository.userNameFlow.first()
 
@@ -177,7 +187,10 @@ class CloudSyncRepository(
             val logs = medicationDao.getAllIntakeLogs().first()
 
             val authUser = FirebaseAuth.getInstance().currentUser
-            val userId = authUser?.uid ?: userEmail.ifBlank { "guest_user" }.replace(".", "_").replace("@", "_")
+            val userId = authUser?.uid ?: userEmail.replace(".", "_").replace("@", "_")
+            if (userId.isBlank()) {
+                return@withContext Result.success("Cloud sync skipped (no active account)")
+            }
 
             // 1. Try real Firestore Cloud Database Sync
             val firestoreSuccess = try {
@@ -234,7 +247,7 @@ class CloudSyncRepository(
 
             // 2. Also save to local JSON backup mirror
             val rootJson = JSONObject().apply {
-                put("userEmail", userEmail.ifBlank { "guest@meditracker.app" })
+                put("userEmail", userEmail.ifBlank { "user@meditracker.app" })
                 put("userName", userName)
                 put("timestamp", System.currentTimeMillis())
 
@@ -291,15 +304,15 @@ class CloudSyncRepository(
             settingsRepository.updateLastSyncTimestamp()
 
             if (firestoreSuccess) {
-                Result.success("Синхронизация с Cloud Firestore успешно завершена!")
+                Result.success("Cloud sync completed successfully")
             } else {
-                Result.success("Данные сохранены в локальный облачный кэш!")
+                Result.success("Data saved to local cloud cache")
             }
         } catch (e: Exception) {
             e.printStackTrace()
             try {
                 settingsRepository.updateLastSyncTimestamp()
-                Result.success("Сохранено в облачном кэше (Офлайн режим)")
+                Result.success("Saved to local cache (Offline Mode)")
             } catch (ex: Exception) {
                 Result.failure(e)
             }
@@ -308,9 +321,17 @@ class CloudSyncRepository(
 
     suspend fun restoreFromCloud(): Result<String> = withContext(Dispatchers.IO) {
         try {
+            val isGuest = settingsRepository.isGuestModeFlow.first()
+            if (isGuest) {
+                return@withContext Result.failure(Exception("Guest mode: restore from cloud disabled"))
+            }
+
             val userEmail = settingsRepository.userEmailFlow.first()
             val authUser = FirebaseAuth.getInstance().currentUser
-            val userId = authUser?.uid ?: userEmail.ifBlank { "guest_user" }.replace(".", "_").replace("@", "_")
+            val userId = authUser?.uid ?: userEmail.replace(".", "_").replace("@", "_")
+            if (userId.isBlank()) {
+                return@withContext Result.failure(Exception("No user logged in"))
+            }
 
             // 1. First try fetching from live Firebase Firestore
             var restoredMeds = mutableListOf<Medication>()
@@ -460,7 +481,7 @@ class CloudSyncRepository(
             }
 
             if (restoredMeds.isEmpty()) {
-                return@withContext Result.failure(Exception("Никаких данных в облаке не найдено."))
+                return@withContext Result.failure(Exception("No data found in cloud."))
             }
 
             // Write into database
@@ -469,8 +490,8 @@ class CloudSyncRepository(
             restoredLogs.forEach { medicationDao.insertIntakeLog(it) }
 
             settingsRepository.updateLastSyncTimestamp()
-            val sourceText = if (fetchedFromFirestore) "Cloud Firestore" else "локального кэша"
-            Result.success("Восстановлено ${restoredMeds.size} препаратов из $sourceText!")
+            val sourceText = if (fetchedFromFirestore) "Cloud Firestore" else "local cache"
+            Result.success("Restored ${restoredMeds.size} medications from $sourceText")
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)

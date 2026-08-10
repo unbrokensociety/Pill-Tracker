@@ -22,8 +22,19 @@ class MedicationRepository(private val dao: MedicationDao) {
     }
 
     suspend fun deleteMedication(medication: Medication) {
+        dao.deleteIntakeLogsForMedication(medication.id)
         dao.deleteSchedulesForMedication(medication.id)
         dao.deleteMedication(medication)
+    }
+
+    suspend fun clearAllData() {
+        dao.deleteAllIntakeLogs()
+        dao.deleteAllSchedules()
+        dao.deleteAllMedications()
+    }
+
+    suspend fun getAllActiveScheduleViews(): List<DailyScheduleView> {
+        return dao.getAllActiveScheduleViews()
     }
 
     private fun getStartOfDayEpochMillis(date: LocalDate): Long {

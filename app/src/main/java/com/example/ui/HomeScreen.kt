@@ -42,16 +42,12 @@ import com.example.ui.components.GlassChip
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel,
-    bottomPadding: androidx.compose.ui.unit.Dp,
-    onOpenProfile: () -> Unit = {}
+    bottomPadding: androidx.compose.ui.unit.Dp
 ) {
     val selectedDate by viewModel.selectedDate.collectAsState()
     val schedules by viewModel.dailySchedules.collectAsState()
     val logs by viewModel.todayIntakeLogs.collectAsState()
     val streakDays by viewModel.streakDays.collectAsState()
-    val userName by viewModel.userName.collectAsState()
-    val userAvatarUri by viewModel.userAvatarUri.collectAsState()
-    val isGuestMode by viewModel.isGuestMode.collectAsState()
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -63,16 +59,6 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
-                },
-                actions = {
-                    ProfileAvatarCircle(
-                        userName = userName,
-                        userAvatarUri = userAvatarUri,
-                        isGuestMode = isGuestMode,
-                        onClick = onOpenProfile,
-                        modifier = Modifier.padding(end = 16.dp),
-                        size = 38.dp
-                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent

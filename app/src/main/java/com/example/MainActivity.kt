@@ -144,35 +144,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
-    
     val currentBackStack by navController.currentBackStackEntryAsState()
-    val isOnboardingCompletedState by viewModel.isOnboardingCompleted.collectAsState()
-
-    if (isOnboardingCompletedState == null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        )
-        return
-    }
-
-    val isOnboardingCompleted = isOnboardingCompletedState == true
-    val startDestination = remember { if (isOnboardingCompleted) "home" else "auth" }
-
-    LaunchedEffect(isOnboardingCompletedState) {
-        if (isOnboardingCompletedState == false) {
-            val currentRoute = navController.currentDestination?.route
-            if (currentRoute != null && currentRoute != "auth") {
-                navController.navigate("auth") {
-                    popUpTo(0) { inclusive = true }
-                }
-            }
-        }
-    }
-
-    val currentDestination = currentBackStack?.destination?.route ?: startDestination
-    
+    val currentDestination = currentBackStack?.destination?.route ?: "home"
     val showBottomBar = currentDestination in listOf("home", "calendar", "meds", "settings")
 
     Box(
@@ -209,7 +182,7 @@ fun MainScreen(viewModel: MainViewModel) {
 
             NavHost(
                 navController = navController,
-                startDestination = startDestination,
+                startDestination = "home",
                 modifier = Modifier.fillMaxSize(),
                 enterTransition = {
                     val targetRoute = targetState.destination.route
@@ -263,52 +236,30 @@ fun MainScreen(viewModel: MainViewModel) {
                 composable("home") { 
                     HomeScreen(
                         viewModel = viewModel, 
-                        bottomPadding = 120.dp,
-                        onOpenProfile = { navController.navigate("profile") }
+                        bottomPadding = 120.dp
                     ) 
                 }
                 composable("calendar") { 
                     CalendarScreen(
                         viewModel = viewModel, 
-                        bottomPadding = 120.dp,
-                        onOpenProfile = { navController.navigate("profile") }
+                        bottomPadding = 120.dp
                     )
                 }
                 composable("meds") { 
                     MedicationsListScreen(
                         viewModel = viewModel, 
-                        bottomPadding = 120.dp,
-                        onOpenProfile = { navController.navigate("profile") }
+                        bottomPadding = 120.dp
                     )
                 }
                 composable("settings") { 
                     SettingsScreen(
                         viewModel = viewModel,
-                        bottomPadding = 120.dp,
-                        onNavigateToAuth = { navController.navigate("auth") },
-                        onOpenProfile = { navController.navigate("profile") }
-                    )
-                }
-                composable("profile") {
-                    ProfileScreen(
-                        viewModel = viewModel,
-                        onNavigateBack = { navController.popBackStack() },
-                        onNavigateToAuth = { navController.navigate("auth") }
+                        bottomPadding = 120.dp
                     )
                 }
                 composable("add") {
                     AddMedicationScreen(
                         onNavigateBack = { navController.popBackStack() },
-                        viewModel = viewModel
-                    )
-                }
-                composable("auth") {
-                    AuthScreen(
-                        onCompleteAuth = {
-                            navController.navigate("home") {
-                                popUpTo("auth") { inclusive = true }
-                            }
-                        },
                         viewModel = viewModel
                     )
                 }

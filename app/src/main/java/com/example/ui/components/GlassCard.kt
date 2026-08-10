@@ -1,8 +1,5 @@
 package com.example.ui.components
 
-import android.content.Context
-import android.os.Build
-import android.os.PowerManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,33 +12,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Checks if system energy saver mode is active to dynamically disable heavy blur calculations.
- */
-@Composable
-fun isPowerSaveMode(): Boolean {
-    val context = LocalContext.current
-    val powerManager = remember(context) {
-        context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-    }
-    return remember(powerManager) {
-        powerManager?.isPowerSaveMode ?: false
-    }
-}
-
-/**
- * Core Liquid Glass Modifier applying Backdrop Blur, Translucent Tinting,
+ * Core Liquid Glass Modifier applying Translucent Tinting,
  * Specular Edge Highlight (1px specular gradient rim), and Soft Ambient Shadow.
+ * Text and children composables inside remain 100% crisp and readable.
  */
 @Composable
 fun Modifier.liquidGlass(

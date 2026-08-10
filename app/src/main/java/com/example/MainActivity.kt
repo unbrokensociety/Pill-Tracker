@@ -322,7 +322,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 else -> 0
             }
 
-            // Floating Liquid Glass Navigation Capsule withSpecular Edge Rim & Backdrop Blur
+            // Floating Liquid Glass Navigation Capsule with Specular Edge Rim & Soft Shadow
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -331,7 +331,6 @@ fun MainScreen(viewModel: MainViewModel) {
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .liquidGlass(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
-                        blurRadius = 24.dp,
                         elevation = 16.dp
                     )
             ) {
@@ -359,7 +358,6 @@ fun MainScreen(viewModel: MainViewModel) {
                             .padding(horizontal = 4.dp)
                             .liquidGlass(
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                                blurRadius = 12.dp,
                                 customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
                                 elevation = 4.dp
                             )

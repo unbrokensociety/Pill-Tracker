@@ -46,31 +46,28 @@ fun isPowerSaveMode(): Boolean {
 @Composable
 fun Modifier.liquidGlass(
     shape: Shape = RoundedCornerShape(24.dp),
-    blurRadius: Dp = 24.dp,
     customGlassColor: Color? = null,
     elevation: Dp = 12.dp,
     borderWidth: Dp = 1.dp
 ): Modifier {
     val isDark = isSystemInDarkTheme()
-    val powerSave = isPowerSaveMode()
-    val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !powerSave
 
-    // Specular Edge Highlight (Gradient from Top-Left specular light to Bottom-Right shadow)
-    val specularTopLeft = if (isDark) Color(1.0f, 1.0f, 1.0f, 0.35f) else Color(1.0f, 1.0f, 1.0f, 0.85f)
-    val specularBottomRight = if (isDark) Color(1.0f, 1.0f, 1.0f, 0.04f) else Color(1.0f, 1.0f, 1.0f, 0.15f)
+    // Specular Edge Highlight (1px Rim gradient from Top-Left light to Bottom-Right shadow)
+    val specularTopLeft = if (isDark) Color(1.0f, 1.0f, 1.0f, 0.30f) else Color(1.0f, 1.0f, 1.0f, 0.80f)
+    val specularBottomRight = if (isDark) Color(1.0f, 1.0f, 1.0f, 0.03f) else Color(1.0f, 1.0f, 1.0f, 0.15f)
     val borderBrush = Brush.linearGradient(
         colors = listOf(specularTopLeft, specularBottomRight)
     )
 
-    // Liquid Glass Translucent Surface Colors (Light: 62% milky white, Dark: 68% graphite black)
+    // Liquid Glass Translucent Surface Colors (Light: 65% translucent white, Dark: 65% graphite)
     val defaultGlassColor = if (isDark) {
-        if (supportsBlur) Color(0xAD1C1C1E) else Color(0xF01C1C1E)
+        Color(0xA61C1C1E) // rgba(28, 28, 30, 0.65)
     } else {
-        if (supportsBlur) Color(0x9EFFFFFF) else Color(0xF2FFFFFF)
+        Color(0xA6FFFFFF) // rgba(255, 255, 255, 0.65)
     }
     val glassColor = customGlassColor ?: defaultGlassColor
 
-    val ambientShadowColor = if (isDark) Color(0x59000000) else Color(0x14000000)
+    val ambientShadowColor = if (isDark) Color(0x66000000) else Color(0x1A000000)
     val spotShadowColor = if (isDark) Color(0x80000000) else Color(0x1F000000)
 
     return this
@@ -82,13 +79,6 @@ fun Modifier.liquidGlass(
             spotColor = spotShadowColor
         )
         .clip(shape)
-        .then(
-            if (supportsBlur) {
-                Modifier.blur(radius = blurRadius)
-            } else {
-                Modifier
-            }
-        )
         .background(glassColor)
         .border(
             width = borderWidth,
@@ -109,15 +99,11 @@ fun GlassCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val powerSave = isPowerSaveMode()
-    val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !powerSave
 
     val glassColor = if (isDark) {
-        val alpha = if (supportsBlur) (0.68f * glassAlpha) else 0.94f
-        Color(0xFF1C1C1E).copy(alpha = alpha)
+        Color(0x1C, 0x1C, 0x1E, (255 * 0.65f * glassAlpha).toInt())
     } else {
-        val alpha = if (supportsBlur) (0.62f * glassAlpha) else 0.94f
-        Color(0xFFFFFFFF).copy(alpha = alpha)
+        Color(0xFF, 0xFF, 0xFF, (255 * 0.65f * glassAlpha).toInt())
     }
 
     val baseModifier = modifier

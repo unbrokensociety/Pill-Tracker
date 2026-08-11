@@ -81,20 +81,14 @@ fun AddMedicationScreen(
             )
         },
         bottomBar = {
-            Surface(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding(),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
-                shadowElevation = 8.dp
+                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.92f))
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
-                ) {
-                    Button(
+                Button(
                         onClick = {
                             if (isFormValid) {
                                 val startOfDayMillis = selectedStartDate
@@ -132,7 +126,6 @@ fun AddMedicationScreen(
                         )
                     }
                 }
-            }
         }
     ) { padding ->
         LazyColumn(

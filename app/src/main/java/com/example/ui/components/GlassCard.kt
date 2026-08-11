@@ -1,13 +1,9 @@
 package com.example.ui.components
 
-import android.content.Context
-import android.os.Build
-import android.os.PowerManager
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -22,20 +18,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-
-@Composable
-private fun isPowerSaveMode(): Boolean {
-    val ctx = LocalContext.current
-    val pm = ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return false
-    return pm.isPowerSaveMode
-}
 
 /**
  * Tactile spring press modifier for buttons, cards, and nav items.
@@ -130,7 +117,7 @@ fun Modifier.liquidGlass(
 
 /**
  * Special Floating Island Glass Modifier specifically tuned for the Bottom Navigation Capsule.
- * Combines hardware backdrop blur (API 31+), soft translucent glass tinting, and high-contrast specular rim.
+ * Soft translucent glass tinting and high-contrast specular rim.
  */
 @Composable
 fun Modifier.islandGlass(
@@ -293,7 +280,7 @@ fun GlassChip(
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontWeight = FontWeight.Bold,
                 color = contentColor
             )
         }

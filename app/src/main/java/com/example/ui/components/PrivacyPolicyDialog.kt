@@ -37,9 +37,6 @@ fun PrivacyPolicyDialog(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            val safeBottomInset = if (navBottom > 16.dp) navBottom else 28.dp
-
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
@@ -74,17 +71,14 @@ fun PrivacyPolicyDialog(
                         tonalElevation = 8.dp,
                         shadowElevation = 12.dp,
                         color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(
-                                    start = 16.dp,
-                                    end = 16.dp,
-                                    top = 12.dp,
-                                    bottom = 12.dp + safeBottomInset
-                                )
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
                         ) {
                             Button(
                                 onClick = onDismiss,

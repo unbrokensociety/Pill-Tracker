@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +16,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -29,28 +29,36 @@ import androidx.compose.ui.unit.dp
 fun Modifier.liquidGlass(
     shape: Shape = RoundedCornerShape(24.dp),
     customGlassColor: Color? = null,
-    elevation: Dp = 12.dp,
+    elevation: Dp = 10.dp,
     borderWidth: Dp = 1.dp
 ): Modifier {
-    val isDark = isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     // Specular Edge Highlight (1px Rim gradient from Top-Left light to Bottom-Right shadow)
-    val specularTopLeft = if (isDark) Color(1.0f, 1.0f, 1.0f, 0.30f) else Color(1.0f, 1.0f, 1.0f, 0.80f)
-    val specularBottomRight = if (isDark) Color(1.0f, 1.0f, 1.0f, 0.03f) else Color(1.0f, 1.0f, 1.0f, 0.15f)
+    val specularTopLeft = if (isDark) {
+        Color(1.0f, 1.0f, 1.0f, 0.22f)
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.50f)
+    }
+    val specularBottomRight = if (isDark) {
+        Color(1.0f, 1.0f, 1.0f, 0.04f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)
+    }
     val borderBrush = Brush.linearGradient(
         colors = listOf(specularTopLeft, specularBottomRight)
     )
 
-    // Liquid Glass Translucent Surface Colors (Light: 65% translucent white, Dark: 65% graphite)
+    // Liquid Glass Translucent Surface Colors (Light: 95% crisp white surface, Dark: 85% graphite surface)
     val defaultGlassColor = if (isDark) {
-        Color(0xA61C1C1E) // rgba(28, 28, 30, 0.65)
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
     } else {
-        Color(0xA6FFFFFF) // rgba(255, 255, 255, 0.65)
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
     }
     val glassColor = customGlassColor ?: defaultGlassColor
 
-    val ambientShadowColor = if (isDark) Color(0x66000000) else Color(0x1A000000)
-    val spotShadowColor = if (isDark) Color(0x80000000) else Color(0x1F000000)
+    val ambientShadowColor = if (isDark) Color(0x66000000) else Color(0x0D000000)
+    val spotShadowColor = if (isDark) Color(0x80000000) else Color(0x1A000000)
 
     return this
         .shadow(
@@ -76,16 +84,17 @@ fun GlassCard(
     onClick: (() -> Unit)? = null,
     glassAlpha: Float = 1.0f,
     contentPadding: Dp = 16.dp,
-    elevation: Dp = 10.dp,
+    elevation: Dp = 8.dp,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
+    val defaultSurface = MaterialTheme.colorScheme.surface
     val glassColor = if (isDark) {
-        Color(0x1C, 0x1C, 0x1E, (255 * 0.65f * glassAlpha).toInt())
+        defaultSurface.copy(alpha = 0.85f * glassAlpha)
     } else {
-        Color(0xFF, 0xFF, 0xFF, (255 * 0.65f * glassAlpha).toInt())
+        defaultSurface.copy(alpha = 0.96f * glassAlpha)
     }
 
     val baseModifier = modifier
@@ -126,16 +135,16 @@ fun GlassCircleIcon(
     tintColor: Color = MaterialTheme.colorScheme.primary,
     content: @Composable () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
-    val specularTopLeft = if (isDark) Color(1f, 1f, 1f, 0.40f) else Color(1f, 1f, 1f, 0.90f)
-    val specularBottomRight = if (isDark) Color(1f, 1f, 1f, 0.05f) else Color(1f, 1f, 1f, 0.20f)
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val specularTopLeft = if (isDark) Color(1f, 1f, 1f, 0.35f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.40f)
+    val specularBottomRight = if (isDark) Color(1f, 1f, 1f, 0.05f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f)
 
     Box(
         modifier = modifier
             .size(size)
-            .shadow(elevation = 6.dp, shape = CircleShape, clip = false)
+            .shadow(elevation = 4.dp, shape = CircleShape, clip = false)
             .clip(CircleShape)
-            .background(tintColor.copy(alpha = if (isDark) 0.22f else 0.14f))
+            .background(tintColor.copy(alpha = if (isDark) 0.25f else 0.16f))
             .border(
                 width = 1.dp,
                 brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
@@ -158,20 +167,20 @@ fun GlassChip(
     modifier: Modifier = Modifier,
     icon: (@Composable () -> Unit)? = null
 ) {
-    val isDark = isSystemInDarkTheme()
-    val specularTopLeft = if (isDark) Color(1f, 1f, 1f, 0.45f) else Color(1f, 1f, 1f, 0.85f)
-    val specularBottomRight = if (isDark) Color(1f, 1f, 1f, 0.05f) else Color(1f, 1f, 1f, 0.15f)
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val specularTopLeft = if (isDark) Color(1f, 1f, 1f, 0.40f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.40f)
+    val specularBottomRight = if (isDark) Color(1f, 1f, 1f, 0.05f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f)
 
     Surface(
         modifier = modifier
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(20.dp), clip = false)
+            .shadow(elevation = 3.dp, shape = RoundedCornerShape(20.dp), clip = false)
             .clip(RoundedCornerShape(20.dp))
             .border(
                 width = 1.dp,
                 brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
                 shape = RoundedCornerShape(20.dp)
             ),
-        color = containerColor.copy(alpha = if (isDark) 0.35f else 0.22f),
+        color = containerColor.copy(alpha = if (isDark) 0.35f else 0.18f),
         contentColor = contentColor
     ) {
         Row(
@@ -203,29 +212,28 @@ fun GlassFAB(
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
     content: @Composable () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
     val specularTopLeft = Color(1f, 1f, 1f, 0.85f)
     val specularBottomRight = Color(1f, 1f, 1f, 0.20f)
 
     Box(
         modifier = modifier
             .shadow(
-                elevation = 16.dp,
+                elevation = 14.dp,
                 shape = RoundedCornerShape(24.dp),
-                ambientColor = containerColor.copy(alpha = 0.5f),
-                spotColor = containerColor.copy(alpha = 0.8f)
+                ambientColor = containerColor.copy(alpha = 0.4f),
+                spotColor = containerColor.copy(alpha = 0.6f)
             )
             .clip(RoundedCornerShape(24.dp))
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         containerColor,
-                        containerColor.copy(alpha = 0.85f)
+                        containerColor.copy(alpha = 0.88f)
                     )
                 )
             )
             .border(
-                width = 1.5.dp,
+                width = 1.2.dp,
                 brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
                 shape = RoundedCornerShape(24.dp)
             )

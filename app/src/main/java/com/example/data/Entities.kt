@@ -41,15 +41,4 @@ data class IntakeLog(
     val sideEffectNote: String = ""
 )
 
-@Entity(tableName = "users")
-data class UserAccount(
-    @PrimaryKey val email: String,
-    val name: String,
-    val authProvider: String, // "GOOGLE", "EMAIL", "GUEST"
-    val avatarUrl: String = "",
-    val passwordHash: String = "",
-    val createdAt: Long = System.currentTimeMillis(),
-    val lastLoginAt: Long = System.currentTimeMillis()
-)
-
 

@@ -41,10 +41,25 @@ import com.example.ui.components.GlassFAB
 import com.example.ui.theme.MyApplicationTheme
 import com.example.data.ThemeMode
 
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalView
+
 @Composable
 fun MyAppThemeWrapper(viewModel: MainViewModel, content: @Composable () -> Unit) {
     val themeMode by viewModel.themeMode.collectAsState()
     MyApplicationTheme(themeMode = themeMode) {
+        val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+        val view = LocalView.current
+        if (!view.isInEditMode) {
+            SideEffect {
+                val window = (view.context as? android.app.Activity)?.window
+                if (window != null) {
+                    val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                    insetsController.isAppearanceLightStatusBars = !isDark
+                    insetsController.isAppearanceLightNavigationBars = !isDark
+                }
+            }
+        }
         content()
     }
 }
@@ -64,12 +79,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        try {
-            com.google.firebase.FirebaseApp.initializeApp(this)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
 
         // Request notifications permission on Android 13+ dynamically to guarantee notifications are delivered
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -136,10 +145,13 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (targetRoute == "add") {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                        )
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        ) + fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
                     } else if (initialRoute == "add") {
-                        fadeIn(animationSpec = tween(200))
+                        fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
                         val initialIndex = getRouteIndex(initialRoute)
@@ -150,8 +162,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         }
                         slideIntoContainer(
                             direction,
-                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                        ) + fadeIn(animationSpec = tween(250))
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        ) + fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
                     }
                 },
                 exitTransition = {
@@ -160,8 +175,8 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (initialRoute == "add") {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(280, easing = FastOutLinearInEasing)
-                        )
+                            animationSpec = tween(260, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(200))
                     } else if (targetRoute == "add") {
                         fadeOut(animationSpec = tween(200))
                     } else {
@@ -174,8 +189,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         }
                         slideOutOfContainer(
                             direction,
-                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(250))
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        ) + fadeOut(animationSpec = tween(200))
                     }
                 }
             ) {

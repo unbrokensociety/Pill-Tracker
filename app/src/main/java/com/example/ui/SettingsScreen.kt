@@ -36,7 +36,6 @@ import com.example.ui.components.PrivacyPolicyDialog
 import com.example.ui.components.TermsOfServiceDialog
 import com.example.ui.locale.LocaleHelper
 import com.example.ui.locale.findActivity
-import com.example.ui.util.ReportExportHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -435,70 +434,12 @@ fun SettingsScreen(
                 }
             }
 
-            // Health Export & Legal Documents Glass Card
+            // Legal Documents Glass Card
             item {
-                Text(
-                    text = stringResource(R.string.settings_export_and_docs),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
-                )
-
                 GlassCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Export Report Item
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    ReportExportHelper.generateAndShareReport(
-                                        context = context,
-                                        userAccountName = "",
-                                        userEmail = "",
-                                        medications = medications,
-                                        schedules = schedules,
-                                        todayLogs = logs,
-                                        streakDays = streakDays
-                                    )
-                                }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Share,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onTertiaryContainer
-                                )
-                            }
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.report_export_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = stringResource(R.string.report_export_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-
                         // Privacy Policy Row
                         Row(
                             modifier = Modifier

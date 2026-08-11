@@ -83,7 +83,7 @@ fun HomeScreen(
             }
 
             // Horizontal Date strip
-            val dateStrip = remember {
+            val dateStrip = remember(LocalDate.now()) {
                 (-2..2).map { LocalDate.now().plusDays(it.toLong()) }
             }
             Row(
@@ -335,7 +335,7 @@ fun MedicationCard(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
-                                .background(Color.White.copy(alpha = 0.8f))
+                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
                         )
                     }
                 }
@@ -357,14 +357,14 @@ fun MedicationCard(
                     if (isTaken) {
                         GlassChip(
                             text = stringResource(R.string.status_taken),
-                            containerColor = Color(0xFF66BB6A),
-                            contentColor = Color(0xFF2E7D32),
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.primary,
                             icon = {
                                 Icon(
                                     Icons.Filled.Check,
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp),
-                                    tint = Color(0xFF2E7D32)
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         )
@@ -509,7 +509,7 @@ fun LowStockBanner(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            lowStockMeds.take(2).forEach { med ->
+            lowStockMeds.forEach { med ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

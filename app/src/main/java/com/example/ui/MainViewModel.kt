@@ -17,189 +17,31 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlinx.coroutines.flow.map
-
-import com.example.data.CloudSyncRepository
-import com.example.data.UserAccount
-import com.example.data.UserRepository
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class MainViewModel(
     private val repository: MedicationRepository,
-    private val userRepository: UserRepository,
     private val alarmScheduler: AlarmScheduler,
-    private val settingsRepository: SettingsRepository,
-    private val cloudSyncRepository: CloudSyncRepository
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
-
-    val lastSyncTimestamp: StateFlow<Long> = settingsRepository.lastSyncTimestampFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0L
-    )
-
-    val cloudSyncEnabled: StateFlow<Boolean> = settingsRepository.cloudSyncEnabledFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
-
-    val pendingDeletionTimestamp: StateFlow<Long> = settingsRepository.pendingDeletionTimestampFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0L
-    )
-
-    init {
-        checkAccountDeletionGracePeriod()
-        autoSync()
-    }
-
-    fun checkAccountDeletionGracePeriod() {
-        viewModelScope.launch {
-            settingsRepository.pendingDeletionTimestampFlow.collect { timestamp ->
-                if (timestamp > 0L && System.currentTimeMillis() >= timestamp) {
-                    purgeAllUserData()
-                }
-            }
-        }
-    }
-
-    fun requestAccountDeletion(graceDays: Int = 30) {
-        viewModelScope.launch {
-            settingsRepository.requestAccountDeletion(graceDays)
-            cloudSyncRepository.recordAccountDeletionStatus(userEmail.value, userName.value, isPending = true, graceDays = graceDays)
-            cloudSyncRepository.logUserAuthentication(userEmail.value, userName.value, "DELETION_REQUESTED_30_DAYS")
-        }
-    }
-
-    fun cancelAccountDeletion() {
-        viewModelScope.launch {
-            settingsRepository.cancelAccountDeletion()
-            cloudSyncRepository.recordAccountDeletionStatus(userEmail.value, userName.value, isPending = false)
-            cloudSyncRepository.logUserAuthentication(userEmail.value, userName.value, "DELETION_CANCELED")
-        }
-    }
-
-    fun autoSync() {
-        viewModelScope.launch {
-            if (cloudSyncEnabled.value) {
-                cloudSyncRepository.autoSync()
-            }
-        }
-    }
-
-    fun setCloudSyncEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setCloudSyncEnabled(enabled)
-            if (enabled) {
-                cloudSyncRepository.autoSync()
-            }
-        }
-    }
-
-    fun triggerCloudSync(onResult: (String) -> Unit) {
-        viewModelScope.launch {
-            val result = cloudSyncRepository.syncToCloud()
-            onResult(result.getOrDefault("Sync complete"))
-        }
-    }
-
-    fun triggerCloudRestore(onResult: (String) -> Unit) {
-        viewModelScope.launch {
-            val result = cloudSyncRepository.restoreFromCloud()
-            onResult(result.getOrDefault("Restore complete"))
-        }
-    }
-
-    val allSavedUsers: StateFlow<List<UserAccount>> = userRepository.allUsers.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeModeFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = ThemeMode.SYSTEM
     )
-    
+
     val notificationsEnabled: StateFlow<Boolean> = settingsRepository.notificationsFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = true
     )
-
-    val isOnboardingCompleted: StateFlow<Boolean?> = settingsRepository.isOnboardingCompletedFlow
-        .map<Boolean, Boolean?> { it }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
-
-    val isGuestMode: StateFlow<Boolean> = settingsRepository.isGuestModeFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
-
-    val userName: StateFlow<String> = settingsRepository.userNameFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ""
-    )
-
-    val userEmail: StateFlow<String> = settingsRepository.userEmailFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ""
-    )
-
-    val userAvatarUri: StateFlow<String> = settingsRepository.userAvatarUriFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ""
-    )
-
-    val alarmClockMode: StateFlow<Boolean> = settingsRepository.alarmClockModeFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
-
-    val alarmRepeatCount: StateFlow<Int> = settingsRepository.alarmRepeatCountFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 1
-    )
-
-    fun updateUserProfile(name: String, avatarUri: String) {
-        viewModelScope.launch {
-            settingsRepository.updateUserProfile(name, avatarUri)
-            userRepository.updateUserName(userEmail.value, name)
-            cloudSyncRepository.autoSync()
-        }
-    }
-
-    fun setAlarmClockMode(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setAlarmClockMode(enabled)
-        }
-    }
-
-    fun setAlarmRepeatCount(count: Int) {
-        viewModelScope.launch {
-            settingsRepository.setAlarmRepeatCount(count)
-        }
-    }
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
@@ -236,7 +78,7 @@ class MainViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-        
+
     val todayIntakeLogs: StateFlow<List<IntakeLog>> = _selectedDate
         .flatMapLatest { date -> repository.getIntakeLogsForDate(date) }
         .stateIn(
@@ -290,14 +132,12 @@ class MainViewModel(
     fun toggleLog(schedule: DailyScheduleView, isTaken: Boolean, sideEffectNote: String = "") {
         viewModelScope.launch {
             repository.toggleIntake(schedule, _selectedDate.value, isTaken, sideEffectNote)
-            cloudSyncRepository.autoSync()
         }
     }
 
     fun refillStock(medicationId: Int, amount: Int) {
         viewModelScope.launch {
             repository.refillStock(medicationId, amount)
-            cloudSyncRepository.autoSync()
         }
     }
 
@@ -307,7 +147,6 @@ class MainViewModel(
             createdSchedules.forEach { schedule ->
                 alarmScheduler.scheduleAlarm(schedule, medication.name)
             }
-            cloudSyncRepository.autoSync()
         }
     }
 
@@ -318,123 +157,6 @@ class MainViewModel(
                 alarmScheduler.cancelAlarm(schedule)
             }
             repository.deleteMedication(medication)
-            cloudSyncRepository.autoSync()
-        }
-    }
-
-    fun loginOrRegister(name: String, email: String, provider: String = "EMAIL", passwordHash: String = "") {
-        viewModelScope.launch {
-            val userAccount = UserAccount(
-                email = email,
-                name = name,
-                authProvider = provider,
-                passwordHash = passwordHash,
-                lastLoginAt = System.currentTimeMillis()
-            )
-            userRepository.saveUser(userAccount)
-            settingsRepository.setAccountState(
-                isGuest = false,
-                name = name,
-                email = email,
-                onboardingDone = true
-            )
-            cloudSyncRepository.logUserAuthentication(email, name, provider)
-            cloudSyncRepository.autoSync()
-        }
-    }
-
-    fun loginWithGoogle(email: String, name: String, avatarUrl: String) {
-        viewModelScope.launch {
-            val userAccount = UserAccount(
-                email = email,
-                name = name,
-                authProvider = "GOOGLE",
-                avatarUrl = avatarUrl,
-                lastLoginAt = System.currentTimeMillis()
-            )
-            userRepository.saveUser(userAccount)
-            settingsRepository.setAccountState(
-                isGuest = false,
-                name = name,
-                email = email,
-                onboardingDone = true
-            )
-            cloudSyncRepository.logUserAuthentication(email, name, "GOOGLE")
-            cloudSyncRepository.autoSync()
-        }
-    }
-
-    fun switchAccount(email: String) {
-        viewModelScope.launch {
-            val user = userRepository.getUserByEmail(email)
-            if (user != null) {
-                userRepository.updateLastLogin(email)
-                settingsRepository.setAccountState(
-                    isGuest = false,
-                    name = user.name,
-                    email = user.email,
-                    onboardingDone = true
-                )
-                cloudSyncRepository.autoSync()
-            }
-        }
-    }
-
-    fun skipAuthAsGuest() {
-        viewModelScope.launch {
-            settingsRepository.setAccountState(
-                isGuest = true,
-                name = "",
-                email = "",
-                onboardingDone = true
-            )
-        }
-    }
-
-    fun signOutToGuest() {
-        viewModelScope.launch {
-            try {
-                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            settingsRepository.signOutToGuest()
-        }
-    }
-
-    fun purgeAllUserData() {
-        viewModelScope.launch {
-            try {
-                val email = settingsRepository.userEmailFlow.first()
-                val allActive = repository.getAllActiveScheduleViews()
-                allActive.forEach { view ->
-                    val sched = com.example.data.Schedule(
-                        id = view.scheduleId,
-                        medicationId = view.medicationId,
-                        timeHour = view.timeHour,
-                        timeMinute = view.timeMinute
-                    )
-                    alarmScheduler.cancelAlarm(sched)
-                }
-                repository.clearAllData()
-                userRepository.deleteAllUsers()
-                cloudSyncRepository.purgeUserDataFromCloud(email)
-                try {
-                    val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                    firebaseUser?.delete()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                try {
-                    com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                settingsRepository.signOutToGuest()
-                settingsRepository.cancelAccountDeletion()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 }
@@ -446,14 +168,11 @@ class MainViewModelFactory(
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             val database = AppDatabase.getDatabase(context)
             val repository = MedicationRepository(database.medicationDao())
-            val userRepository = UserRepository(database.userDao())
             val alarmScheduler = AlarmScheduler(context)
             val settingsRepository = SettingsRepository(context)
-            val cloudSyncRepository = CloudSyncRepository(context, database.medicationDao(), settingsRepository)
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(repository, userRepository, alarmScheduler, settingsRepository, cloudSyncRepository) as T
+            return MainViewModel(repository, alarmScheduler, settingsRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-

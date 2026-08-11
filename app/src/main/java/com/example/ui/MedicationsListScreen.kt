@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,7 +34,8 @@ import com.example.ui.components.GlassCard
 @Composable
 fun MedicationsListScreen(
     viewModel: MainViewModel,
-    bottomPadding: androidx.compose.ui.unit.Dp
+    bottomPadding: androidx.compose.ui.unit.Dp,
+    onEditMedication: (Int) -> Unit = {}
 ) {
     val medications by viewModel.allMedications.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
@@ -159,6 +161,7 @@ fun MedicationsListScreen(
                         ) {
                             MedicationInfoCard(
                                 medication = med,
+                                onEdit = { onEditMedication(med.id) },
                                 onDelete = { medicationToDelete = med }
                             )
                         }
@@ -170,14 +173,19 @@ fun MedicationsListScreen(
 }
 
 @Composable
-fun MedicationInfoCard(medication: Medication, onDelete: () -> Unit) {
+fun MedicationInfoCard(
+    medication: Medication,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     GlassCard(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onEdit
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // High fidelity beautifully color-coded pill capsule
             val medColor = remember(medication.color, medication.name) {
@@ -244,9 +252,19 @@ fun MedicationInfoCard(medication: Medication, onDelete: () -> Unit) {
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
+
+                if (medication.notes.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "• ${medication.notes}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
@@ -262,19 +280,38 @@ fun MedicationInfoCard(medication: Medication, onDelete: () -> Unit) {
                 }
             }
 
-            // Beautiful clear trash action
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f))
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = MaterialTheme.colorScheme.error
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Edit button
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.action_edit),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                // Delete button
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.action_delete),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

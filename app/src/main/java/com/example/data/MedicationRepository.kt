@@ -17,6 +17,20 @@ class MedicationRepository(private val dao: MedicationDao) {
         return dao.getSchedulesForMedication(medId)
     }
 
+    suspend fun getMedicationById(id: Int): Medication? {
+        return dao.getMedicationById(id)
+    }
+
+    suspend fun updateMedicationWithSchedules(medication: Medication, times: List<Pair<Int, Int>>): List<Schedule> {
+        dao.deleteSchedulesForMedication(medication.id)
+        dao.insertMedication(medication)
+        val schedulesToInsert = times.map { (hour, minute) ->
+            Schedule(medicationId = medication.id, timeHour = hour, timeMinute = minute)
+        }
+        dao.insertSchedules(schedulesToInsert)
+        return dao.getSchedulesForMedication(medication.id)
+    }
+
     suspend fun getSchedulesForMedication(medicationId: Int): List<Schedule> {
         return dao.getSchedulesForMedication(medicationId)
     }

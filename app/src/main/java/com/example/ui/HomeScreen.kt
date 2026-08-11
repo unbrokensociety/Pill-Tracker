@@ -36,6 +36,7 @@ import com.example.ui.components.GlassCard
 import com.example.ui.components.liquidGlass
 import com.example.ui.components.GlassCircleIcon
 import com.example.ui.components.GlassChip
+import com.example.ui.components.tactilePress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -219,6 +220,15 @@ fun DateItem(
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     }
 
+    val dateScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.06f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "dateScale"
+    )
+
     Box(
         modifier = modifier
             .liquidGlass(
@@ -226,13 +236,15 @@ fun DateItem(
                 customGlassColor = customGlassColor,
                 elevation = if (isSelected) 10.dp else 4.dp
             )
-            .clickable { onClick() }
+            .tactilePress(pressScale = 0.90f, onClick = onClick)
             .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .scale(dateScale)
         ) {
             Text(
                 text = localizedDay,

@@ -67,6 +67,13 @@
     <string name="add_med_delete_time">Delete time slot</string>
     <string name="add_med_color_label">Color Label</string>
     <string name="add_med_start_date_label">Start Date</string>
+    <string name="edit_med_title">Edit Medication</string>
+    <string name="add_med_notes_label">Notes &amp; Instructions</string>
+    <string name="add_med_notes_placeholder">e.g. After meals / With water</string>
+    <string name="food_before_meal">Before meals</string>
+    <string name="food_with_meal">With food</string>
+    <string name="food_after_meal">After meals</string>
+    <string name="food_before_bed">Before bed</string>
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">General Parameters</string>

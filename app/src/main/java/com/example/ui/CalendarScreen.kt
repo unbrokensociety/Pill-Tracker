@@ -31,6 +31,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 import com.example.ui.components.GlassCard
+import com.example.ui.components.tactilePress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -302,12 +303,19 @@ fun CalendarDayCell(
         label = "cellText"
     )
 
+    val cellScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.12f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+        label = "cellScale"
+    )
+
     Box(
         modifier = Modifier
             .size(40.dp)
+            .scale(cellScale)
             .clip(CircleShape)
             .background(animatedBg)
-            .clickable { onClick() },
+            .tactilePress(pressScale = 0.88f, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(

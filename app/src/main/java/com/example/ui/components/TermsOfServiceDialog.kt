@@ -39,6 +39,7 @@ fun TermsOfServiceDialog(
         ) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 topBar = {
                     TopAppBar(
                         modifier = Modifier.statusBarsPadding(),
@@ -67,18 +68,24 @@ fun TermsOfServiceDialog(
                     )
                 },
                 bottomBar = {
+                    val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    val extraBottomInset = if (navBottom > 16.dp) navBottom + 12.dp else 40.dp
+
                     Surface(
                         tonalElevation = 8.dp,
                         shadowElevation = 12.dp,
                         color = MaterialTheme.colorScheme.surface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 12.dp,
+                                    bottom = extraBottomInset
+                                )
                         ) {
                             Button(
                                 onClick = onDismiss,

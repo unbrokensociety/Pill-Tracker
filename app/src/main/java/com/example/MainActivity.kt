@@ -30,6 +30,8 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.navigation.compose.*
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.ui.AddMedicationScreen
 import com.example.ui.CalendarScreen
 import com.example.ui.HomeScreen
@@ -145,12 +147,12 @@ fun MainScreen(viewModel: MainViewModel) {
                 enterTransition = {
                     val targetRoute = targetState.destination.route
                     val initialRoute = initialState.destination.route
-                    if (targetRoute == "add") {
+                    if (targetRoute?.startsWith("add") == true) {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Up,
                             animationSpec = tween(300, easing = FastOutSlowInEasing)
                         ) + fadeIn(animationSpec = tween(250))
-                    } else if (initialRoute == "add") {
+                    } else if (initialRoute?.startsWith("add") == true) {
                         fadeIn(animationSpec = tween(220))
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
@@ -169,12 +171,12 @@ fun MainScreen(viewModel: MainViewModel) {
                 exitTransition = {
                     val targetRoute = targetState.destination.route
                     val initialRoute = initialState.destination.route
-                    if (initialRoute == "add") {
+                    if (initialRoute?.startsWith("add") == true) {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
                             animationSpec = tween(280, easing = FastOutSlowInEasing)
                         ) + fadeOut(animationSpec = tween(200))
-                    } else if (targetRoute == "add") {
+                    } else if (targetRoute?.startsWith("add") == true) {
                         fadeOut(animationSpec = tween(200))
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
@@ -206,7 +208,10 @@ fun MainScreen(viewModel: MainViewModel) {
                 composable("meds") { 
                     MedicationsListScreen(
                         viewModel = viewModel, 
-                        bottomPadding = 120.dp
+                        bottomPadding = 120.dp,
+                        onEditMedication = { medId ->
+                            navController.navigate("add?medicationId=$medId")
+                        }
                     )
                 }
                 composable("settings") { 
@@ -215,8 +220,19 @@ fun MainScreen(viewModel: MainViewModel) {
                         bottomPadding = 120.dp
                     )
                 }
-                composable("add") {
+                composable(
+                    route = "add?medicationId={medicationId}",
+                    arguments = listOf(
+                        navArgument("medicationId") {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    )
+                ) { backStackEntry ->
+                    val medIdArg = backStackEntry.arguments?.getInt("medicationId") ?: -1
+                    val editMedId = if (medIdArg != -1) medIdArg else null
                     AddMedicationScreen(
+                        editingMedicationId = editMedId,
                         onNavigateBack = { navController.popBackStack() },
                         viewModel = viewModel
                     )

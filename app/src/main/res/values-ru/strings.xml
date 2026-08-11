@@ -67,6 +67,13 @@
     <string name="add_med_delete_time">Удалить время приема</string>
     <string name="add_med_color_label">Цветовая метка</string>
     <string name="add_med_start_date_label">Дата начала приёма</string>
+    <string name="edit_med_title">Редактировать лекарство</string>
+    <string name="add_med_notes_label">Примечания и указания</string>
+    <string name="add_med_notes_placeholder">Например: После еды / Перед сном</string>
+    <string name="food_before_meal">До еды</string>
+    <string name="food_with_meal">С едой</string>
+    <string name="food_after_meal">После еды</string>
+    <string name="food_before_bed">Перед сном</string>
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">Общие параметры</string>

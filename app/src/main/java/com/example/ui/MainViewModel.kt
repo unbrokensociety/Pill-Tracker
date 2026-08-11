@@ -150,6 +150,26 @@ class MainViewModel(
         }
     }
 
+    suspend fun getMedicationById(id: Int): Medication? {
+        return repository.getMedicationById(id)
+    }
+
+    suspend fun getSchedulesForMedication(id: Int): List<com.example.data.Schedule> {
+        return repository.getSchedulesForMedication(id)
+    }
+
+    fun updateMedication(medication: Medication, times: List<Pair<Int, Int>>) {
+        viewModelScope.launch {
+            val oldSchedules = repository.getSchedulesForMedication(medication.id)
+            oldSchedules.forEach { alarmScheduler.cancelAlarm(it) }
+
+            val newSchedules = repository.updateMedicationWithSchedules(medication, times)
+            newSchedules.forEach { schedule ->
+                alarmScheduler.scheduleAlarm(schedule, medication.name)
+            }
+        }
+    }
+
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
             val schedules = repository.getSchedulesForMedication(medication.id)

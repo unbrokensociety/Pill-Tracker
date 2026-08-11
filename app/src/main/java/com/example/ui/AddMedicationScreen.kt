@@ -40,18 +40,44 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+import androidx.compose.material.icons.filled.Remove
+import java.time.Instant
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddMedicationScreen(
+    editingMedicationId: Int? = null,
     onNavigateBack: () -> Unit,
     viewModel: MainViewModel
 ) {
     var name by remember { mutableStateOf("") }
     var dosage by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
     var selectedColorIdx by remember { mutableStateOf(0) }
     var selectedStartDate by remember { mutableStateOf(LocalDate.now()) }
     val times = remember { mutableStateListOf<LocalTime>(LocalTime.of(8, 0)) }
     val context = LocalContext.current
+
+    LaunchedEffect(editingMedicationId) {
+        if (editingMedicationId != null) {
+            val med = viewModel.getMedicationById(editingMedicationId)
+            if (med != null) {
+                name = med.name
+                dosage = med.dosage
+                notes = med.notes
+                selectedColorIdx = med.color
+                selectedStartDate = Instant.ofEpochMilli(med.startDate)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+
+                val scheds = viewModel.getSchedulesForMedication(editingMedicationId)
+                times.clear()
+                scheds.forEach { s ->
+                    times.add(LocalTime.of(s.timeHour, s.timeMinute))
+                }
+            }
+        }
+    }
     
     // Check if form is valid
     val isFormValid = name.isNotBlank() && dosage.isNotBlank() && times.isNotEmpty()
@@ -62,7 +88,7 @@ fun AddMedicationScreen(
             TopAppBar(
                 title = { 
                     Text(
-                        text = stringResource(R.string.add_med_title),
+                        text = stringResource(if (editingMedicationId != null) R.string.edit_med_title else R.string.add_med_title),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     ) 
@@ -96,14 +122,23 @@ fun AddMedicationScreen(
                                     .toInstant()
                                     .toEpochMilli()
 
-                                val newMed = com.example.data.Medication(
+                                val medToSave = com.example.data.Medication(
+                                    id = editingMedicationId ?: 0,
                                     name = name,
                                     dosage = dosage,
+                                    notes = notes,
                                     color = selectedColorIdx,
                                     timesPerDay = times.size,
-                                    startDate = startOfDayMillis
+                                    startDate = startOfDayMillis,
+                                    stockCount = 0,
+                                    lowStockThreshold = 0
                                 )
-                                viewModel.addMedication(newMed, times.map { it.hour to it.minute })
+
+                                if (editingMedicationId != null) {
+                                    viewModel.updateMedication(medToSave, times.map { it.hour to it.minute })
+                                } else {
+                                    viewModel.addMedication(medToSave, times.map { it.hour to it.minute })
+                                }
                                 onNavigateBack()
                             }
                         },
@@ -177,6 +212,56 @@ fun AddMedicationScreen(
                             ),
                             singleLine = true
                         )
+
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            label = { Text(stringResource(R.string.add_med_notes_label)) },
+                            placeholder = { Text(stringResource(R.string.add_med_notes_placeholder)) },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                            ),
+                            singleLine = true
+                        )
+
+                        // Quick Food Presets
+                        val foodPresets = listOf(
+                            stringResource(R.string.food_before_meal),
+                            stringResource(R.string.food_with_meal),
+                            stringResource(R.string.food_after_meal),
+                            stringResource(R.string.food_before_bed)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            foodPresets.forEach { preset ->
+                                val isSelected = notes.contains(preset)
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {
+                                        notes = if (notes.isBlank()) {
+                                            preset
+                                        } else if (notes.contains(preset)) {
+                                            notes.replace(preset, "").replace(", ,", ",").trim(',', ' ')
+                                        } else {
+                                            "$notes, $preset"
+                                        }
+                                    },
+                                    label = {
+                                        Text(
+                                            text = preset,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

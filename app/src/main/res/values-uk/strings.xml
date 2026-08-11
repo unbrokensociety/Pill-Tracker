@@ -67,6 +67,13 @@
     <string name="add_med_delete_time">Вилучити час прийому</string>
     <string name="add_med_color_label">Колір маркування</string>
     <string name="add_med_start_date_label">Дата початку прийому</string>
+    <string name="edit_med_title">Редагувати ліки</string>
+    <string name="add_med_notes_label">Примітки та вказівки</string>
+    <string name="add_med_notes_placeholder">Наприклад: Після їжі / Перед сном</string>
+    <string name="food_before_meal">До їжі</string>
+    <string name="food_with_meal">З їжею</string>
+    <string name="food_after_meal">Після їжі</string>
+    <string name="food_before_bed">Перед сном</string>
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">Загальні параметри</string>

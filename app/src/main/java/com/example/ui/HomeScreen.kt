@@ -33,7 +33,6 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 import com.example.ui.components.GlassCard
-import com.example.ui.components.ProfileAvatarCircle
 import com.example.ui.components.liquidGlass
 import com.example.ui.components.GlassCircleIcon
 import com.example.ui.components.GlassChip

@@ -31,7 +31,6 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 import com.example.ui.components.GlassCard
-import com.example.ui.components.ProfileAvatarCircle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

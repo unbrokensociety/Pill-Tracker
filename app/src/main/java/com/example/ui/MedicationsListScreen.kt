@@ -28,7 +28,6 @@ import com.example.R
 import com.example.data.Medication
 
 import com.example.ui.components.GlassCard
-import com.example.ui.components.ProfileAvatarCircle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable

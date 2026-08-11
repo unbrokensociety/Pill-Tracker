@@ -261,7 +261,23 @@ class MainViewModel(
     }
 
     fun setNotifications(enabled: Boolean) {
-        viewModelScope.launch { settingsRepository.setNotificationsEnabled(enabled) }
+        viewModelScope.launch {
+            settingsRepository.setNotificationsEnabled(enabled)
+            val allSchedules = repository.getAllActiveScheduleViews()
+            allSchedules.forEach { view ->
+                val sched = com.example.data.Schedule(
+                    id = view.scheduleId,
+                    medicationId = view.medicationId,
+                    timeHour = view.timeHour,
+                    timeMinute = view.timeMinute
+                )
+                if (enabled) {
+                    alarmScheduler.scheduleAlarm(sched, view.name)
+                } else {
+                    alarmScheduler.cancelAlarm(sched)
+                }
+            }
+        }
     }
 
     val lowStockMedications: StateFlow<List<Medication>> = repository.lowStockMedications

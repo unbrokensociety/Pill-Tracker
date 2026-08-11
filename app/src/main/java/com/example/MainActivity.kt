@@ -35,12 +35,10 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.AddMedicationScreen
-import com.example.ui.AuthScreen
 import com.example.ui.CalendarScreen
 import com.example.ui.HomeScreen
 import com.example.ui.MedicationsListScreen
 import com.example.ui.SettingsScreen
-import com.example.ui.ProfileScreen
 import com.example.ui.MainViewModel
 import com.example.ui.MainViewModelFactory
 import com.example.ui.components.liquidGlass

@@ -37,6 +37,8 @@ import com.example.ui.SettingsScreen
 import com.example.ui.MainViewModel
 import com.example.ui.MainViewModelFactory
 import com.example.ui.components.liquidGlass
+import com.example.ui.components.islandGlass
+import com.example.ui.components.tactilePress
 import com.example.ui.components.GlassFAB
 import com.example.ui.theme.MyApplicationTheme
 import com.example.data.ThemeMode
@@ -145,13 +147,10 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (targetRoute == "add") {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMediumLow
-                            )
-                        ) + fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(250))
                     } else if (initialRoute == "add") {
-                        fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
+                        fadeIn(animationSpec = tween(220))
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
                         val initialIndex = getRouteIndex(initialRoute)
@@ -162,11 +161,8 @@ fun MainScreen(viewModel: MainViewModel) {
                         }
                         slideIntoContainer(
                             direction,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMediumLow
-                            )
-                        ) + fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing))
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(200))
                     }
                 },
                 exitTransition = {
@@ -175,7 +171,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (initialRoute == "add") {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(260, easing = FastOutLinearInEasing)
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
                         ) + fadeOut(animationSpec = tween(200))
                     } else if (targetRoute == "add") {
                         fadeOut(animationSpec = tween(200))
@@ -189,10 +185,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         }
                         slideOutOfContainer(
                             direction,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioNoBouncy,
-                                stiffness = Spring.StiffnessMediumLow
-                            )
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
                         ) + fadeOut(animationSpec = tween(200))
                     }
                 }
@@ -239,14 +232,14 @@ fun MainScreen(viewModel: MainViewModel) {
                 else -> 0
             }
 
-            // Floating Liquid Glass Navigation Capsule with Specular Edge Rim & Soft Shadow
+            // Floating Tactile Glass Navigation Island Capsule with Backdrop Blur & Specular Rim
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .liquidGlass(
+                    .islandGlass(
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
                         elevation = 16.dp
                     )
@@ -260,7 +253,7 @@ fun MainScreen(viewModel: MainViewModel) {
                     val indicatorOffset by animateDpAsState(
                         targetValue = tabWidth * selectedIndex,
                         animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            dampingRatio = Spring.DampingRatioLowBouncy,
                             stiffness = Spring.StiffnessMediumLow
                         ),
                         label = "indicatorOffsetAnim"
@@ -348,12 +341,21 @@ fun RowScope.FloatingNavItem(
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1.08f else 1f,
+        targetValue = if (selected) 1.12f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
+            dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMediumLow
         ),
         label = "pillScale"
+    )
+
+    val yOffset by animateDpAsState(
+        targetValue = if (selected) (-2).dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "yOffset"
     )
 
     val targetContentColor = if (selected) {
@@ -364,7 +366,7 @@ fun RowScope.FloatingNavItem(
 
     val contentColor by animateColorAsState(
         targetValue = targetContentColor,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = tween(durationMillis = 220),
         label = "contentColorAnim"
     )
 
@@ -372,17 +374,14 @@ fun RowScope.FloatingNavItem(
         modifier = Modifier
             .weight(1f)
             .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = androidx.compose.foundation.LocalIndication.current,
-                onClick = onClick
-            )
+            .tactilePress(pressScale = 0.88f, onClick = onClick)
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
+                .offset(y = yOffset)
                 .scale(scale)
                 .padding(horizontal = 12.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center

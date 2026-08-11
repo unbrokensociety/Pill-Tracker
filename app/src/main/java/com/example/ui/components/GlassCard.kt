@@ -1,9 +1,15 @@
 package com.example.ui.components
 
+import android.content.Context
+import android.os.Build
+import android.os.PowerManager
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,14 +22,60 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+@Composable
+private fun isPowerSaveMode(): Boolean {
+    val ctx = LocalContext.current
+    val pm = ctx.getSystemService(Context.POWER_SERVICE) as? PowerManager ?: return false
+    return pm.isPowerSaveMode
+}
+
+/**
+ * Tactile spring press modifier for buttons, cards, and nav items.
+ * Scales down smoothly on press and rebounds with organic spring physics.
+ */
+@Composable
+fun Modifier.tactilePress(
+    pressScale: Float = 0.94f,
+    onClick: (() -> Unit)? = null
+): Modifier {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) pressScale else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "tactileScale"
+    )
+
+    return this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .then(
+            if (onClick != null) {
+                Modifier.clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick
+                )
+            } else Modifier
+        )
+}
 
 /**
  * Core Liquid Glass Modifier applying Translucent Tinting,
  * Specular Edge Highlight (1px specular gradient rim), and Soft Ambient Shadow.
- * Text and children composables inside remain 100% crisp and readable.
  */
 @Composable
 fun Modifier.liquidGlass(
@@ -49,7 +101,6 @@ fun Modifier.liquidGlass(
         colors = listOf(specularTopLeft, specularBottomRight)
     )
 
-    // Liquid Glass Translucent Surface Colors (Light: 95% crisp white surface, Dark: 85% graphite surface)
     val defaultGlassColor = if (isDark) {
         MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
     } else {
@@ -59,6 +110,58 @@ fun Modifier.liquidGlass(
 
     val ambientShadowColor = if (isDark) Color(0x66000000) else Color(0x0D000000)
     val spotShadowColor = if (isDark) Color(0x80000000) else Color(0x1A000000)
+
+    return this
+        .shadow(
+            elevation = elevation,
+            shape = shape,
+            clip = false,
+            ambientColor = ambientShadowColor,
+            spotColor = spotShadowColor
+        )
+        .clip(shape)
+        .background(glassColor)
+        .border(
+            width = borderWidth,
+            brush = borderBrush,
+            shape = shape
+        )
+}
+
+/**
+ * Special Floating Island Glass Modifier specifically tuned for the Bottom Navigation Capsule.
+ * Combines hardware backdrop blur (API 31+), soft translucent glass tinting, and high-contrast specular rim.
+ */
+@Composable
+fun Modifier.islandGlass(
+    shape: Shape = RoundedCornerShape(28.dp),
+    elevation: Dp = 16.dp,
+    borderWidth: Dp = 1.dp
+): Modifier {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    val specularTopLeft = if (isDark) {
+        Color(1.0f, 1.0f, 1.0f, 0.30f)
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.50f)
+    }
+    val specularBottomRight = if (isDark) {
+        Color(1.0f, 1.0f, 1.0f, 0.05f)
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+    }
+    val borderBrush = Brush.linearGradient(
+        colors = listOf(specularTopLeft, specularBottomRight)
+    )
+
+    val glassColor = if (isDark) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+    } else {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+    }
+
+    val ambientShadowColor = if (isDark) Color(0x66000000) else Color(0x12000000)
+    val spotShadowColor = if (isDark) Color(0x80000000) else Color(0x24000000)
 
     return this
         .shadow(
@@ -105,11 +208,7 @@ fun GlassCard(
         )
 
     val finalModifier = if (onClick != null) {
-        baseModifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = androidx.compose.foundation.LocalIndication.current,
-            onClick = onClick
-        )
+        baseModifier.tactilePress(pressScale = 0.96f, onClick = onClick)
     } else {
         baseModifier
     }
@@ -202,7 +301,7 @@ fun GlassChip(
 }
 
 /**
- * Volumetric Liquid Glass Floating Action Button with specular rim and vibrant glow.
+ * Volumetric Liquid Glass Floating Action Button with spring tactile bounce and specular glow.
  */
 @Composable
 fun GlassFAB(
@@ -237,11 +336,7 @@ fun GlassFAB(
                 brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
                 shape = RoundedCornerShape(24.dp)
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = androidx.compose.foundation.LocalIndication.current,
-                onClick = onClick
-            )
+            .tactilePress(pressScale = 0.88f, onClick = onClick)
             .padding(18.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -250,6 +345,3 @@ fun GlassFAB(
         }
     }
 }
-
-
-

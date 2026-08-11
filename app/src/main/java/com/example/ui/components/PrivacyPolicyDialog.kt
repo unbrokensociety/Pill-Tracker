@@ -37,10 +37,14 @@ fun PrivacyPolicyDialog(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
+            val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val safeBottomInset = if (navBottom > 16.dp) navBottom else 28.dp
+
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
                     TopAppBar(
+                        modifier = Modifier.statusBarsPadding(),
                         title = {
                             Text(
                                 text = when (currentLang) {
@@ -68,15 +72,19 @@ fun PrivacyPolicyDialog(
                 bottomBar = {
                     Surface(
                         tonalElevation = 8.dp,
-                        shadowElevation = 8.dp,
+                        shadowElevation = 12.dp,
                         color = MaterialTheme.colorScheme.surface,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .navigationBarsPadding()
-                                .padding(16.dp)
+                                .padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 12.dp,
+                                    bottom = 12.dp + safeBottomInset
+                                )
                         ) {
                             Button(
                                 onClick = onDismiss,
@@ -115,7 +123,7 @@ fun PrivacyPolicyDialog(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(20.dp),
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Header Banner

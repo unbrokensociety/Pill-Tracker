@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.Icons
@@ -20,11 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
@@ -32,8 +29,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.navigation.compose.*
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.compose.ui.graphics.asComposeRenderEffect
-import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.AddMedicationScreen
 import com.example.ui.CalendarScreen
 import com.example.ui.HomeScreen
@@ -75,36 +70,6 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        
-        // Request highest refresh rate (up to 144Hz) for ultra-smooth 120/144 FPS animations
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            try {
-                val highestMode = display?.supportedModes?.maxByOrNull { it.refreshRate }
-                if (highestMode != null) {
-                    val params = window.attributes
-                    params.preferredDisplayModeId = highestMode.modeId
-                    @Suppress("DEPRECATION")
-                    params.preferredRefreshRate = highestMode.refreshRate
-                    window.attributes = params
-                }
-            } catch (e: Exception) {
-                // Ignore if display mode is restricted by OS
-            }
-        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            try {
-                @Suppress("DEPRECATION")
-                val display = window.windowManager.defaultDisplay
-                val highestMode = display?.supportedModes?.maxByOrNull { it.refreshRate }
-                if (highestMode != null) {
-                    val params = window.attributes
-                    params.preferredDisplayModeId = highestMode.modeId
-                    params.preferredRefreshRate = highestMode.refreshRate
-                    window.attributes = params
-                }
-            } catch (e: Exception) {
-                // Ignore
-            }
-        }
 
         // Request notifications permission on Android 13+ dynamically to guarantee notifications are delivered
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -114,28 +79,11 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Register network callback for instant auto-sync when internet becomes available
-        try {
-            val cm = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
-            cm?.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: android.net.Network) {
-                    viewModel.autoSync()
-                }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
         setContent {
             MyAppThemeWrapper(viewModel) {
                 MainScreen(viewModel)
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        viewModel.autoSync()
     }
 }
 

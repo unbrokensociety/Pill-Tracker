@@ -411,23 +411,7 @@ fun MedicationCard(
     }
 
     val medColor = remember(schedule.color, schedule.name) {
-        val predefinedColors = listOf(
-            Color(0xFFE57373), // Coral Red
-            Color(0xFF42A5F5), // Sky Blue
-            Color(0xFF66BB6A), // Fresh Green
-            Color(0xFFFFA726), // Sunset Orange
-            Color(0xFFAB47BC), // Rich Purple
-            Color(0xFF26A69A), // Teal Green
-            Color(0xFFEC407A), // Rose Pink
-            Color(0xFFFFCA28)  // Sunflower Yellow
-        )
-        val cVal = schedule.color
-        if (cVal >= 0 && cVal < predefinedColors.size) {
-            predefinedColors[cVal]
-        } else {
-            val idx = Math.abs(schedule.name.hashCode()) % predefinedColors.size
-            predefinedColors[idx]
-        }
+        com.example.ui.theme.MedicationColors.getColor(schedule.color, schedule.name)
     }
 
     GlassCard(
@@ -464,8 +448,8 @@ fun MedicationCard(
                     // Glass Time Pill
                     GlassChip(
                         text = formattedTime,
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
 
                     // Stock Tag if enabled
@@ -483,13 +467,13 @@ fun MedicationCard(
                         GlassChip(
                             text = stringResource(R.string.status_taken),
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             icon = {
                                 Icon(
                                     Icons.Filled.Check,
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
                         )
@@ -512,44 +496,38 @@ fun MedicationCard(
                 )
             }
             
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            // High visibility check circle button
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .scale(checkButtonScale)
+                    .clip(CircleShape)
+                    .background(
+                        if (isTaken) MaterialTheme.colorScheme.primary 
+                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
+                    .border(
+                        width = if (isTaken) 0.dp else 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape
+                    )
+                    .clickable { onToggle(!isTaken) },
+                contentAlignment = Alignment.Center
             ) {
-                if (!isTaken) {
-                    IconButton(
-                        onClick = onSnooze,
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
-                    ) {
-                        Text("⏱️", style = MaterialTheme.typography.titleSmall)
-                    }
-                }
-
-                // Interactive Glass Check Circle Button
-                GlassCircleIcon(
-                    size = 48.dp,
-                    tintColor = if (isTaken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                    modifier = Modifier.scale(checkButtonScale)
-                ) {
-                    if (isTaken) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = stringResource(R.string.status_taken),
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                        )
-                    }
+                if (isTaken) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = stringResource(R.string.status_taken),
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(26.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = stringResource(R.string.status_taken),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
         }

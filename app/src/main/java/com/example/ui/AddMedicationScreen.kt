@@ -601,16 +601,7 @@ fun AddMedicationScreen(
                             fontWeight = FontWeight.Bold
                         )
 
-                        val predefinedColors = listOf(
-                            Color(0xFFE57373), // Coral Red
-                            Color(0xFF42A5F5), // Sky Blue
-                            Color(0xFF66BB6A), // Fresh Green
-                            Color(0xFFFFA726), // Sunset Orange
-                            Color(0xFFAB47BC), // Rich Purple
-                            Color(0xFF26A69A), // Teal Green
-                            Color(0xFFEC407A), // Rose Pink
-                            Color(0xFFFFCA28)  // Sunflower Yellow
-                        )
+                        val predefinedColors = com.example.ui.theme.MedicationColors.predefinedColors
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

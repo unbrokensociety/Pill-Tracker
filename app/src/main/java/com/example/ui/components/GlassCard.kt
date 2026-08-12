@@ -77,21 +77,21 @@ fun Modifier.liquidGlass(
     val specularTopLeft = if (isDark) {
         Color(1.0f, 1.0f, 1.0f, 0.22f)
     } else {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.50f)
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.60f)
     }
     val specularBottomRight = if (isDark) {
         Color(1.0f, 1.0f, 1.0f, 0.04f)
     } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f)
     }
     val borderBrush = Brush.linearGradient(
         colors = listOf(specularTopLeft, specularBottomRight)
     )
 
     val defaultGlassColor = if (isDark) {
-        MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.90f)
     } else {
-        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+        MaterialTheme.colorScheme.surface
     }
     val glassColor = customGlassColor ?: defaultGlassColor
 
@@ -254,23 +254,23 @@ fun GlassChip(
     icon: (@Composable () -> Unit)? = null
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val specularTopLeft = if (isDark) Color(1f, 1f, 1f, 0.40f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.40f)
+    val specularTopLeft = if (isDark) Color(1f, 1f, 1f, 0.30f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.50f)
     val specularBottomRight = if (isDark) Color(1f, 1f, 1f, 0.05f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f)
 
     Surface(
         modifier = modifier
-            .shadow(elevation = 3.dp, shape = RoundedCornerShape(20.dp), clip = false)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp), clip = false)
             .clip(RoundedCornerShape(20.dp))
             .border(
                 width = 1.dp,
                 brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
                 shape = RoundedCornerShape(20.dp)
             ),
-        color = containerColor.copy(alpha = if (isDark) 0.55f else 0.22f),
+        color = containerColor,
         contentColor = contentColor
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {

@@ -59,11 +59,15 @@ fun HomeScreen(
         val sched = snoozeScheduleToPrompt!!
         AlertDialog(
             onDismissRequest = { snoozeScheduleToPrompt = null },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             title = {
                 Text(
                     text = stringResource(R.string.snooze_title),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
@@ -71,7 +75,8 @@ fun HomeScreen(
                     Text(
                         text = sched.name,
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),

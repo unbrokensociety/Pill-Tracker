@@ -7,6 +7,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -99,6 +100,8 @@ fun AddMedicationScreen(
             }
         }
     }
+    
+    val isDarkTheme = isSystemInDarkTheme()
     
     // Check if form is valid
     val isFormValid = name.isNotBlank() && dosage.isNotBlank() && (scheduleTypeKey == "as_needed" || times.isNotEmpty())
@@ -221,7 +224,11 @@ fun AddMedicationScreen(
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             singleLine = true
                         )
@@ -235,7 +242,11 @@ fun AddMedicationScreen(
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             singleLine = true
                         )
@@ -249,7 +260,11 @@ fun AddMedicationScreen(
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             singleLine = true
                         )
@@ -511,7 +526,15 @@ fun AddMedicationScreen(
                                     label = { Text(stringResource(R.string.stock_total_label)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     shape = RoundedCornerShape(16.dp),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 )
                                 OutlinedTextField(
                                     value = lowStockThresholdInput,
@@ -519,7 +542,15 @@ fun AddMedicationScreen(
                                     label = { Text(stringResource(R.string.stock_low_warning)) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     shape = RoundedCornerShape(16.dp),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 )
                             }
                         }
@@ -533,8 +564,10 @@ fun AddMedicationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
                         val activityContext = context.findActivity() ?: context
+                        val dialogTheme = if (isDarkTheme) android.R.style.Theme_DeviceDefault_Dialog else android.R.style.Theme_DeviceDefault_Light_Dialog
                         val datePicker = DatePickerDialog(
                             activityContext,
+                            dialogTheme,
                             { _, y, m, d ->
                                 selectedStartDate = LocalDate.of(y, m + 1, d)
                             },
@@ -722,8 +755,10 @@ fun AddMedicationScreen(
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     val activityContext = context.findActivity() ?: context
+                                    val dialogTheme = if (isDarkTheme) android.R.style.Theme_DeviceDefault_Dialog else android.R.style.Theme_DeviceDefault_Light_Dialog
                                     val timePickerDialog = TimePickerDialog(
                                         activityContext,
+                                        dialogTheme,
                                         { _, selectedHour, selectedMinute ->
                                             times[index] = LocalTime.of(selectedHour, selectedMinute)
                                         },

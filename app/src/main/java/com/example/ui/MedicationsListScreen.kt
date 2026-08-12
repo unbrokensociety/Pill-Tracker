@@ -44,15 +44,20 @@ fun MedicationsListScreen(
         val med = medicationToDelete!!
         AlertDialog(
             onDismissRequest = { medicationToDelete = null },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             title = {
                 Text(
                     text = stringResource(R.string.dialog_delete_title),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
                 Text(
-                    text = stringResource(R.string.dialog_delete_msg, med.name)
+                    text = stringResource(R.string.dialog_delete_msg, med.name),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             confirmButton = {

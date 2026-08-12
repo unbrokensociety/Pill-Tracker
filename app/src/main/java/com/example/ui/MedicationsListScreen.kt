@@ -259,7 +259,7 @@ fun MedicationInfoCard(
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = if (isLow) "⚠️ ${medication.stockCount}" else "${medication.stockCount} шт.",
+                                text = if (isLow) stringResource(R.string.stock_low_tag, medication.stockCount) else stringResource(R.string.stock_pcs, medication.stockCount),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant

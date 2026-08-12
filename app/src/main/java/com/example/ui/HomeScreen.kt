@@ -199,12 +199,22 @@ fun HomeScreen(
                 transitionSpec = {
                     val isAfter = targetState.isAfter(initialState)
                     if (isAfter) {
-                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
-                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> -width / 8 } + fadeOut(animationSpec = tween(180))
+                        (slideInHorizontally(animationSpec = tween(280, easing = EaseOutCubic)) { width -> width / 10 } + 
+                         fadeIn(animationSpec = tween(220)) + 
+                         scaleIn(initialScale = 0.97f, animationSpec = tween(280, easing = EaseOutCubic))
+                        ).togetherWith(
+                         slideOutHorizontally(animationSpec = tween(240, easing = FastOutLinearInEasing)) { width -> -width / 10 } + 
+                         fadeOut(animationSpec = tween(180)) + 
+                         scaleOut(targetScale = 0.97f, animationSpec = tween(240, easing = FastOutLinearInEasing))
                         )
                     } else {
-                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> -width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
-                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> width / 8 } + fadeOut(animationSpec = tween(180))
+                        (slideInHorizontally(animationSpec = tween(280, easing = EaseOutCubic)) { width -> -width / 10 } + 
+                         fadeIn(animationSpec = tween(220)) + 
+                         scaleIn(initialScale = 0.97f, animationSpec = tween(280, easing = EaseOutCubic))
+                        ).togetherWith(
+                         slideOutHorizontally(animationSpec = tween(240, easing = FastOutLinearInEasing)) { width -> width / 10 } + 
+                         fadeOut(animationSpec = tween(180)) + 
+                         scaleOut(targetScale = 0.97f, animationSpec = tween(240, easing = FastOutLinearInEasing))
                         )
                     }
                 },
@@ -414,6 +424,18 @@ fun MedicationCard(
         com.example.ui.theme.MedicationColors.getColor(schedule.color, schedule.name)
     }
 
+    val checkBgColor by animateColorAsState(
+        targetValue = if (isTaken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+        animationSpec = tween(durationMillis = 280, easing = EaseOutCubic),
+        label = "checkBgColor"
+    )
+
+    val checkBorderColor by animateColorAsState(
+        targetValue = if (isTaken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        animationSpec = tween(durationMillis = 280, easing = EaseOutCubic),
+        label = "checkBorderColor"
+    )
+
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -456,7 +478,7 @@ fun MedicationCard(
                     if (schedule.trackStock) {
                         val isLow = schedule.stockCount <= schedule.lowStockThreshold
                         GlassChip(
-                            text = if (isLow) "⚠️ ${schedule.stockCount}" else "${schedule.stockCount} шт.",
+                            text = if (isLow) stringResource(R.string.stock_low_tag, schedule.stockCount) else stringResource(R.string.stock_pcs, schedule.stockCount),
                             containerColor = if (isLow) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -502,32 +524,38 @@ fun MedicationCard(
                     .size(48.dp)
                     .scale(checkButtonScale)
                     .clip(CircleShape)
-                    .background(
-                        if (isTaken) MaterialTheme.colorScheme.primary 
-                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    )
+                    .background(checkBgColor)
                     .border(
                         width = if (isTaken) 0.dp else 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = checkBorderColor,
                         shape = CircleShape
                     )
                     .clickable { onToggle(!isTaken) },
                 contentAlignment = Alignment.Center
             ) {
-                if (isTaken) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = stringResource(R.string.status_taken),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(26.dp)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = stringResource(R.string.status_taken),
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        modifier = Modifier.size(22.dp)
-                    )
+                AnimatedContent(
+                    targetState = isTaken,
+                    transitionSpec = {
+                        (scaleIn(initialScale = 0.4f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) + fadeIn(animationSpec = tween(200)))
+                            .togetherWith(scaleOut(targetScale = 0.4f, animationSpec = tween(150)) + fadeOut(animationSpec = tween(150)))
+                    },
+                    label = "checkIconAnim"
+                ) { taken ->
+                    if (taken) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = stringResource(R.string.status_taken),
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = stringResource(R.string.status_taken),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }

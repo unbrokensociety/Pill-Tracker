@@ -151,10 +151,16 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (targetRoute?.startsWith("add") == true) {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                        ) + fadeIn(animationSpec = tween(250))
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) + fadeIn(animationSpec = tween(300)) + scaleIn(
+                            initialScale = 0.95f,
+                            animationSpec = tween(300, easing = EaseOutCubic)
+                        )
                     } else if (initialRoute?.startsWith("add") == true) {
-                        fadeIn(animationSpec = tween(220))
+                        fadeIn(animationSpec = tween(250))
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
                         val initialIndex = getRouteIndex(initialRoute)
@@ -165,8 +171,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         }
                         slideIntoContainer(
                             direction,
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
-                        ) + fadeIn(animationSpec = tween(220))
+                            animationSpec = tween(320, easing = EaseOutCubic)
+                        ) + fadeIn(animationSpec = tween(250)) + scaleIn(
+                            initialScale = 0.97f,
+                            animationSpec = tween(320, easing = EaseOutCubic)
+                        )
                     }
                 },
                 exitTransition = {
@@ -175,10 +184,13 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (initialRoute?.startsWith("add") == true) {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                            animationSpec = tween(280, easing = FastOutLinearInEasing)
                         ) + fadeOut(animationSpec = tween(200))
                     } else if (targetRoute?.startsWith("add") == true) {
-                        fadeOut(animationSpec = tween(200))
+                        fadeOut(animationSpec = tween(200)) + scaleOut(
+                            targetScale = 0.96f,
+                            animationSpec = tween(280, easing = FastOutLinearInEasing)
+                        )
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
                         val initialIndex = getRouteIndex(initialRoute)
@@ -189,8 +201,11 @@ fun MainScreen(viewModel: MainViewModel) {
                         }
                         slideOutOfContainer(
                             direction,
-                            animationSpec = tween(280, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(200))
+                            animationSpec = tween(300, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(200)) + scaleOut(
+                            targetScale = 0.97f,
+                            animationSpec = tween(300, easing = FastOutLinearInEasing)
+                        )
                     }
                 }
             ) {

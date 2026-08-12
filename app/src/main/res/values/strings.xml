@@ -261,6 +261,7 @@
     <string name="adherence_title">Medication Discipline</string>
     <string name="adherence_subtitle">Last 30 days</string>
     <string name="adherence_taken">On time</string>
+    <string name="adherence_taken_count">%1$d of %2$d taken</string>
     <string name="adherence_rate">Discipline</string>
     <string name="adherence_as_needed_section">As Needed Medications</string>
     <string name="take_now">Take Now</string>

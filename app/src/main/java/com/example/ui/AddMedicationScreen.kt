@@ -627,7 +627,7 @@ fun AddMedicationScreen(
                                         .background(color)
                                         .border(
                                             width = if (isSelected) 3.dp else 0.dp,
-                                            color = if (index == 7) Color.DarkGray else Color.White,
+                                            color = Color.White,
                                             shape = CircleShape
                                         )
                                         .clickable { selectedColorIdx = index },
@@ -637,7 +637,7 @@ fun AddMedicationScreen(
                                         Icon(
                                             imageVector = Icons.Filled.Check,
                                             contentDescription = "Selected",
-                                            tint = if (index == 7) Color.DarkGray else Color.White,
+                                            tint = Color.White,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }

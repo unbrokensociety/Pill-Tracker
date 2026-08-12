@@ -38,8 +38,8 @@ fun Modifier.tactilePress(
     val scale by animateFloatAsState(
         targetValue = if (isPressed) pressScale else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessHigh
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
         ),
         label = "tactileScale"
     )

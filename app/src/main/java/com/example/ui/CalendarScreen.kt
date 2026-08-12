@@ -259,8 +259,15 @@ fun CalendarScreen(
                             )
                         }
 
+                        val targetProgress = if (totalCount > 0) takenCount.toFloat() / totalCount else 1.0f
+                        val animatedProgress by animateFloatAsState(
+                            targetValue = targetProgress,
+                            animationSpec = tween(durationMillis = 500, easing = EaseOutCubic),
+                            label = "adherenceProgressAnim"
+                        )
+
                         LinearProgressIndicator(
-                            progress = { if (totalCount > 0) takenCount.toFloat() / totalCount else 1.0f },
+                            progress = { animatedProgress },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(8.dp)
@@ -274,7 +281,7 @@ fun CalendarScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = stringResource(R.string.adherence_taken, takenCount, totalCount),
+                                text = stringResource(R.string.adherence_taken_count, takenCount, totalCount),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

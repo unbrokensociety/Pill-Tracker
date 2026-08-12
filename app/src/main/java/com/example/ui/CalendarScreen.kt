@@ -157,12 +157,12 @@ fun CalendarScreen(
                             targetState = currentMonth,
                             transitionSpec = {
                                 if (targetState.isAfter(initialState)) {
-                                    (slideInHorizontally { width -> width } + fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMedium))).togetherWith(
-                                        slideOutHorizontally { width -> -width } + fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMedium))
+                                    (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 3 } + scaleIn(initialScale = 0.94f) + fadeIn(animationSpec = tween(220))).togetherWith(
+                                        slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 3 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
                                     )
                                 } else {
-                                    (slideInHorizontally { width -> -width } + fadeIn(animationSpec = spring(stiffness = Spring.StiffnessMedium))).togetherWith(
-                                        slideOutHorizontally { width -> width } + fadeOut(animationSpec = spring(stiffness = Spring.StiffnessMedium))
+                                    (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 3 } + scaleIn(initialScale = 0.94f) + fadeIn(animationSpec = tween(220))).togetherWith(
+                                        slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 3 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
                                     )
                                 }.using(
                                     SizeTransform(clip = false)

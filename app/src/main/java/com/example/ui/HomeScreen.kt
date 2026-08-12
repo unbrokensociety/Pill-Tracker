@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -108,12 +109,12 @@ fun HomeScreen(
                 transitionSpec = {
                     val isAfter = targetState.isAfter(initialState)
                     if (isAfter) {
-                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
-                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> -width / 8 } + fadeOut(animationSpec = tween(180))
+                        (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 6 } + scaleIn(initialScale = 0.95f) + fadeIn(animationSpec = tween(220))).togetherWith(
+                            slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 6 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
                         )
                     } else {
-                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> -width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
-                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> width / 8 } + fadeOut(animationSpec = tween(180))
+                        (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 6 } + scaleIn(initialScale = 0.95f) + fadeIn(animationSpec = tween(220))).togetherWith(
+                            slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 6 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
                         )
                     }
                 },
@@ -244,7 +245,10 @@ fun DateItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
-                .scale(dateScale)
+                .graphicsLayer {
+                    scaleX = dateScale
+                    scaleY = dateScale
+                }
         ) {
             Text(
                 text = localizedDay,
@@ -314,7 +318,10 @@ fun MedicationCard(
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(cardScale),
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            },
         shape = RoundedCornerShape(24.dp),
         onClick = { onToggle(!isTaken) },
         glassAlpha = if (isTaken) 0.85f else 1.0f,

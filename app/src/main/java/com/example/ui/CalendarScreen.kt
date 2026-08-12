@@ -3,6 +3,7 @@ package com.example.ui
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -93,9 +94,14 @@ fun CalendarScreen(
                                 onClick = { currentMonth = currentMonth.minusMonths(1) },
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month")
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = "Previous Month",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                             
                             val monthName = remember(currentMonth) {
@@ -113,9 +119,14 @@ fun CalendarScreen(
                                 onClick = { currentMonth = currentMonth.plusMonths(1) },
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Month")
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = "Next Month",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                         
@@ -157,12 +168,12 @@ fun CalendarScreen(
                             targetState = currentMonth,
                             transitionSpec = {
                                 if (targetState.isAfter(initialState)) {
-                                    (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 3 } + scaleIn(initialScale = 0.94f) + fadeIn(animationSpec = tween(220))).togetherWith(
-                                        slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 3 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
+                                    (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> width / 4 } + fadeIn(animationSpec = tween(200))).togetherWith(
+                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> -width / 4 } + fadeOut(animationSpec = tween(180))
                                     )
                                 } else {
-                                    (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 3 } + scaleIn(initialScale = 0.94f) + fadeIn(animationSpec = tween(220))).togetherWith(
-                                        slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 3 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
+                                    (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> -width / 4 } + fadeIn(animationSpec = tween(200))).togetherWith(
+                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> width / 4 } + fadeOut(animationSpec = tween(180))
                                     )
                                 }.using(
                                     SizeTransform(clip = false)
@@ -217,6 +228,67 @@ fun CalendarScreen(
                 }
             }
             
+            // Adherence Stats Card
+            item {
+                val takenCount = logs.count { log -> dailySchedules.any { it.scheduleId == log.scheduleId } }
+                val totalCount = dailySchedules.size
+                val adherencePercent = if (totalCount > 0) ((takenCount.toFloat() / totalCount) * 100).toInt() else 100
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.adherence_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "$adherencePercent%",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        LinearProgressIndicator(
+                            progress = { if (totalCount > 0) takenCount.toFloat() / totalCount else 1.0f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.adherence_taken, takenCount, totalCount),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = stringResource(R.string.adherence_discipline),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+
             // Selected Day Label & Compliance Overview
             item {
                 Row(
@@ -288,7 +360,7 @@ fun CalendarDayCell(
     val animatedBg by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.primary
-            isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+            isToday -> MaterialTheme.colorScheme.primaryContainer
             else -> Color.Transparent
         },
         label = "cellBg"

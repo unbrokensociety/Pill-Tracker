@@ -41,7 +41,7 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_brand">Brand</string>
-    <string name="settings_notifications">Notifications Enabled</string>
+    <string name="settings_notifications">Notifications</string>
     
     <string name="settings_language">Language</string>
     <string name="settings_lang_system">System Default</string>
@@ -77,8 +77,8 @@
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">General Parameters</string>
-    <string name="settings_notif_active">Active</string>
-    <string name="settings_notif_disabled">Disabled</string>
+    <string name="settings_notif_active">Yes</string>
+    <string name="settings_notif_disabled">No</string>
     <string name="settings_my_profile">My Profile</string>
     <string name="settings_active_user">Active Member</string>
 
@@ -231,4 +231,40 @@
     <string name="settings_cloud_sync_local">Data is stored locally on device</string>
     <string name="settings_export_and_docs">Export &amp; Documents</string>
 
+    <!-- New Features Strings -->
+    <string name="snooze_15m">15m</string>
+    <string name="snooze_30m">30m</string>
+    <string name="snooze_60m">1h</string>
+    <string name="snooze_title">Snooze Reminder</string>
+    
+    <string name="form_capsule">Capsule</string>
+    <string name="form_tablet">Tablet</string>
+    <string name="form_liquid">Syrup</string>
+    <string name="form_drops">Drops</string>
+    <string name="form_injection">Injection</string>
+    <string name="form_spray">Spray</string>
+    <string name="form_patch">Patch</string>
+
+    <string name="sched_daily">Daily</string>
+    <string name="sched_interval">Every %1$d days</string>
+    <string name="sched_interval_label">Schedule Interval (days)</string>
+    <string name="sched_as_needed">As Needed (PRN)</string>
+    <string name="add_med_form_type_label">Medication Form</string>
+    <string name="add_med_schedule_type_label">Schedule Frequency</string>
+
+    <string name="stock_track_label">Track package stock</string>
+    <string name="stock_total_label">Initial Stock Count</string>
+    <string name="stock_pcs">%1$d pcs</string>
+    <string name="stock_low_tag">Low stock: %1$d pcs</string>
+    <string name="stock_empty_tag">Out of stock (0 pcs)</string>
+
+    <string name="adherence_title">Medication Discipline</string>
+    <string name="adherence_subtitle">Last 30 days</string>
+    <string name="adherence_taken">On time</string>
+    <string name="adherence_rate">Discipline</string>
+    <string name="adherence_as_needed_section">As Needed Medications</string>
+    <string name="take_now">Take Now</string>
+
+    <string name="dialog_cancel">Cancel</string>
+    <string name="adherence_discipline">Discipline</string>
 </resources>

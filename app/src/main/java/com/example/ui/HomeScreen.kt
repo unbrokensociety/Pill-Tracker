@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,72 @@ fun HomeScreen(
     val schedules by viewModel.dailySchedules.collectAsState()
     val logs by viewModel.todayIntakeLogs.collectAsState()
     val streakDays by viewModel.streakDays.collectAsState()
+
+    val context = LocalContext.current
+    val alarmScheduler = remember { com.example.alarms.AlarmScheduler(context.applicationContext) }
+    var snoozeScheduleToPrompt by remember { mutableStateOf<DailyScheduleView?>(null) }
+
+    if (snoozeScheduleToPrompt != null) {
+        val sched = snoozeScheduleToPrompt!!
+        AlertDialog(
+            onDismissRequest = { snoozeScheduleToPrompt = null },
+            title = {
+                Text(
+                    text = stringResource(R.string.snooze_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = sched.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                alarmScheduler.scheduleSnooze(sched.scheduleId, sched.name, 15)
+                                snoozeScheduleToPrompt = null
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.snooze_15m))
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                alarmScheduler.scheduleSnooze(sched.scheduleId, sched.name, 30)
+                                snoozeScheduleToPrompt = null
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.snooze_30m))
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                alarmScheduler.scheduleSnooze(sched.scheduleId, sched.name, 60)
+                                snoozeScheduleToPrompt = null
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(stringResource(R.string.snooze_60m))
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { snoozeScheduleToPrompt = null }) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -104,17 +171,40 @@ fun HomeScreen(
                 }
             }
 
+            val visibleSchedules = remember(schedules, selectedDate) {
+                schedules.filter { sched ->
+                    when (sched.scheduleType) {
+                        "interval" -> {
+                            val startLocal = java.time.Instant.ofEpochMilli(sched.startDate)
+                                .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                            if (selectedDate.isBefore(startLocal)) {
+                                false
+                            } else {
+                                val daysDiff = java.time.temporal.ChronoUnit.DAYS.between(startLocal, selectedDate)
+                                daysDiff % (if (sched.intervalDays > 0) sched.intervalDays else 1) == 0L
+                            }
+                        }
+                        "as_needed" -> false
+                        else -> true
+                    }
+                }
+            }
+
+            val prnSchedules = remember(schedules) {
+                schedules.filter { it.scheduleType == "as_needed" }
+            }
+
             AnimatedContent(
                 targetState = selectedDate,
                 transitionSpec = {
                     val isAfter = targetState.isAfter(initialState)
                     if (isAfter) {
-                        (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 6 } + scaleIn(initialScale = 0.95f) + fadeIn(animationSpec = tween(220))).togetherWith(
-                            slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 6 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
+                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
+                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> -width / 8 } + fadeOut(animationSpec = tween(180))
                         )
                     } else {
-                        (slideInHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> -width / 6 } + scaleIn(initialScale = 0.95f) + fadeIn(animationSpec = tween(220))).togetherWith(
-                            slideOutHorizontally(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { width -> width / 6 } + scaleOut(targetScale = 0.95f) + fadeOut(animationSpec = tween(180))
+                        (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> -width / 8 } + fadeIn(animationSpec = tween(200))).togetherWith(
+                            slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> width / 8 } + fadeOut(animationSpec = tween(180))
                         )
                     }
                 },
@@ -122,7 +212,7 @@ fun HomeScreen(
                 label = "dayContentTransition",
                 modifier = Modifier.fillMaxSize()
             ) { currDate ->
-                if (schedules.isEmpty()) {
+                if (visibleSchedules.isEmpty() && prnSchedules.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -174,15 +264,39 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(schedules, key = { it.scheduleId }) { schedule ->
+                        items(visibleSchedules, key = { it.scheduleId }) { schedule ->
                             val isTaken = remember(logs, schedule.scheduleId) { 
                                 logs.any { it.scheduleId == schedule.scheduleId } 
                             }
                             MedicationCard(
                                 schedule = schedule,
                                 isTaken = isTaken,
-                                onToggle = { taken -> viewModel.toggleLog(schedule, taken) }
+                                onToggle = { taken -> viewModel.toggleLog(schedule, taken) },
+                                onSnooze = { snoozeScheduleToPrompt = schedule }
                             )
+                        }
+
+                        if (prnSchedules.isNotEmpty()) {
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(R.string.adherence_as_needed_section),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp)
+                                )
+                            }
+                            items(prnSchedules, key = { "prn_${it.scheduleId}" }) { schedule ->
+                                val isTaken = remember(logs, schedule.scheduleId) { 
+                                    logs.any { it.scheduleId == schedule.scheduleId } 
+                                }
+                                MedicationCard(
+                                    schedule = schedule,
+                                    isTaken = isTaken,
+                                    onToggle = { taken -> viewModel.toggleLog(schedule, taken) }
+                                )
+                            }
                         }
                     }
                 }
@@ -211,7 +325,7 @@ fun DateItem(
 
     val customGlassColor = when {
         isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-        isToday -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+        isToday -> MaterialTheme.colorScheme.primaryContainer
         else -> null
     }
 
@@ -271,7 +385,8 @@ fun DateItem(
 fun MedicationCard(
     schedule: DailyScheduleView,
     isTaken: Boolean,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
+    onSnooze: () -> Unit = {}
 ) {
     val cardScale by animateFloatAsState(
         targetValue = if (isTaken) 0.98f else 1.0f,
@@ -332,33 +447,14 @@ fun MedicationCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Liquid Glass Circle badge housing color pill icon
-            GlassCircleIcon(
-                size = 54.dp,
-                tintColor = medColor
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = 24.dp, height = 12.dp)
-                        .scale(1.1f)
-                        .clip(RoundedCornerShape(6.dp))
-                ) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(medColor)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f))
-                        )
-                    }
-                }
-            }
+            // FormType icon inside circle badge
+            com.example.ui.components.FormTypeIcon(
+                formKey = schedule.formType,
+                tint = medColor,
+                backgroundColor = medColor.copy(alpha = 0.18f),
+                size = 52.dp,
+                iconSize = 24.dp
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -371,6 +467,16 @@ fun MedicationCard(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.primary
                     )
+
+                    // Stock Tag if enabled
+                    if (schedule.trackStock) {
+                        val isLow = schedule.stockCount <= schedule.lowStockThreshold
+                        GlassChip(
+                            text = if (isLow) "⚠️ ${schedule.stockCount}" else "${schedule.stockCount} шт.",
+                            containerColor = if (isLow) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
                     // Status Chip
                     if (isTaken) {
@@ -406,26 +512,44 @@ fun MedicationCard(
                 )
             }
             
-            // Interactive Glass Check Circle Button
-            GlassCircleIcon(
-                size = 48.dp,
-                tintColor = if (isTaken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
-                modifier = Modifier.scale(checkButtonScale)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (isTaken) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = stringResource(R.string.status_taken),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    Box(
+                if (!isTaken) {
+                    IconButton(
+                        onClick = onSnooze,
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
-                    )
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
+                    ) {
+                        Text("⏱️", style = MaterialTheme.typography.titleSmall)
+                    }
+                }
+
+                // Interactive Glass Check Circle Button
+                GlassCircleIcon(
+                    size = 48.dp,
+                    tintColor = if (isTaken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                    modifier = Modifier.scale(checkButtonScale)
+                ) {
+                    if (isTaken) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = stringResource(R.string.status_taken),
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+                        )
+                    }
                 }
             }
         }

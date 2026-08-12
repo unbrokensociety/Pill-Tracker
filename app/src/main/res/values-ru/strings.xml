@@ -41,7 +41,7 @@
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
     <string name="settings_theme_brand">Фирменная</string>
-    <string name="settings_notifications">Уведомления включены</string>
+    <string name="settings_notifications">Уведомления</string>
     
     <string name="settings_language">Язык</string>
     <string name="settings_lang_system">Системный язык</string>
@@ -77,8 +77,8 @@
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">Общие параметры</string>
-    <string name="settings_notif_active">Активны</string>
-    <string name="settings_notif_disabled">Отключены</string>
+    <string name="settings_notif_active">Да</string>
+    <string name="settings_notif_disabled">Нет</string>
     <string name="settings_my_profile">Мой профиль</string>
     <string name="settings_active_user">Активный пользователь</string>
 
@@ -231,4 +231,40 @@
     <string name="settings_cloud_sync_local">Данные хранятся локально на устройстве</string>
     <string name="settings_export_and_docs">Экспорт и Документы</string>
 
+    <!-- New Features Strings -->
+    <string name="snooze_15m">На 15 мин</string>
+    <string name="snooze_30m">На 30 мин</string>
+    <string name="snooze_60m">На 1 час</string>
+    <string name="snooze_title">Отложить напоминание</string>
+    
+    <string name="form_capsule">Капсула</string>
+    <string name="form_tablet">Таблетка</string>
+    <string name="form_liquid">Сироп</string>
+    <string name="form_drops">Капли</string>
+    <string name="form_injection">Укол</string>
+    <string name="form_spray">Спрей</string>
+    <string name="form_patch">Пластырь</string>
+
+    <string name="sched_daily">Ежедневно</string>
+    <string name="sched_interval">Каждые %1$d дн.</string>
+    <string name="sched_interval_label">Интервал приема (дней)</string>
+    <string name="sched_as_needed">По необходимости</string>
+    <string name="add_med_form_type_label">Форма выпуска лекарства</string>
+    <string name="add_med_schedule_type_label">Режим приема</string>
+
+    <string name="stock_track_label">Отслеживать остаток в упаковке</string>
+    <string name="stock_total_label">Начальный запас (шт.)</string>
+    <string name="stock_pcs">%1$d шт.</string>
+    <string name="stock_low_tag">Мало: %1$d шт.</string>
+    <string name="stock_empty_tag">Закончились (0 шт.)</string>
+
+    <string name="adherence_title">Дисциплина приема</string>
+    <string name="adherence_subtitle">За последние 30 дней</string>
+    <string name="adherence_taken">Вовремя</string>
+    <string name="adherence_rate">Дисциплина</string>
+    <string name="adherence_as_needed_section">Лекарства по необходимости</string>
+    <string name="take_now">Принять сейчас</string>
+
+    <string name="dialog_cancel">Отмена</string>
+    <string name="adherence_discipline">Дисциплина</string>
 </resources>

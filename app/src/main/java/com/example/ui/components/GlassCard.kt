@@ -266,7 +266,7 @@ fun GlassChip(
                 brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
                 shape = RoundedCornerShape(20.dp)
             ),
-        color = containerColor.copy(alpha = if (isDark) 0.35f else 0.18f),
+        color = containerColor.copy(alpha = if (isDark) 0.55f else 0.22f),
         contentColor = contentColor
     ) {
         Row(

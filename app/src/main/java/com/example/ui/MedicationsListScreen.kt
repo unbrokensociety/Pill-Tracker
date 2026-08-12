@@ -208,36 +208,13 @@ fun MedicationInfoCard(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(medColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                // Custom drawn capsule
-                Box(
-                    modifier = Modifier
-                        .size(width = 24.dp, height = 12.dp)
-                        .scale(1.1f)
-                        .clip(RoundedCornerShape(6.dp))
-                ) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(medColor)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(Color.White.copy(alpha = 0.7f))
-                        )
-                    }
-                }
-            }
+            com.example.ui.components.FormTypeIcon(
+                formKey = medication.formType,
+                tint = medColor,
+                backgroundColor = medColor.copy(alpha = 0.15f),
+                size = 52.dp,
+                iconSize = 24.dp
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -265,18 +242,46 @@ fun MedicationInfoCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.meds_intakes_per_day, medication.timesPerDay),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    val schedLabel = when (medication.scheduleType) {
+                        "interval" -> stringResource(R.string.sched_interval, medication.intervalDays)
+                        "as_needed" -> stringResource(R.string.sched_as_needed)
+                        else -> stringResource(R.string.meds_intakes_per_day, medication.timesPerDay)
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = schedLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    if (medication.trackStock) {
+                        val isLow = medication.stockCount <= medication.lowStockThreshold
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isLow) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (isLow) "⚠️ ${medication.stockCount}" else "${medication.stockCount} шт.",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
 

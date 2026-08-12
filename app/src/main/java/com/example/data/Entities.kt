@@ -16,7 +16,11 @@ data class Medication(
     val startDate: Long,
     val endDate: Long? = null,
     val stockCount: Int = 30,
-    val lowStockThreshold: Int = 5
+    val lowStockThreshold: Int = 5,
+    val formType: String = "capsule",
+    val scheduleType: String = "daily",
+    val intervalDays: Int = 1,
+    val trackStock: Boolean = true
 )
 
 @Entity(tableName = "schedules")

@@ -43,6 +43,13 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.material.icons.filled.Remove
 import java.time.Instant
 
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import com.example.ui.components.FormType
+import com.example.ui.components.FormTypeIcon
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddMedicationScreen(
@@ -55,6 +62,13 @@ fun AddMedicationScreen(
     var notes by remember { mutableStateOf("") }
     var selectedColorIdx by remember { mutableStateOf(0) }
     var selectedStartDate by remember { mutableStateOf(LocalDate.now()) }
+    var formTypeKey by remember { mutableStateOf("capsule") }
+    var scheduleTypeKey by remember { mutableStateOf("daily") } // daily, interval, as_needed
+    var intervalDaysVal by remember { mutableStateOf(2) }
+    var trackStockEnabled by remember { mutableStateOf(true) }
+    var stockCountInput by remember { mutableStateOf("30") }
+    var lowStockThresholdInput by remember { mutableStateOf("5") }
+
     val times = remember { mutableStateListOf<LocalTime>(LocalTime.of(8, 0)) }
     val context = LocalContext.current
 
@@ -66,6 +80,13 @@ fun AddMedicationScreen(
                 dosage = med.dosage
                 notes = med.notes
                 selectedColorIdx = med.color
+                formTypeKey = med.formType
+                scheduleTypeKey = med.scheduleType
+                intervalDaysVal = med.intervalDays
+                trackStockEnabled = med.trackStock
+                stockCountInput = med.stockCount.toString()
+                lowStockThresholdInput = med.lowStockThreshold.toString()
+
                 selectedStartDate = Instant.ofEpochMilli(med.startDate)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
@@ -80,7 +101,7 @@ fun AddMedicationScreen(
     }
     
     // Check if form is valid
-    val isFormValid = name.isNotBlank() && dosage.isNotBlank() && times.isNotEmpty()
+    val isFormValid = name.isNotBlank() && dosage.isNotBlank() && (scheduleTypeKey == "as_needed" || times.isNotEmpty())
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -128,16 +149,22 @@ fun AddMedicationScreen(
                                     dosage = dosage,
                                     notes = notes,
                                     color = selectedColorIdx,
-                                    timesPerDay = times.size,
+                                    timesPerDay = if (scheduleTypeKey == "as_needed") 0 else times.size,
                                     startDate = startOfDayMillis,
-                                    stockCount = 0,
-                                    lowStockThreshold = 0
+                                    stockCount = stockCountInput.toIntOrNull() ?: 30,
+                                    lowStockThreshold = lowStockThresholdInput.toIntOrNull() ?: 5,
+                                    formType = formTypeKey,
+                                    scheduleType = scheduleTypeKey,
+                                    intervalDays = intervalDaysVal,
+                                    trackStock = trackStockEnabled
                                 )
 
+                                val timesToSave = if (scheduleTypeKey == "as_needed") emptyList() else times.map { it.hour to it.minute }
+
                                 if (editingMedicationId != null) {
-                                    viewModel.updateMedication(medToSave, times.map { it.hour to it.minute })
+                                    viewModel.updateMedication(medToSave, timesToSave)
                                 } else {
-                                    viewModel.addMedication(medToSave, times.map { it.hour to it.minute })
+                                    viewModel.addMedication(medToSave, timesToSave)
                                 }
                                 onNavigateBack()
                             }
@@ -258,7 +285,241 @@ fun AddMedicationScreen(
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                     },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                        enabled = true,
+                                        selected = isSelected
+                                    ),
                                     shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Form Type Selector Glass Card
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.add_med_form_type_label),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = 2.dp)
+                        ) {
+                            items(FormType.values()) { formType ->
+                                val isSelected = formTypeKey.equals(formType.key, ignoreCase = true)
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { formTypeKey = formType.key },
+                                    label = {
+                                        Text(
+                                            text = stringResource(formType.stringRes),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        FormTypeIcon(
+                                            formKey = formType.key,
+                                            size = 26.dp,
+                                            iconSize = 14.dp,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
+                                    border = FilterChipDefaults.filterChipBorder(
+                                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                        enabled = true,
+                                        selected = isSelected
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Schedule Frequency Selector Glass Card
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.add_med_schedule_type_label),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val chipColors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            val chipBorderDaily = FilterChipDefaults.filterChipBorder(
+                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                enabled = true,
+                                selected = scheduleTypeKey == "daily"
+                            )
+                            val chipBorderInterval = FilterChipDefaults.filterChipBorder(
+                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                enabled = true,
+                                selected = scheduleTypeKey == "interval"
+                            )
+                            val chipBorderAsNeeded = FilterChipDefaults.filterChipBorder(
+                                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                enabled = true,
+                                selected = scheduleTypeKey == "as_needed"
+                            )
+
+                            FilterChip(
+                                selected = scheduleTypeKey == "daily",
+                                onClick = { scheduleTypeKey = "daily" },
+                                label = { Text(stringResource(R.string.sched_daily)) },
+                                modifier = Modifier.weight(1f),
+                                colors = chipColors,
+                                border = chipBorderDaily,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            FilterChip(
+                                selected = scheduleTypeKey == "interval",
+                                onClick = { scheduleTypeKey = "interval" },
+                                label = { Text(stringResource(R.string.sched_interval, intervalDaysVal)) },
+                                modifier = Modifier.weight(1f),
+                                colors = chipColors,
+                                border = chipBorderInterval,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            FilterChip(
+                                selected = scheduleTypeKey == "as_needed",
+                                onClick = { scheduleTypeKey = "as_needed" },
+                                label = { Text(stringResource(R.string.sched_as_needed)) },
+                                modifier = Modifier.weight(1f),
+                                colors = chipColors,
+                                border = chipBorderAsNeeded,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+
+                        if (scheduleTypeKey == "interval") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sched_interval_label),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { if (intervalDaysVal > 2) intervalDaysVal-- },
+                                        enabled = intervalDaysVal > 2
+                                    ) {
+                                        Icon(Icons.Filled.Remove, contentDescription = "Decrease interval")
+                                    }
+                                    Text(
+                                        text = "$intervalDaysVal",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    IconButton(
+                                        onClick = { if (intervalDaysVal < 30) intervalDaysVal++ },
+                                        enabled = intervalDaysVal < 30
+                                    ) {
+                                        Icon(Icons.Filled.Add, contentDescription = "Increase interval")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Stock Tracker Glass Card
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.stock_track_label),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Switch(
+                                checked = trackStockEnabled,
+                                onCheckedChange = { trackStockEnabled = it }
+                            )
+                        }
+
+                        if (trackStockEnabled) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = stockCountInput,
+                                    onValueChange = { stockCountInput = it.filter { char -> char.isDigit() } },
+                                    label = { Text(stringResource(R.string.stock_total_label)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = lowStockThresholdInput,
+                                    onValueChange = { lowStockThresholdInput = it.filter { char -> char.isDigit() } },
+                                    label = { Text(stringResource(R.string.stock_low_warning)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                         }

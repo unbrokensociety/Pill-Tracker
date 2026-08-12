@@ -233,7 +233,8 @@ fun SettingsScreen(
                                         .clip(RoundedCornerShape(16.dp))
                                         .clickable { viewModel.setTheme(mode) },
                                     shape = RoundedCornerShape(16.dp),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                    border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                                     tonalElevation = if (isSelected) 4.dp else 0.dp
                                 ) {
                                     Column(
@@ -375,7 +376,8 @@ fun SettingsScreen(
                                                 }
                                             },
                                         shape = RoundedCornerShape(14.dp),
-                                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                                     ) {
                                         Box(
                                             modifier = Modifier.padding(vertical = 12.dp, horizontal = 10.dp),
@@ -411,7 +413,8 @@ fun SettingsScreen(
                                                 }
                                             },
                                         shape = RoundedCornerShape(14.dp),
-                                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                                     ) {
                                         Box(
                                             modifier = Modifier.padding(vertical = 12.dp, horizontal = 10.dp),

@@ -27,6 +27,10 @@ private val DarkColorScheme = darkColorScheme(
     onPrimary = TelegramDarkOnPrimary,
     primaryContainer = TelegramDarkPrimaryContainer,
     onPrimaryContainer = TelegramDarkOnPrimaryContainer,
+    secondary = TelegramDarkSecondary,
+    onSecondary = TelegramDarkOnSecondary,
+    secondaryContainer = TelegramDarkSecondaryContainer,
+    onSecondaryContainer = TelegramDarkOnSecondaryContainer,
     background = TelegramDarkBackground,
     onBackground = TelegramDarkOnBackground,
     surface = TelegramDarkSurface,
@@ -34,7 +38,11 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = TelegramDarkSurfaceVariant,
     onSurfaceVariant = TelegramDarkOnSurfaceVariant,
     outline = TelegramDarkOutline,
-    outlineVariant = TelegramDarkOutlineVariant
+    outlineVariant = TelegramDarkOutlineVariant,
+    error = TelegramDarkError,
+    onError = TelegramDarkOnError,
+    errorContainer = TelegramDarkErrorContainer,
+    onErrorContainer = TelegramDarkOnErrorContainer
 )
 
 private val BrandColorScheme = darkColorScheme(
@@ -42,6 +50,10 @@ private val BrandColorScheme = darkColorScheme(
     onPrimary = BrandOnPrimary,
     primaryContainer = BrandPrimaryContainer,
     onPrimaryContainer = BrandOnPrimaryContainer,
+    secondary = BrandSecondary,
+    onSecondary = BrandOnSecondary,
+    secondaryContainer = BrandSecondaryContainer,
+    onSecondaryContainer = BrandOnSecondaryContainer,
     background = BrandBackground,
     onBackground = BrandOnBackground,
     surface = BrandSurface,
@@ -49,7 +61,11 @@ private val BrandColorScheme = darkColorScheme(
     surfaceVariant = BrandSurfaceVariant,
     onSurfaceVariant = BrandOnSurfaceVariant,
     outline = BrandOutline,
-    outlineVariant = BrandOutlineVariant
+    outlineVariant = BrandOutlineVariant,
+    error = BrandError,
+    onError = BrandOnError,
+    errorContainer = BrandErrorContainer,
+    onErrorContainer = BrandOnErrorContainer
 )
 
 @Composable

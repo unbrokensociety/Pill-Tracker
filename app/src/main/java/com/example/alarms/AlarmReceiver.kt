@@ -15,10 +15,28 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 
 class AlarmReceiver : BroadcastReceiver() {
+
+    companion object {
+        const val ACTION_SNOOZE = "com.example.meditracker.ACTION_SNOOZE"
+        const val EXTRA_SNOOZE_MINUTES = "EXTRA_SNOOZE_MINUTES"
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
         val localizedContext = LocaleHelper.getLocalizedContext(context)
         val medicationName = intent?.getStringExtra("EXTRA_MEDICATION_NAME") ?: localizedContext.getString(R.string.alarm_default_med)
         val scheduleId = intent?.getIntExtra("EXTRA_SCHEDULE_ID", -1) ?: -1
+
+        if (intent?.action == ACTION_SNOOZE) {
+            val snoozeMinutes = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, 15)
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (scheduleId != -1) {
+                notificationManager.cancel(scheduleId)
+            }
+
+            val scheduler = AlarmScheduler(context.applicationContext)
+            scheduler.scheduleSnooze(scheduleId, medicationName, snoozeMinutes)
+            return
+        }
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
@@ -106,6 +124,34 @@ class AlarmReceiver : BroadcastReceiver() {
         val defaultMedName = localizedContext.getString(R.string.alarm_default_med)
         val finalMedName = if (medicationName.isBlank()) defaultMedName else medicationName
 
+        // Snooze 15 min intent
+        val snooze15Intent = Intent(localizedContext, AlarmReceiver::class.java).apply {
+            action = ACTION_SNOOZE
+            putExtra("EXTRA_SCHEDULE_ID", scheduleId)
+            putExtra("EXTRA_MEDICATION_NAME", finalMedName)
+            putExtra(EXTRA_SNOOZE_MINUTES, 15)
+        }
+        val snooze15PendingIntent = PendingIntent.getBroadcast(
+            localizedContext,
+            scheduleId * 100 + 15,
+            snooze15Intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Snooze 30 min intent
+        val snooze30Intent = Intent(localizedContext, AlarmReceiver::class.java).apply {
+            action = ACTION_SNOOZE
+            putExtra("EXTRA_SCHEDULE_ID", scheduleId)
+            putExtra("EXTRA_MEDICATION_NAME", finalMedName)
+            putExtra(EXTRA_SNOOZE_MINUTES, 30)
+        }
+        val snooze30PendingIntent = PendingIntent.getBroadcast(
+            localizedContext,
+            scheduleId * 100 + 30,
+            snooze30Intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(localizedContext, channelId)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
             .setContentTitle(localizedContext.getString(R.string.alarm_title, finalMedName))
@@ -116,6 +162,8 @@ class AlarmReceiver : BroadcastReceiver() {
             .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
+            .addAction(0, localizedContext.getString(R.string.snooze_15m), snooze15PendingIntent)
+            .addAction(0, localizedContext.getString(R.string.snooze_30m), snooze30PendingIntent)
 
         notificationManager.notify(scheduleId, builder.build())
     }

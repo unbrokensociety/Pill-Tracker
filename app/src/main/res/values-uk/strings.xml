@@ -41,7 +41,7 @@
     <string name="settings_theme_light">Світла</string>
     <string name="settings_theme_dark">Темна</string>
     <string name="settings_theme_brand">Фірмова</string>
-    <string name="settings_notifications">Сповіщення увімкнено</string>
+    <string name="settings_notifications">Сповіщення</string>
     
     <string name="settings_language">Мова</string>
     <string name="settings_lang_system">Системна мова</string>
@@ -77,8 +77,8 @@
     
     <!-- Settings section localization elements -->
     <string name="settings_group_general">Загальні параметри</string>
-    <string name="settings_notif_active">Активні</string>
-    <string name="settings_notif_disabled">Вимкнені</string>
+    <string name="settings_notif_active">Так</string>
+    <string name="settings_notif_disabled">Ні</string>
     <string name="settings_my_profile">Мій профіль</string>
     <string name="settings_active_user">Активний користувач</string>
 
@@ -231,4 +231,40 @@
     <string name="settings_cloud_sync_local">Дані зберігаються локально на пристрої</string>
     <string name="settings_export_and_docs">Експорт та Документи</string>
 
+    <!-- New Features Strings -->
+    <string name="snooze_15m">На 15 хв</string>
+    <string name="snooze_30m">На 30 хв</string>
+    <string name="snooze_60m">На 1 год</string>
+    <string name="snooze_title">Відкласти нагадування</string>
+    
+    <string name="form_capsule">Капсула</string>
+    <string name="form_tablet">Таблетка</string>
+    <string name="form_liquid">Сироп</string>
+    <string name="form_drops">Краплі</string>
+    <string name="form_injection">Укол</string>
+    <string name="form_spray">Спрей</string>
+    <string name="form_patch">Пластир</string>
+
+    <string name="sched_daily">Щодня</string>
+    <string name="sched_interval">Кожні %1$d дн.</string>
+    <string name="sched_interval_label">Інтервал прийому (днів)</string>
+    <string name="sched_as_needed">За потреби</string>
+    <string name="add_med_form_type_label">Форма випуску ліків</string>
+    <string name="add_med_schedule_type_label">Режим прийому</string>
+
+    <string name="stock_track_label">Відстежувати залишок в упаковці</string>
+    <string name="stock_total_label">Початковий запас (шт.)</string>
+    <string name="stock_pcs">%1$d шт.</string>
+    <string name="stock_low_tag">Мало: %1$d шт.</string>
+    <string name="stock_empty_tag">Закінчились (0 шт.)</string>
+
+    <string name="adherence_title">Дисципліна прийому</string>
+    <string name="adherence_subtitle">За останні 30 днів</string>
+    <string name="adherence_taken">Вчасно</string>
+    <string name="adherence_rate">Дисципліна</string>
+    <string name="adherence_as_needed_section">Ліки за потреби</string>
+    <string name="take_now">Прийняти зараз</string>
+
+    <string name="dialog_cancel">Скасувати</string>
+    <string name="adherence_discipline">Дисципліна</string>
 </resources>

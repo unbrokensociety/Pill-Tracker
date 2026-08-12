@@ -57,6 +57,41 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
+    fun scheduleSnooze(scheduleId: Int, medicationName: String, snoozeMinutes: Int) {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            putExtra("EXTRA_SCHEDULE_ID", scheduleId)
+            putExtra("EXTRA_MEDICATION_NAME", medicationName)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            scheduleId * 1000 + snoozeMinutes,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val triggerAtMillis = System.currentTimeMillis() + (snoozeMinutes * 60 * 1000L)
+
+        try {
+            val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent)
+            alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        } catch (e: Exception) {
+            try {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            } catch (ex: Exception) {
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
+        }
+    }
+
     fun cancelAlarm(schedule: Schedule) {
         val intent = Intent(context, AlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(

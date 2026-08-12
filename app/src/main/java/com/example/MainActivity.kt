@@ -151,22 +151,22 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (targetRoute?.startsWith("add") == true) {
                         slideIntoContainer(
                             AnimatedContentTransitionScope.SlideDirection.Up,
-                            initialOffset = { (it * 0.40f).toInt() },
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
-                        ) + scaleIn(initialScale = 0.90f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(animationSpec = tween(260))
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(250))
                     } else if (initialRoute?.startsWith("add") == true) {
-                        scaleIn(initialScale = 0.94f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(animationSpec = tween(260))
+                        fadeIn(animationSpec = tween(220))
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
                         val initialIndex = getRouteIndex(initialRoute)
-                        val isNext = targetIndex > initialIndex
-                        val direction = if (isNext) AnimatedContentTransitionScope.SlideDirection.Left else AnimatedContentTransitionScope.SlideDirection.Right
-                        val initialOffset = { width: Int -> if (isNext) (width * 0.32f).toInt() else (-width * 0.32f).toInt() }
+                        val direction = if (targetIndex > initialIndex) {
+                            AnimatedContentTransitionScope.SlideDirection.Left
+                        } else {
+                            AnimatedContentTransitionScope.SlideDirection.Right
+                        }
                         slideIntoContainer(
                             direction,
-                            initialOffset = initialOffset,
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy)
-                        ) + scaleIn(initialScale = 0.93f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(animationSpec = tween(280, easing = LinearOutSlowInEasing))
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeIn(animationSpec = tween(220))
                     }
                 },
                 exitTransition = {
@@ -175,33 +175,23 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (initialRoute?.startsWith("add") == true) {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
-                            targetOffset = { (it * 0.40f).toInt() },
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
-                        ) + scaleOut(targetScale = 0.90f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(animationSpec = tween(220))
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(200))
                     } else if (targetRoute?.startsWith("add") == true) {
-                        scaleOut(targetScale = 0.94f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(animationSpec = tween(220))
+                        fadeOut(animationSpec = tween(200))
                     } else {
                         val targetIndex = getRouteIndex(targetRoute)
                         val initialIndex = getRouteIndex(initialRoute)
-                        val isNext = targetIndex > initialIndex
-                        val direction = if (isNext) AnimatedContentTransitionScope.SlideDirection.Left else AnimatedContentTransitionScope.SlideDirection.Right
-                        val targetOffset = { width: Int -> if (isNext) (-width * 0.32f).toInt() else (width * 0.32f).toInt() }
+                        val direction = if (targetIndex > initialIndex) {
+                            AnimatedContentTransitionScope.SlideDirection.Left
+                        } else {
+                            AnimatedContentTransitionScope.SlideDirection.Right
+                        }
                         slideOutOfContainer(
                             direction,
-                            targetOffset = targetOffset,
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy)
-                        ) + scaleOut(targetScale = 0.95f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(animationSpec = tween(220, easing = FastOutLinearInEasing))
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(200))
                     }
-                },
-                popEnterTransition = {
-                    scaleIn(initialScale = 0.94f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(animationSpec = tween(260))
-                },
-                popExitTransition = {
-                    slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Down,
-                        targetOffset = { (it * 0.40f).toInt() },
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioLowBouncy)
-                    ) + scaleOut(targetScale = 0.90f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(animationSpec = tween(220))
                 }
             ) {
                 composable("home") { 

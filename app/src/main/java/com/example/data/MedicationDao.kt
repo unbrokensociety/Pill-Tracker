@@ -37,7 +37,8 @@ interface MedicationDao {
 
     // A unified query to get today's schedules with medication info
     @Query("""
-        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute 
+        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
         FROM medications m 
         INNER JOIN schedules s ON m.id = s.medicationId
         WHERE :date >= m.startDate AND (m.endDate IS NULL OR :date <= m.endDate)
@@ -72,27 +73,29 @@ interface MedicationDao {
     @Query("SELECT DISTINCT scheduledDateEpoch FROM intake_logs ORDER BY scheduledDateEpoch DESC")
     fun getAllIntakeLogDates(): Flow<List<Long>>
 
-    @Query("UPDATE medications SET stockCount = MAX(0, stockCount - 1) WHERE id = :medicationId")
+    @Query("UPDATE medications SET stockCount = MAX(0, stockCount - 1) WHERE id = :medicationId AND trackStock = 1")
     suspend fun decrementStock(medicationId: Int)
 
-    @Query("UPDATE medications SET stockCount = stockCount + 1 WHERE id = :medicationId")
+    @Query("UPDATE medications SET stockCount = stockCount + 1 WHERE id = :medicationId AND trackStock = 1")
     suspend fun incrementStock(medicationId: Int)
 
     @Query("UPDATE medications SET stockCount = stockCount + :amount WHERE id = :medicationId")
     suspend fun refillStock(medicationId: Int, amount: Int)
 
-    @Query("SELECT * FROM medications WHERE stockCount <= lowStockThreshold")
+    @Query("SELECT * FROM medications WHERE trackStock = 1 AND stockCount <= lowStockThreshold")
     fun getLowStockMedications(): Flow<List<Medication>>
 
     @Query("""
-        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute 
+        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
         FROM medications m 
         INNER JOIN schedules s ON m.id = s.medicationId
     """)
     suspend fun getAllActiveScheduleViews(): List<DailyScheduleView>
 
     @Query("""
-        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute 
+        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
         FROM medications m 
         INNER JOIN schedules s ON m.id = s.medicationId
         WHERE s.id = :scheduleId LIMIT 1
@@ -107,5 +110,12 @@ data class DailyScheduleView(
     val dosage: String,
     val color: Int,
     val timeHour: Int,
-    val timeMinute: Int
+    val timeMinute: Int,
+    val formType: String = "capsule",
+    val scheduleType: String = "daily",
+    val intervalDays: Int = 1,
+    val stockCount: Int = 30,
+    val lowStockThreshold: Int = 5,
+    val trackStock: Boolean = true,
+    val startDate: Long = 0L
 )

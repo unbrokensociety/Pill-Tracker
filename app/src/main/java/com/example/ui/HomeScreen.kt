@@ -147,10 +147,20 @@ fun HomeScreen(
         ) {
             
             // Streak motivation banner
-            StreakBanner(streakDays = streakDays)
+            AnimatedVisibility(
+                visible = true,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                StreakBanner(streakDays = streakDays)
+            }
 
             val lowStockMeds by viewModel.lowStockMedications.collectAsState()
-            if (lowStockMeds.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = lowStockMeds.isNotEmpty(),
+                enter = fadeIn(animationSpec = tween(250)) + expandVertically(animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow)),
+                exit = fadeOut(animationSpec = tween(200)) + shrinkVertically(animationSpec = tween(200))
+            ) {
                 LowStockBanner(
                     lowStockMeds = lowStockMeds,
                     onRefill = { medId -> viewModel.refillStock(medId, 30) }
@@ -164,7 +174,7 @@ fun HomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 dateStrip.forEach { d ->
@@ -189,25 +199,29 @@ fun HomeScreen(
                 targetState = selectedDate,
                 transitionSpec = {
                     val isAfter = targetState.isAfter(initialState)
-                    if (isAfter) {
-                        (slideInHorizontally(animationSpec = tween(280, easing = EaseOutCubic)) { width -> width / 10 } + 
-                         fadeIn(animationSpec = tween(220)) + 
-                         scaleIn(initialScale = 0.97f, animationSpec = tween(280, easing = EaseOutCubic))
-                        ).togetherWith(
-                         slideOutHorizontally(animationSpec = tween(240, easing = FastOutLinearInEasing)) { width -> -width / 10 } + 
-                         fadeOut(animationSpec = tween(180)) + 
-                         scaleOut(targetScale = 0.97f, animationSpec = tween(240, easing = FastOutLinearInEasing))
-                        )
+                    val slideDir = if (isAfter) {
+                        AnimatedContentTransitionScope.SlideDirection.Left
                     } else {
-                        (slideInHorizontally(animationSpec = tween(280, easing = EaseOutCubic)) { width -> -width / 10 } + 
-                         fadeIn(animationSpec = tween(220)) + 
-                         scaleIn(initialScale = 0.97f, animationSpec = tween(280, easing = EaseOutCubic))
-                        ).togetherWith(
-                         slideOutHorizontally(animationSpec = tween(240, easing = FastOutLinearInEasing)) { width -> width / 10 } + 
-                         fadeOut(animationSpec = tween(180)) + 
-                         scaleOut(targetScale = 0.97f, animationSpec = tween(240, easing = FastOutLinearInEasing))
-                        )
+                        AnimatedContentTransitionScope.SlideDirection.Right
                     }
+                    (slideIntoContainer(
+                        towards = slideDir,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    ) + fadeIn(animationSpec = tween(220)) + scaleIn(
+                        initialScale = 0.96f,
+                        animationSpec = tween(220, easing = EaseOutCubic)
+                    )).togetherWith(
+                        slideOutOfContainer(
+                            towards = slideDir,
+                            animationSpec = tween(200, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(160)) + scaleOut(
+                            targetScale = 0.96f,
+                            animationSpec = tween(200, easing = FastOutLinearInEasing)
+                        )
+                    )
                 },
                 contentAlignment = Alignment.TopCenter,
                 label = "dayContentTransition",
@@ -259,8 +273,8 @@ fun HomeScreen(
                         contentPadding = PaddingValues(
                             start = 16.dp,
                             end = 16.dp,
-                            top = 16.dp,
-                            bottom = bottomPadding + 88.dp // Ensures content scrolls fully above bottom navigation
+                            top = 10.dp,
+                            bottom = bottomPadding + 88.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
@@ -269,17 +283,26 @@ fun HomeScreen(
                             val isTaken = remember(logs, schedule.scheduleId) { 
                                 logs.any { it.scheduleId == schedule.scheduleId } 
                             }
-                            MedicationCard(
-                                schedule = schedule,
-                                isTaken = isTaken,
-                                onToggle = { taken -> viewModel.toggleLog(schedule, taken) },
-                                onSnooze = { snoozeScheduleToPrompt = schedule }
-                            )
+                            Box(
+                                modifier = Modifier.animateItem(
+                                    placementSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMediumLow
+                                    )
+                                )
+                            ) {
+                                MedicationCard(
+                                    schedule = schedule,
+                                    isTaken = isTaken,
+                                    onToggle = { taken -> viewModel.toggleLog(schedule, taken) },
+                                    onSnooze = { snoozeScheduleToPrompt = schedule }
+                                )
+                            }
                         }
 
                         if (prnSchedules.isNotEmpty()) {
                             item {
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = stringResource(R.string.adherence_as_needed_section),
                                     style = MaterialTheme.typography.titleSmall,
@@ -292,11 +315,20 @@ fun HomeScreen(
                                 val isTaken = remember(logs, schedule.scheduleId) { 
                                     logs.any { it.scheduleId == schedule.scheduleId } 
                                 }
-                                MedicationCard(
-                                    schedule = schedule,
-                                    isTaken = isTaken,
-                                    onToggle = { taken -> viewModel.toggleLog(schedule, taken) }
-                                )
+                                Box(
+                                    modifier = Modifier.animateItem(
+                                        placementSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMediumLow
+                                        )
+                                    )
+                                ) {
+                                    MedicationCard(
+                                        schedule = schedule,
+                                        isTaken = isTaken,
+                                        onToggle = { taken -> viewModel.toggleLog(schedule, taken) }
+                                    )
+                                }
                             }
                         }
                     }

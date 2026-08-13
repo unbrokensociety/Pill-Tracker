@@ -347,11 +347,20 @@ fun CalendarScreen(
                     val isTaken = remember(logs, schedule.scheduleId) { 
                         logs.any { it.scheduleId == schedule.scheduleId } 
                     }
-                    MedicationCard(
-                        schedule = schedule,
-                        isTaken = isTaken,
-                        onToggle = { taken -> viewModel.toggleLog(schedule, taken) }
-                    )
+                    Box(
+                        modifier = Modifier.animateItem(
+                            placementSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        )
+                    ) {
+                        MedicationCard(
+                            schedule = schedule,
+                            isTaken = isTaken,
+                            onToggle = { taken -> viewModel.toggleLog(schedule, taken) }
+                        )
+                    }
                 }
             }
         }

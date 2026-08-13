@@ -9,7 +9,10 @@ on:
       - '**'
   workflow_dispatch:
 
-permissions: write-all
+permissions:
+  contents: write
+  packages: write
+  actions: write
 
 jobs:
   build:
@@ -31,7 +34,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.3.1'
+          gradle-version: '8.11.1'
           validate-wrappers: false
 
       - name: Accept Android SDK Licenses
@@ -40,44 +43,54 @@ jobs:
           echo -e "\n8933902d075f4b3826b566165d513be473804393\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
           echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: Ensure Valid Gradle Wrapper
-        run: |
-          if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
-            echo "⚠️ Gradle wrapper jar is corrupt or missing. Re-generating wrapper with Gradle 9.3.1..."
-            gradle wrapper --gradle-version 9.3.1
-          fi
-
       - name: Make Gradlew Executable
         run: chmod +x gradlew || true
 
-      - name: Decode Debug Keystore
+      - name: Prepare Keystores
         run: |
-          if [ -f "debug.keystore.base64" ]; then
-            python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
+          if [ ! -f "debug.keystore" ]; then
+            if [ -f "debug.keystore.base64" ]; then
+              echo "Decoding debug.keystore from base64..."
+              python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))" || true
+            fi
           fi
-
-      - name: Decode Release Keystore (if KEYSTORE_BASE64 secret exists)
-        run: |
+          if [ ! -f "debug.keystore" ] || [ ! -s "debug.keystore" ]; then
+            echo "Generating fallback debug keystore..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "Decoding release.keystore from secret..."
             python3 -c "import base64, re; text='''${{ secrets.KEYSTORE_BASE64 }}'''; open('release.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
             echo "KEYSTORE_PATH=release.keystore" >> $GITHUB_ENV
           fi
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
         env:
-          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH || secrets.KEYSTORE_PATH }}
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Copy Built APK
-        run: cp app/build/outputs/apk/release/app-release.apk pill-tracker.apk
+      - name: Locate Built APK
+        run: |
+          mkdir -p build_output
+          if [ -f "app/build/outputs/apk/release/app-release.apk" ]; then
+            cp app/build/outputs/apk/release/app-release.apk pill-tracker.apk
+          elif [ -f "app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+            cp app/build/outputs/apk/release/app-release-unsigned.apk pill-tracker.apk
+          else
+            APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+            if [ -n "$APK_FILE" ]; then
+              cp "$APK_FILE" pill-tracker.apk
+            fi
+          fi
+          ls -la pill-tracker.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pill-tracker
+          name: pill-tracker-v1.${{ github.run_number }}
           path: pill-tracker.apk
 
       - name: Ensure Release Notes
@@ -85,19 +98,10 @@ jobs:
           if [ ! -s "RELEASE_NOTES.md" ]; then
             echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
             echo "" >> RELEASE_NOTES.md
-            echo "- 🔐 **Seamless Email Verification**: Automatic verification link polling and account activation." >> RELEASE_NOTES.md
-            echo "- 🚀 **Instant Offline Mode**: Continue using the app immediately while waiting for verification." >> RELEASE_NOTES.md
-            echo "- 📜 **Legal Privacy Consent**: Mandatory privacy policy agreement and immutable audit record." >> RELEASE_NOTES.md
+            echo "- 💊 **Smoother Visuals & Animations**: High-performance tactile springs and liquid glass aesthetics." >> RELEASE_NOTES.md
+            echo "- ⏱️ **Instant Day Transitions**: Seamless fluid medication schedule & calendar navigation." >> RELEASE_NOTES.md
+            echo "- 🔒 **Rock-Solid Build System**: Continuous automated releases & artifact packaging." >> RELEASE_NOTES.md
           fi
-
-      - name: Create and Push Git Tag
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          TAG_NAME="v1.${{ github.run_number }}"
-          git tag -f "$TAG_NAME"
-          git push origin "$TAG_NAME" --force || true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

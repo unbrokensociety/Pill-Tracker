@@ -153,28 +153,15 @@ fun MainScreen(viewModel: MainViewModel) {
                             AnimatedContentTransitionScope.SlideDirection.Up,
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioLowBouncy,
-                                stiffness = Spring.StiffnessLow
+                                stiffness = Spring.StiffnessMedium
                             )
-                        ) + fadeIn(animationSpec = tween(300)) + scaleIn(
-                            initialScale = 0.95f,
-                            animationSpec = tween(300, easing = EaseOutCubic)
-                        )
+                        ) + fadeIn(animationSpec = tween(200))
                     } else if (initialRoute?.startsWith("add") == true) {
-                        fadeIn(animationSpec = tween(250))
+                        fadeIn(animationSpec = tween(160)) + scaleIn(initialScale = 0.98f, animationSpec = tween(160, easing = EaseOutCubic))
                     } else {
-                        val targetIndex = getRouteIndex(targetRoute)
-                        val initialIndex = getRouteIndex(initialRoute)
-                        val direction = if (targetIndex > initialIndex) {
-                            AnimatedContentTransitionScope.SlideDirection.Left
-                        } else {
-                            AnimatedContentTransitionScope.SlideDirection.Right
-                        }
-                        slideIntoContainer(
-                            direction,
-                            animationSpec = tween(320, easing = EaseOutCubic)
-                        ) + fadeIn(animationSpec = tween(250)) + scaleIn(
-                            initialScale = 0.97f,
-                            animationSpec = tween(320, easing = EaseOutCubic)
+                        fadeIn(animationSpec = tween(180, easing = EaseOutCubic)) + scaleIn(
+                            initialScale = 0.985f,
+                            animationSpec = tween(180, easing = EaseOutCubic)
                         )
                     }
                 },
@@ -184,28 +171,15 @@ fun MainScreen(viewModel: MainViewModel) {
                     if (initialRoute?.startsWith("add") == true) {
                         slideOutOfContainer(
                             AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(280, easing = FastOutLinearInEasing)
-                        ) + fadeOut(animationSpec = tween(200))
+                            animationSpec = tween(200, easing = FastOutLinearInEasing)
+                        ) + fadeOut(animationSpec = tween(150))
                     } else if (targetRoute?.startsWith("add") == true) {
-                        fadeOut(animationSpec = tween(200)) + scaleOut(
-                            targetScale = 0.96f,
-                            animationSpec = tween(280, easing = FastOutLinearInEasing)
+                        fadeOut(animationSpec = tween(150)) + scaleOut(
+                            targetScale = 0.98f,
+                            animationSpec = tween(200, easing = FastOutLinearInEasing)
                         )
                     } else {
-                        val targetIndex = getRouteIndex(targetRoute)
-                        val initialIndex = getRouteIndex(initialRoute)
-                        val direction = if (targetIndex > initialIndex) {
-                            AnimatedContentTransitionScope.SlideDirection.Left
-                        } else {
-                            AnimatedContentTransitionScope.SlideDirection.Right
-                        }
-                        slideOutOfContainer(
-                            direction,
-                            animationSpec = tween(300, easing = FastOutLinearInEasing)
-                        ) + fadeOut(animationSpec = tween(200)) + scaleOut(
-                            targetScale = 0.97f,
-                            animationSpec = tween(300, easing = FastOutLinearInEasing)
-                        )
+                        fadeOut(animationSpec = tween(120, easing = FastOutLinearInEasing))
                     }
                 }
             ) {

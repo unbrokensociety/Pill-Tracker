@@ -167,15 +167,11 @@ fun CalendarScreen(
                         AnimatedContent(
                             targetState = currentMonth,
                             transitionSpec = {
-                                if (targetState.isAfter(initialState)) {
-                                    (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> width / 4 } + fadeIn(animationSpec = tween(200))).togetherWith(
-                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> -width / 4 } + fadeOut(animationSpec = tween(180))
-                                    )
-                                } else {
-                                    (slideInHorizontally(animationSpec = tween(220, easing = LinearOutSlowInEasing)) { width -> -width / 4 } + fadeIn(animationSpec = tween(200))).togetherWith(
-                                        slideOutHorizontally(animationSpec = tween(200, easing = FastOutLinearInEasing)) { width -> width / 4 } + fadeOut(animationSpec = tween(180))
-                                    )
-                                }.using(
+                                (fadeIn(animationSpec = tween(150, easing = LinearOutSlowInEasing)) + 
+                                 scaleIn(initialScale = 0.98f, animationSpec = tween(150, easing = EaseOutCubic))
+                                ).togetherWith(
+                                 fadeOut(animationSpec = tween(90, easing = FastOutLinearInEasing))
+                                ).using(
                                     SizeTransform(clip = false)
                                 )
                             },

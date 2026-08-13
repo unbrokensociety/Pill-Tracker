@@ -34,7 +34,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.11.1'
+          gradle-version: '9.3.1'
           validate-wrappers: false
 
       - name: Accept Android SDK Licenses
@@ -43,8 +43,10 @@ jobs:
           echo -e "\n8933902d075f4b3826b566165d513be473804393\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
           echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: Make Gradlew Executable
-        run: chmod +x gradlew || true
+      - name: Ensure Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 9.3.1 || true
+          chmod +x gradlew || true
 
       - name: Prepare Keystores
         run: |
@@ -65,7 +67,7 @@ jobs:
           fi
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: gradle assembleRelease --no-daemon --stacktrace
         env:
           KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}

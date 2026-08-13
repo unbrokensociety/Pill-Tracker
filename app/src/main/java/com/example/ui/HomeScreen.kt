@@ -198,29 +198,10 @@ fun HomeScreen(
             AnimatedContent(
                 targetState = selectedDate,
                 transitionSpec = {
-                    val isAfter = targetState.isAfter(initialState)
-                    val slideDir = if (isAfter) {
-                        AnimatedContentTransitionScope.SlideDirection.Left
-                    } else {
-                        AnimatedContentTransitionScope.SlideDirection.Right
-                    }
-                    (slideIntoContainer(
-                        towards = slideDir,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        )
-                    ) + fadeIn(animationSpec = tween(220)) + scaleIn(
-                        initialScale = 0.96f,
-                        animationSpec = tween(220, easing = EaseOutCubic)
-                    )).togetherWith(
-                        slideOutOfContainer(
-                            towards = slideDir,
-                            animationSpec = tween(200, easing = FastOutLinearInEasing)
-                        ) + fadeOut(animationSpec = tween(160)) + scaleOut(
-                            targetScale = 0.96f,
-                            animationSpec = tween(200, easing = FastOutLinearInEasing)
-                        )
+                    (fadeIn(animationSpec = tween(150, easing = EaseOutCubic)) + 
+                     scaleIn(initialScale = 0.98f, animationSpec = tween(150, easing = EaseOutCubic))
+                    ).togetherWith(
+                     fadeOut(animationSpec = tween(90, easing = FastOutLinearInEasing))
                     )
                 },
                 contentAlignment = Alignment.TopCenter,

@@ -202,9 +202,7 @@ fun GlassCard(
 
     Box(modifier = finalModifier) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(contentPadding),
+            modifier = Modifier.padding(contentPadding),
             horizontalAlignment = horizontalAlignment,
             content = content
         )

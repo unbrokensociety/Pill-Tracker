@@ -56,11 +56,19 @@ jobs:
             python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
           fi
 
+      - name: Decode Release Keystore (if KEYSTORE_BASE64 secret exists)
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            python3 -c "import base64, re; text='''${{ secrets.KEYSTORE_BASE64 }}'''; open('release.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
+            echo "KEYSTORE_PATH=release.keystore" >> $GITHUB_ENV
+          fi
+
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon
         env:
-          KEYSTORE_PATH: ${{ secrets.KEYSTORE_PATH }}
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH || secrets.KEYSTORE_PATH }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Copy Built APK

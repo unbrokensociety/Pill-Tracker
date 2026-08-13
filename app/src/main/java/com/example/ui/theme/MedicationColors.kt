@@ -18,7 +18,7 @@ object MedicationColors {
         return if (index in predefinedColors.indices) {
             predefinedColors[index]
         } else if (fallbackName.isNotBlank()) {
-            val idx = Math.abs(fallbackName.hashCode()) % predefinedColors.size
+            val idx = (fallbackName.hashCode() and 0x7FFFFFFF) % predefinedColors.size
             predefinedColors[idx]
         } else {
             predefinedColors[0]

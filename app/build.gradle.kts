@@ -44,11 +44,11 @@ android {
     }
     create("release") {
       val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
-      val hasCustomReleaseKey = releaseKeystorePath != null && file(releaseKeystorePath).exists()
+      val hasCustomReleaseKey = !releaseKeystorePath.isNullOrBlank() && file(releaseKeystorePath).let { it.exists() && it.isFile }
       if (hasCustomReleaseKey) {
         storeFile = file(releaseKeystorePath!!)
         storePassword = System.getenv("STORE_PASSWORD")
-        keyAlias = "upload"
+        keyAlias = System.getenv("KEY_ALIAS").takeIf { !it.isNullOrBlank() } ?: "upload"
         keyPassword = System.getenv("KEY_PASSWORD")
       } else {
         val ksFile = file("${rootDir}/debug.keystore")

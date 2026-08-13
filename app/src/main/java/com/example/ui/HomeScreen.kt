@@ -177,23 +177,8 @@ fun HomeScreen(
                 }
             }
 
-            val visibleSchedules = remember(schedules, selectedDate) {
-                schedules.filter { sched ->
-                    when (sched.scheduleType) {
-                        "interval" -> {
-                            val startLocal = java.time.Instant.ofEpochMilli(sched.startDate)
-                                .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-                            if (selectedDate.isBefore(startLocal)) {
-                                false
-                            } else {
-                                val daysDiff = java.time.temporal.ChronoUnit.DAYS.between(startLocal, selectedDate)
-                                daysDiff % (if (sched.intervalDays > 0) sched.intervalDays else 1) == 0L
-                            }
-                        }
-                        "as_needed" -> false
-                        else -> true
-                    }
-                }
+            val visibleSchedules = remember(schedules) {
+                schedules.filter { it.scheduleType != "as_needed" }
             }
 
             val prnSchedules = remember(schedules) {
@@ -422,8 +407,12 @@ fun MedicationCard(
         label = "checkButtonScale"
     )
 
-    val formattedTime = remember(schedule.timeHour, schedule.timeMinute) {
-        String.format("%02d:%02d", schedule.timeHour, schedule.timeMinute)
+    val formattedTime = remember(schedule.timeHour, schedule.timeMinute, schedule.scheduleType) {
+        if (schedule.scheduleType == "as_needed" || schedule.timeHour < 0) {
+            null
+        } else {
+            String.format("%02d:%02d", schedule.timeHour, schedule.timeMinute)
+        }
     }
 
     val medColor = remember(schedule.color, schedule.name) {
@@ -474,11 +463,19 @@ fun MedicationCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Glass Time Pill
-                    GlassChip(
-                        text = formattedTime,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    if (formattedTime != null) {
+                        GlassChip(
+                            text = formattedTime,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    } else {
+                        GlassChip(
+                            text = stringResource(R.string.sched_as_needed),
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
 
                     // Stock Tag if enabled
                     if (schedule.trackStock) {

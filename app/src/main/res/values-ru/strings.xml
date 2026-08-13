@@ -261,6 +261,7 @@
     <string name="adherence_title">Дисциплина приема</string>
     <string name="adherence_subtitle">За последние 30 дней</string>
     <string name="adherence_taken">Вовремя</string>
+    <string name="adherence_taken_count">Принято %1$d из %2$d</string>
     <string name="adherence_rate">Дисциплина</string>
     <string name="adherence_as_needed_section">Лекарства по необходимости</string>
     <string name="take_now">Принять сейчас</string>

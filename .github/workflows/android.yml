@@ -56,11 +56,15 @@ jobs:
             python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
           fi
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          KEYSTORE_PATH: ${{ secrets.KEYSTORE_PATH }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Copy Built APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk pill-tracker.apk
+        run: cp app/build/outputs/apk/release/app-release.apk pill-tracker.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

@@ -230,8 +230,9 @@ fun CalendarScreen(
             
             // Adherence Stats Card
             item {
-                val takenCount = logs.count { log -> dailySchedules.any { it.scheduleId == log.scheduleId } }
-                val totalCount = dailySchedules.size
+                val scheduledItems = remember(dailySchedules) { dailySchedules.filter { it.scheduleType != "as_needed" } }
+                val takenCount = remember(logs, scheduledItems) { logs.count { log -> scheduledItems.any { it.scheduleId == log.scheduleId } } }
+                val totalCount = scheduledItems.size
                 val adherencePercent = if (totalCount > 0) ((takenCount.toFloat() / totalCount) * 100).toInt() else 100
 
                 GlassCard(

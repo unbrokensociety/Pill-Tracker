@@ -14,6 +14,10 @@ class AlarmScheduler(private val context: Context) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun scheduleAlarm(schedule: Schedule, medicationName: String) {
+        if (schedule.timeHour < 0 || schedule.timeMinute < 0) {
+            return
+        }
+
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("EXTRA_SCHEDULE_ID", schedule.id)
             putExtra("EXTRA_MEDICATION_ID", schedule.medicationId)

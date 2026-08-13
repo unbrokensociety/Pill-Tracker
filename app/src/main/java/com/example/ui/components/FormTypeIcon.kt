@@ -307,110 +307,137 @@ fun FormTypeIcon(
                 }
 
                 FormType.INJECTION -> {
-                    // Realistic Medical Syringe angled at -45 degrees
+                    // Beautiful detailed medical syringe positioned angled at -45 degrees
                     rotate(degrees = -45f, pivot = Offset(w / 2f, h / 2f)) {
-                        val bW = w * 0.30f
-                        val bH = h * 0.44f
-                        val bLeft = (w - bW) / 2f
-                        val bTop = h * 0.30f
+                        val barrelW = w * 0.34f
+                        val barrelH = h * 0.48f
+                        val barrelLeft = (w - barrelW) / 2f
+                        val barrelTop = h * 0.28f
 
-                        // 1. Needle Hub & Needle Tip (Top)
-                        val hubW = bW * 0.45f
+                        // 1. Needle Blade (Ultra fine stainless needle)
+                        val needleTop = h * 0.05f
+                        val needleBottom = barrelTop - h * 0.05f
+                        drawLine(
+                            color = tint,
+                            start = Offset(w / 2f, needleBottom),
+                            end = Offset(w / 2f, needleTop),
+                            strokeWidth = 1.6.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                        // Beveled tip highlight on needle
+                        drawLine(
+                            color = Color.White,
+                            start = Offset(w / 2f, needleTop + 1.dp.toPx()),
+                            end = Offset(w / 2f, needleTop + 3.dp.toPx()),
+                            strokeWidth = 1.2.dp.toPx()
+                        )
+
+                        // 2. Luer Lock Plastic Needle Hub
+                        val hubW = barrelW * 0.48f
                         val hubH = h * 0.06f
                         val hubLeft = (w - hubW) / 2f
-                        val hubTop = bTop - hubH
-
+                        val hubTop = barrelTop - hubH
                         drawRoundRect(
                             color = tint,
                             topLeft = Offset(hubLeft, hubTop),
                             size = Size(hubW, hubH),
+                            cornerRadius = CornerRadius(1.5.dp.toPx(), 1.5.dp.toPx())
+                        )
+                        // Hub ribs
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.5f),
+                            start = Offset(hubLeft + 1.dp.toPx(), hubTop + hubH / 2f),
+                            end = Offset(hubLeft + hubW - 1.dp.toPx(), hubTop + hubH / 2f),
+                            strokeWidth = 1.dp.toPx()
+                        )
+
+                        // 3. Clear Glass/Plastic Barrel Body Background
+                        drawRoundRect(
+                            color = tint.copy(alpha = 0.20f),
+                            topLeft = Offset(barrelLeft, barrelTop),
+                            size = Size(barrelW, barrelH),
+                            cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
+                        )
+
+                        // 4. Liquid Dose Fill inside barrel (Vibrant medicine)
+                        val fluidH = barrelH * 0.58f
+                        val fluidTop = barrelTop + barrelH - fluidH
+                        drawRect(
+                            color = tint.copy(alpha = 0.80f),
+                            topLeft = Offset(barrelLeft + 1.5.dp.toPx(), fluidTop),
+                            size = Size(barrelW - 3.dp.toPx(), fluidH)
+                        )
+
+                        // 5. Double-Ring Rubber Piston Stopper at top of liquid
+                        val stopperH = 4.5.dp.toPx()
+                        drawRoundRect(
+                            color = tint,
+                            topLeft = Offset(barrelLeft + 1.dp.toPx(), fluidTop - stopperH),
+                            size = Size(barrelW - 2.dp.toPx(), stopperH),
                             cornerRadius = CornerRadius(1.dp.toPx(), 1.dp.toPx())
                         )
 
-                        // Needle tip
-                        drawLine(
-                            color = tint,
-                            start = Offset(w / 2f, hubTop),
-                            end = Offset(w / 2f, h * 0.08f),
-                            strokeWidth = 1.8.dp.toPx(),
-                            cap = StrokeCap.Round
-                        )
-
-                        // 2. Main Barrel Body Fill (Glass look)
-                        drawRoundRect(
-                            color = tint.copy(alpha = 0.18f),
-                            topLeft = Offset(bLeft, bTop),
-                            size = Size(bW, bH),
-                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
-                        )
-
-                        // Fluid Fill inside barrel (60% full)
-                        val fluidH = bH * 0.55f
-                        val fluidTop = bTop + bH - fluidH
-                        drawRect(
-                            color = tint.copy(alpha = 0.70f),
-                            topLeft = Offset(bLeft + 1.dp.toPx(), fluidTop),
-                            size = Size(bW - 2.dp.toPx(), fluidH)
-                        )
-
-                        // Rubber Stopper / Piston line at top of fluid
-                        drawRect(
-                            color = tint,
-                            topLeft = Offset(bLeft + 1.dp.toPx(), fluidTop - 2.dp.toPx()),
-                            size = Size(bW - 2.dp.toPx(), 3.dp.toPx())
-                        )
-
-                        // Outer Barrel Border
-                        drawRoundRect(
-                            color = tint,
-                            topLeft = Offset(bLeft, bTop),
-                            size = Size(bW, bH),
-                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
-                            style = Stroke(width = 1.8.dp.toPx())
-                        )
-
-                        // Measurement graduation lines on left side
-                        val tickX1 = bLeft + 1.5.dp.toPx()
-                        val tickX2 = bLeft + bW * 0.38f
-                        for (i in 1..4) {
-                            val tickY = bTop + bH * (i * 0.2f)
+                        // 6. Measurement Scale (Graduation Marks)
+                        val markX1 = barrelLeft + 2.dp.toPx()
+                        val markLongX2 = barrelLeft + barrelW * 0.42f
+                        val markShortX2 = barrelLeft + barrelW * 0.28f
+                        for (i in 1..8) {
+                            val markY = barrelTop + barrelH * (i * 0.11f)
+                            val isLong = (i % 2 == 0)
                             drawLine(
-                                color = tint,
-                                start = Offset(tickX1, tickY),
-                                end = Offset(tickX2, tickY),
+                                color = if (markY >= fluidTop) Color.White.copy(alpha = 0.9f) else tint,
+                                start = Offset(markX1, markY),
+                                end = Offset(if (isLong) markLongX2 else markShortX2, markY),
                                 strokeWidth = 1.2.dp.toPx()
                             )
                         }
 
-                        // Finger Flanges at bottom of barrel (wide horizontal bar)
-                        val flangeW = bW * 1.6f
+                        // Glossy glass reflections along top-right edge
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.6f),
+                            start = Offset(barrelLeft + barrelW - 3.dp.toPx(), barrelTop + 3.dp.toPx()),
+                            end = Offset(barrelLeft + barrelW - 3.dp.toPx(), barrelTop + barrelH - 3.dp.toPx()),
+                            strokeWidth = 1.5.dp.toPx()
+                        )
+
+                        // Outer Barrel Border Outline
+                        drawRoundRect(
+                            color = tint,
+                            topLeft = Offset(barrelLeft, barrelTop),
+                            size = Size(barrelW, barrelH),
+                            cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()),
+                            style = Stroke(width = 2.dp.toPx())
+                        )
+
+                        // 7. Wide Finger Flanges (Grip collar) at base of barrel
+                        val flangeW = barrelW * 1.75f
                         val flangeLeft = (w - flangeW) / 2f
                         drawRoundRect(
                             color = tint,
-                            topLeft = Offset(flangeLeft, bTop + bH),
-                            size = Size(flangeW, 3.dp.toPx()),
-                            cornerRadius = CornerRadius(1.5.dp.toPx(), 1.5.dp.toPx())
+                            topLeft = Offset(flangeLeft, barrelTop + barrelH),
+                            size = Size(flangeW, 4.dp.toPx()),
+                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                         )
 
-                        // Plunger Shaft
-                        val shaftW = bW * 0.22f
+                        // 8. Plunger Shaft (Linear central rod)
+                        val shaftW = barrelW * 0.24f
                         val shaftLeft = (w - shaftW) / 2f
-                        val shaftTop = bTop + bH + 3.dp.toPx()
-                        val shaftBottom = h * 0.90f
+                        val shaftTop = barrelTop + barrelH + 4.dp.toPx()
+                        val shaftBottom = h * 0.92f
                         drawRect(
                             color = tint,
                             topLeft = Offset(shaftLeft, shaftTop),
                             size = Size(shaftW, shaftBottom - shaftTop)
                         )
 
-                        // Plunger Push Handle (Thumb Rest) at very bottom
-                        val handleW = bW * 1.3f
-                        val handleLeft = (w - handleW) / 2f
+                        // 9. Plunger Push Disc (Thumb Rest)
+                        val discW = barrelW * 1.40f
+                        val discLeft = (w - discW) / 2f
                         drawRoundRect(
                             color = tint,
-                            topLeft = Offset(handleLeft, shaftBottom),
-                            size = Size(handleW, 3.5.dp.toPx()),
-                            cornerRadius = CornerRadius(1.5.dp.toPx(), 1.5.dp.toPx())
+                            topLeft = Offset(discLeft, shaftBottom),
+                            size = Size(discW, 4.dp.toPx()),
+                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                         )
                     }
                 }

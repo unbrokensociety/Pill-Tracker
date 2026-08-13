@@ -1,6 +1,7 @@
 package com.example.data
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -10,7 +11,12 @@ class MedicationRepository(private val dao: MedicationDao) {
 
     suspend fun addMedicationWithSchedules(medication: Medication, times: List<Pair<Int, Int>>): List<Schedule> {
         val medId = dao.insertMedication(medication).toInt()
-        val schedulesToInsert = times.map { (hour, minute) ->
+        val effectiveTimes = if (medication.scheduleType == "as_needed" || times.isEmpty()) {
+            listOf(-1 to -1)
+        } else {
+            times
+        }
+        val schedulesToInsert = effectiveTimes.map { (hour, minute) ->
             Schedule(medicationId = medId, timeHour = hour, timeMinute = minute)
         }
         dao.insertSchedules(schedulesToInsert)
@@ -24,7 +30,12 @@ class MedicationRepository(private val dao: MedicationDao) {
     suspend fun updateMedicationWithSchedules(medication: Medication, times: List<Pair<Int, Int>>): List<Schedule> {
         dao.deleteSchedulesForMedication(medication.id)
         dao.insertMedication(medication)
-        val schedulesToInsert = times.map { (hour, minute) ->
+        val effectiveTimes = if (medication.scheduleType == "as_needed" || times.isEmpty()) {
+            listOf(-1 to -1)
+        } else {
+            times
+        }
+        val schedulesToInsert = effectiveTimes.map { (hour, minute) ->
             Schedule(medicationId = medication.id, timeHour = hour, timeMinute = minute)
         }
         dao.insertSchedules(schedulesToInsert)
@@ -57,7 +68,23 @@ class MedicationRepository(private val dao: MedicationDao) {
 
     fun getDailySchedules(date: LocalDate): Flow<List<DailyScheduleView>> {
         val dateEpoch = getStartOfDayEpochMillis(date)
-        return dao.getDailySchedules(dateEpoch)
+        return dao.getDailySchedules(dateEpoch).map { list ->
+            list.filter { item ->
+                if (item.scheduleType == "interval") {
+                    val startLocal = java.time.Instant.ofEpochMilli(item.startDate)
+                        .atZone(ZoneId.systemDefault()).toLocalDate()
+                    if (date.isBefore(startLocal)) {
+                        false
+                    } else {
+                        val daysDiff = java.time.temporal.ChronoUnit.DAYS.between(startLocal, date)
+                        val interval = if (item.intervalDays > 0) item.intervalDays else 1
+                        daysDiff >= 0 && (daysDiff % interval == 0L)
+                    }
+                } else {
+                    true
+                }
+            }
+        }
     }
 
     suspend fun getIntakeLog(scheduleId: Int, date: LocalDate): IntakeLog? {

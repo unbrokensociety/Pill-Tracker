@@ -396,13 +396,13 @@ fun AddMedicationScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             val chipColors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                 selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                labelColor = MaterialTheme.colorScheme.onSurface
                             )
                             val chipBorderDaily = FilterChipDefaults.filterChipBorder(
                                 borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
@@ -426,7 +426,13 @@ fun AddMedicationScreen(
                             FilterChip(
                                 selected = scheduleTypeKey == "daily",
                                 onClick = { scheduleTypeKey = "daily" },
-                                label = { Text(stringResource(R.string.sched_daily)) },
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.sched_daily),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1
+                                    )
+                                },
                                 modifier = Modifier.weight(1f),
                                 colors = chipColors,
                                 border = chipBorderDaily,
@@ -435,7 +441,13 @@ fun AddMedicationScreen(
                             FilterChip(
                                 selected = scheduleTypeKey == "interval",
                                 onClick = { scheduleTypeKey = "interval" },
-                                label = { Text(stringResource(R.string.sched_interval, intervalDaysVal)) },
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.sched_interval, intervalDaysVal),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1
+                                    )
+                                },
                                 modifier = Modifier.weight(1f),
                                 colors = chipColors,
                                 border = chipBorderInterval,
@@ -444,7 +456,13 @@ fun AddMedicationScreen(
                             FilterChip(
                                 selected = scheduleTypeKey == "as_needed",
                                 onClick = { scheduleTypeKey = "as_needed" },
-                                label = { Text(stringResource(R.string.sched_as_needed)) },
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.sched_as_needed),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        maxLines = 1
+                                    )
+                                },
                                 modifier = Modifier.weight(1f),
                                 colors = chipColors,
                                 border = chipBorderAsNeeded,
@@ -460,7 +478,8 @@ fun AddMedicationScreen(
                             ) {
                                 Text(
                                     text = stringResource(R.string.sched_interval_label),
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -470,18 +489,27 @@ fun AddMedicationScreen(
                                         onClick = { if (intervalDaysVal > 2) intervalDaysVal-- },
                                         enabled = intervalDaysVal > 2
                                     ) {
-                                        Icon(Icons.Filled.Remove, contentDescription = "Decrease interval")
+                                        Icon(
+                                            imageVector = Icons.Filled.Remove,
+                                            contentDescription = "Decrease interval",
+                                            tint = if (intervalDaysVal > 2) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                        )
                                     }
                                     Text(
                                         text = "$intervalDaysVal",
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     IconButton(
                                         onClick = { if (intervalDaysVal < 30) intervalDaysVal++ },
                                         enabled = intervalDaysVal < 30
                                     ) {
-                                        Icon(Icons.Filled.Add, contentDescription = "Increase interval")
+                                        Icon(
+                                            imageVector = Icons.Filled.Add,
+                                            contentDescription = "Increase interval",
+                                            tint = if (intervalDaysVal < 30) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                        )
                                     }
                                 }
                             }

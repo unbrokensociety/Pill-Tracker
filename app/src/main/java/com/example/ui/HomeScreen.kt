@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -608,9 +609,11 @@ fun StreakBanner(streakDays: Int) {
                 size = 44.dp,
                 tintColor = Color(0xFFFF9800)
             ) {
-                Text(
-                    text = "🔥",
-                    style = MaterialTheme.typography.titleMedium
+                Icon(
+                    imageVector = Icons.Filled.LocalFireDepartment,
+                    contentDescription = null,
+                    tint = Color(0xFFFF9800),
+                    modifier = Modifier.size(24.dp)
                 )
             }
 

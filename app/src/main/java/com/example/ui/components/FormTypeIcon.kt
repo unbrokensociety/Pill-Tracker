@@ -43,7 +43,7 @@ enum class FormType(val key: String, val stringRes: Int) {
 fun FormTypeIcon(
     formKey: String,
     tint: Color = MaterialTheme.colorScheme.primary,
-    backgroundColor: Color = tint.copy(alpha = 0.15f),
+    backgroundColor: Color = tint.copy(alpha = 0.18f),
     size: Dp = 40.dp,
     iconSize: Dp = 22.dp,
     modifier: Modifier = Modifier
@@ -62,25 +62,37 @@ fun FormTypeIcon(
 
             when (formType) {
                 FormType.TABLET -> {
-                    // Round pill tablet with a score line in the middle
+                    // Volumetric round tablet pill with center score line
                     val radius = w * 0.42f
                     val center = Offset(w / 2f, h / 2f)
-                    
-                    // Outer tablet ring/fill
+
+                    // 3D Base fill
                     drawCircle(
-                        color = tint.copy(alpha = 0.25f),
+                        color = tint.copy(alpha = 0.35f),
                         radius = radius,
                         center = center
                     )
+                    // Crisp boundary
                     drawCircle(
                         color = tint,
                         radius = radius,
                         center = center,
                         style = Stroke(width = 2.dp.toPx())
                     )
-                    
+
+                    // Glossy highlight arc on top-left edge
+                    drawArc(
+                        color = Color.White.copy(alpha = 0.6f),
+                        startAngle = 180f,
+                        sweepAngle = 90f,
+                        useCenter = false,
+                        topLeft = Offset(center.x - radius * 0.8f, center.y - radius * 0.8f),
+                        size = Size(radius * 1.6f, radius * 1.6f),
+                        style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
                     // Score line across middle at 45 degree angle
-                    val lineLen = radius * 0.75f
+                    val lineLen = radius * 0.70f
                     val dx = lineLen * 0.7071f
                     val dy = lineLen * 0.7071f
                     drawLine(
@@ -93,7 +105,7 @@ fun FormTypeIcon(
                 }
 
                 FormType.CAPSULE -> {
-                    // Two-tone capsule pill shape angled at -45 degrees
+                    // Classic 2-tone volumetric capsule angled at -45 degrees
                     rotate(degrees = -45f, pivot = Offset(w / 2f, h / 2f)) {
                         val capWidth = w * 0.44f
                         val capHeight = h * 0.88f
@@ -101,7 +113,23 @@ fun FormTypeIcon(
                         val top = (h - capHeight) / 2f
                         val cornerRadius = CornerRadius(capWidth / 2f, capWidth / 2f)
 
-                        // Outer capsule outline
+                        // Bottom half (tinted body)
+                        drawRoundRect(
+                            color = tint.copy(alpha = 0.30f),
+                            topLeft = Offset(left, top + capHeight / 2f),
+                            size = Size(capWidth, capHeight / 2f),
+                            cornerRadius = CornerRadius(capWidth / 2f, capWidth / 2f)
+                        )
+
+                        // Top half (solid cap)
+                        drawRoundRect(
+                            color = tint,
+                            topLeft = Offset(left, top),
+                            size = Size(capWidth, capHeight / 2f),
+                            cornerRadius = CornerRadius(capWidth / 2f, capWidth / 2f)
+                        )
+
+                        // Outer border
                         drawRoundRect(
                             color = tint,
                             topLeft = Offset(left, top),
@@ -110,165 +138,299 @@ fun FormTypeIcon(
                             style = Stroke(width = 2.dp.toPx())
                         )
 
-                        // Top half fill
-                        drawRoundRect(
-                            color = tint,
-                            topLeft = Offset(left, top),
-                            size = Size(capWidth, capHeight / 2f),
-                            cornerRadius = CornerRadius(capWidth / 2f, capWidth / 2f)
-                        )
-
-                        // Center divide line
+                        // Divide line
                         drawLine(
                             color = tint,
                             start = Offset(left, top + capHeight / 2f),
                             end = Offset(left + capWidth, top + capHeight / 2f),
                             strokeWidth = 2.dp.toPx()
                         )
+
+                        // Glossy streak
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.6f),
+                            start = Offset(left + capWidth * 0.3f, top + capHeight * 0.15f),
+                            end = Offset(left + capWidth * 0.3f, top + capHeight * 0.4f),
+                            strokeWidth = 1.5.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
                     }
                 }
 
                 FormType.PATCH -> {
-                    // Band-aid adhesive plaster with central pad and ventilation dots
-                    val patchW = w * 0.88f
-                    val patchH = h * 0.50f
-                    val left = (w - patchW) / 2f
-                    val top = (h - patchH) / 2f
+                    // Realistic Medical Plaster / Band-Aid
+                    rotate(degrees = -12f, pivot = Offset(w / 2f, h / 2f)) {
+                        val patchW = w * 0.92f
+                        val patchH = h * 0.48f
+                        val left = (w - patchW) / 2f
+                        val top = (h - patchH) / 2f
+                        val radiusPx = 7.dp.toPx()
 
-                    drawRoundRect(
-                        color = tint.copy(alpha = 0.2f),
-                        topLeft = Offset(left, top),
-                        size = Size(patchW, patchH),
-                        cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
-                    )
-                    drawRoundRect(
-                        color = tint,
-                        topLeft = Offset(left, top),
-                        size = Size(patchW, patchH),
-                        cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx()),
-                        style = Stroke(width = 1.8.dp.toPx())
-                    )
+                        // Plaster skin body fill
+                        drawRoundRect(
+                            color = tint.copy(alpha = 0.30f),
+                            topLeft = Offset(left, top),
+                            size = Size(patchW, patchH),
+                            cornerRadius = CornerRadius(radiusPx, radiusPx)
+                        )
+                        // Plaster border
+                        drawRoundRect(
+                            color = tint,
+                            topLeft = Offset(left, top),
+                            size = Size(patchW, patchH),
+                            cornerRadius = CornerRadius(radiusPx, radiusPx),
+                            style = Stroke(width = 2.dp.toPx())
+                        )
 
-                    val padW = patchW * 0.38f
-                    val padLeft = (w - padW) / 2f
-                    drawRoundRect(
-                        color = tint,
-                        topLeft = Offset(padLeft, top),
-                        size = Size(padW, patchH),
-                        cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
-                        style = Stroke(width = 1.5.dp.toPx())
-                    )
+                        // Central absorbent gauze pad (elevated 3D look)
+                        val padW = patchW * 0.36f
+                        val padLeft = (w - padW) / 2f
+                        drawRoundRect(
+                            color = tint.copy(alpha = 0.75f),
+                            topLeft = Offset(padLeft, top),
+                            size = Size(padW, patchH),
+                            cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
+                        )
+                        drawRoundRect(
+                            color = tint,
+                            topLeft = Offset(padLeft, top),
+                            size = Size(padW, patchH),
+                            cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()),
+                            style = Stroke(width = 1.5.dp.toPx())
+                        )
 
-                    val dotRadius = 1.2.dp.toPx()
-                    val dotY1 = top + patchH * 0.30f
-                    val dotY2 = top + patchH * 0.70f
-                    val leftDotX = left + patchW * 0.15f
-                    val rightDotX = left + patchW * 0.85f
+                        // Perforated ventilation dots on adhesive wings
+                        val dotRadius = 1.2.dp.toPx()
+                        val leftWingX1 = left + patchW * 0.12f
+                        val leftWingX2 = left + patchW * 0.22f
+                        val rightWingX1 = left + patchW * 0.78f
+                        val rightWingX2 = left + patchW * 0.88f
+                        val dotY1 = top + patchH * 0.28f
+                        val dotY2 = top + patchH * 0.72f
 
-                    drawCircle(color = tint, radius = dotRadius, center = Offset(leftDotX, dotY1))
-                    drawCircle(color = tint, radius = dotRadius, center = Offset(leftDotX, dotY2))
-                    drawCircle(color = tint, radius = dotRadius, center = Offset(rightDotX, dotY1))
-                    drawCircle(color = tint, radius = dotRadius, center = Offset(rightDotX, dotY2))
+                        drawCircle(color = tint, radius = dotRadius, center = Offset(leftWingX1, dotY1))
+                        drawCircle(color = tint, radius = dotRadius, center = Offset(leftWingX1, dotY2))
+                        drawCircle(color = tint, radius = dotRadius, center = Offset(leftWingX2, (dotY1 + dotY2) / 2f))
+
+                        drawCircle(color = tint, radius = dotRadius, center = Offset(rightWingX1, dotY1))
+                        drawCircle(color = tint, radius = dotRadius, center = Offset(rightWingX1, dotY2))
+                        drawCircle(color = tint, radius = dotRadius, center = Offset(rightWingX2, (dotY1 + dotY2) / 2f))
+                    }
                 }
 
                 FormType.LIQUID -> {
-                    // Syrup bottle with liquid level line
-                    val bottleW = w * 0.52f
-                    val bottleH = h * 0.65f
+                    // Syrup bottle with liquid level & scale
+                    val bottleW = w * 0.54f
+                    val bottleH = h * 0.62f
                     val left = (w - bottleW) / 2f
-                    val top = h * 0.28f
+                    val top = h * 0.30f
 
-                    val capW = bottleW * 0.5f
+                    // Bottle Cap
+                    val capW = bottleW * 0.52f
                     val capH = h * 0.12f
                     drawRoundRect(
                         color = tint,
-                        topLeft = Offset((w - capW) / 2f, h * 0.12f),
+                        topLeft = Offset((w - capW) / 2f, h * 0.14f),
                         size = Size(capW, capH),
                         cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
                     )
 
+                    // Bottle body base fill
+                    drawRoundRect(
+                        color = tint.copy(alpha = 0.20f),
+                        topLeft = Offset(left, top),
+                        size = Size(bottleW, bottleH),
+                        cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
+                    )
+
+                    // Liquid inside (60% full)
+                    val liquidH = bottleH * 0.60f
+                    drawRoundRect(
+                        color = tint.copy(alpha = 0.75f),
+                        topLeft = Offset(left + 1.5.dp.toPx(), top + bottleH - liquidH),
+                        size = Size(bottleW - 3.dp.toPx(), liquidH - 1.dp.toPx()),
+                        cornerRadius = CornerRadius(0f, 0f)
+                    )
+
+                    // Outer bottle border
                     drawRoundRect(
                         color = tint,
                         topLeft = Offset(left, top),
                         size = Size(bottleW, bottleH),
                         cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx()),
-                        style = Stroke(width = 1.8.dp.toPx())
+                        style = Stroke(width = 2.dp.toPx())
                     )
 
-                    drawRoundRect(
-                        color = tint.copy(alpha = 0.45f),
-                        topLeft = Offset(left + 2.dp.toPx(), top + bottleH * 0.4f),
-                        size = Size(bottleW - 4.dp.toPx(), bottleH * 0.6f - 2.dp.toPx()),
-                        cornerRadius = CornerRadius(0f, 0f)
-                    )
+                    // Scale ticks
+                    val tickLeft = left + 2.dp.toPx()
+                    drawLine(color = tint, start = Offset(tickLeft, top + bottleH * 0.3f), end = Offset(tickLeft + 3.dp.toPx(), top + bottleH * 0.3f), strokeWidth = 1.2.dp.toPx())
+                    drawLine(color = tint, start = Offset(tickLeft, top + bottleH * 0.5f), end = Offset(tickLeft + 4.dp.toPx(), top + bottleH * 0.5f), strokeWidth = 1.2.dp.toPx())
+                    drawLine(color = tint, start = Offset(tickLeft, top + bottleH * 0.7f), end = Offset(tickLeft + 3.dp.toPx(), top + bottleH * 0.7f), strokeWidth = 1.2.dp.toPx())
                 }
 
                 FormType.DROPS -> {
-                    // Liquid droplet teardrop shape
+                    // Volumetric liquid droplet
                     val dropPath = Path().apply {
-                        moveTo(w / 2f, h * 0.12f)
+                        moveTo(w / 2f, h * 0.10f)
                         cubicTo(
-                            w * 0.85f, h * 0.52f,
-                            w * 0.85f, h * 0.88f,
-                            w / 2f, h * 0.88f
+                            w * 0.88f, h * 0.50f,
+                            w * 0.88f, h * 0.90f,
+                            w / 2f, h * 0.90f
                         )
                         cubicTo(
-                            w * 0.15f, h * 0.88f,
-                            w * 0.15f, h * 0.52f,
-                            w / 2f, h * 0.12f
+                            w * 0.12f, h * 0.90f,
+                            w * 0.12f, h * 0.50f,
+                            w / 2f, h * 0.10f
                         )
                         close()
                     }
-                    drawPath(path = dropPath, color = tint.copy(alpha = 0.25f))
+
+                    // Liquid fill
+                    drawPath(path = dropPath, color = tint.copy(alpha = 0.65f))
+                    // Outline
                     drawPath(
                         path = dropPath,
                         color = tint,
-                        style = Stroke(width = 1.8.dp.toPx())
+                        style = Stroke(width = 2.dp.toPx())
+                    )
+
+                    // Glossy highlight arc
+                    val highlightPath = Path().apply {
+                        moveTo(w * 0.38f, h * 0.38f)
+                        cubicTo(w * 0.28f, h * 0.52f, w * 0.28f, h * 0.70f, w * 0.36f, h * 0.80f)
+                    }
+                    drawPath(
+                        path = highlightPath,
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round)
                     )
                 }
 
                 FormType.INJECTION -> {
-                    // Syringe vector
+                    // Realistic Medical Syringe angled at -45 degrees
                     rotate(degrees = -45f, pivot = Offset(w / 2f, h / 2f)) {
-                        val bW = w * 0.28f
-                        val bH = h * 0.55f
+                        val bW = w * 0.30f
+                        val bH = h * 0.44f
                         val bLeft = (w - bW) / 2f
-                        val bTop = h * 0.25f
+                        val bTop = h * 0.30f
 
+                        // 1. Needle Hub & Needle Tip (Top)
+                        val hubW = bW * 0.45f
+                        val hubH = h * 0.06f
+                        val hubLeft = (w - hubW) / 2f
+                        val hubTop = bTop - hubH
+
+                        drawRoundRect(
+                            color = tint,
+                            topLeft = Offset(hubLeft, hubTop),
+                            size = Size(hubW, hubH),
+                            cornerRadius = CornerRadius(1.dp.toPx(), 1.dp.toPx())
+                        )
+
+                        // Needle tip
+                        drawLine(
+                            color = tint,
+                            start = Offset(w / 2f, hubTop),
+                            end = Offset(w / 2f, h * 0.08f),
+                            strokeWidth = 1.8.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+
+                        // 2. Main Barrel Body Fill (Glass look)
+                        drawRoundRect(
+                            color = tint.copy(alpha = 0.18f),
+                            topLeft = Offset(bLeft, bTop),
+                            size = Size(bW, bH),
+                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+                        )
+
+                        // Fluid Fill inside barrel (60% full)
+                        val fluidH = bH * 0.55f
+                        val fluidTop = bTop + bH - fluidH
                         drawRect(
+                            color = tint.copy(alpha = 0.70f),
+                            topLeft = Offset(bLeft + 1.dp.toPx(), fluidTop),
+                            size = Size(bW - 2.dp.toPx(), fluidH)
+                        )
+
+                        // Rubber Stopper / Piston line at top of fluid
+                        drawRect(
+                            color = tint,
+                            topLeft = Offset(bLeft + 1.dp.toPx(), fluidTop - 2.dp.toPx()),
+                            size = Size(bW - 2.dp.toPx(), 3.dp.toPx())
+                        )
+
+                        // Outer Barrel Border
+                        drawRoundRect(
                             color = tint,
                             topLeft = Offset(bLeft, bTop),
                             size = Size(bW, bH),
+                            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
                             style = Stroke(width = 1.8.dp.toPx())
                         )
-                        drawLine(
+
+                        // Measurement graduation lines on left side
+                        val tickX1 = bLeft + 1.5.dp.toPx()
+                        val tickX2 = bLeft + bW * 0.38f
+                        for (i in 1..4) {
+                            val tickY = bTop + bH * (i * 0.2f)
+                            drawLine(
+                                color = tint,
+                                start = Offset(tickX1, tickY),
+                                end = Offset(tickX2, tickY),
+                                strokeWidth = 1.2.dp.toPx()
+                            )
+                        }
+
+                        // Finger Flanges at bottom of barrel (wide horizontal bar)
+                        val flangeW = bW * 1.6f
+                        val flangeLeft = (w - flangeW) / 2f
+                        drawRoundRect(
                             color = tint,
-                            start = Offset(w / 2f, bTop),
-                            end = Offset(w / 2f, h * 0.08f),
-                            strokeWidth = 1.8.dp.toPx()
+                            topLeft = Offset(flangeLeft, bTop + bH),
+                            size = Size(flangeW, 3.dp.toPx()),
+                            cornerRadius = CornerRadius(1.5.dp.toPx(), 1.5.dp.toPx())
                         )
-                        drawLine(
+
+                        // Plunger Shaft
+                        val shaftW = bW * 0.22f
+                        val shaftLeft = (w - shaftW) / 2f
+                        val shaftTop = bTop + bH + 3.dp.toPx()
+                        val shaftBottom = h * 0.90f
+                        drawRect(
                             color = tint,
-                            start = Offset(w / 2f, bTop + bH),
-                            end = Offset(w / 2f, h * 0.92f),
-                            strokeWidth = 2.dp.toPx()
+                            topLeft = Offset(shaftLeft, shaftTop),
+                            size = Size(shaftW, shaftBottom - shaftTop)
                         )
-                        drawLine(
+
+                        // Plunger Push Handle (Thumb Rest) at very bottom
+                        val handleW = bW * 1.3f
+                        val handleLeft = (w - handleW) / 2f
+                        drawRoundRect(
                             color = tint,
-                            start = Offset(bLeft - 2.dp.toPx(), h * 0.92f),
-                            end = Offset(bLeft + bW + 2.dp.toPx(), h * 0.92f),
-                            strokeWidth = 2.dp.toPx()
+                            topLeft = Offset(handleLeft, shaftBottom),
+                            size = Size(handleW, 3.5.dp.toPx()),
+                            cornerRadius = CornerRadius(1.5.dp.toPx(), 1.5.dp.toPx())
                         )
                     }
                 }
 
                 FormType.SPRAY -> {
                     // Spray bottle with mist arcs
-                    val sW = w * 0.40f
-                    val sH = h * 0.52f
-                    val left = w * 0.18f
-                    val top = h * 0.38f
+                    val sW = w * 0.42f
+                    val sH = h * 0.50f
+                    val left = w * 0.16f
+                    val top = h * 0.40f
 
+                    // Liquid fill in bottle
+                    drawRoundRect(
+                        color = tint.copy(alpha = 0.50f),
+                        topLeft = Offset(left + 1.dp.toPx(), top + sH * 0.3f),
+                        size = Size(sW - 2.dp.toPx(), sH * 0.7f - 1.dp.toPx()),
+                        cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+                    )
+
+                    // Bottle outline
                     drawRoundRect(
                         color = tint,
                         topLeft = Offset(left, top),
@@ -277,32 +439,42 @@ fun FormTypeIcon(
                         style = Stroke(width = 1.8.dp.toPx())
                     )
 
+                    // Pump neck & Nozzle
                     drawLine(
                         color = tint,
                         start = Offset(left + sW / 2f, top),
-                        end = Offset(left + sW / 2f, top - 4.dp.toPx()),
-                        strokeWidth = 2.dp.toPx()
+                        end = Offset(left + sW / 2f, top - 6.dp.toPx()),
+                        strokeWidth = 2.2.dp.toPx()
                     )
+                    drawRect(
+                        color = tint,
+                        topLeft = Offset(left + sW / 2f - 2.dp.toPx(), top - 9.dp.toPx()),
+                        size = Size(sW * 0.6f, 3.5.dp.toPx())
+                    )
+
+                    // Spray mist arcs radiating outward
+                    val nozzleX = left + sW / 2f + sW * 0.6f
+                    val nozzleY = top - 7.dp.toPx()
 
                     drawLine(
                         color = tint,
-                        start = Offset(left + sW + 3.dp.toPx(), top - 2.dp.toPx()),
-                        end = Offset(left + sW + 9.dp.toPx(), top - 6.dp.toPx()),
-                        strokeWidth = 1.5.dp.toPx(),
+                        start = Offset(nozzleX, nozzleY),
+                        end = Offset(nozzleX + 6.dp.toPx(), nozzleY - 4.dp.toPx()),
+                        strokeWidth = 1.8.dp.toPx(),
                         cap = StrokeCap.Round
                     )
                     drawLine(
                         color = tint,
-                        start = Offset(left + sW + 4.dp.toPx(), top + 2.dp.toPx()),
-                        end = Offset(left + sW + 11.dp.toPx(), top + 2.dp.toPx()),
-                        strokeWidth = 1.5.dp.toPx(),
+                        start = Offset(nozzleX, nozzleY),
+                        end = Offset(nozzleX + 8.dp.toPx(), nozzleY),
+                        strokeWidth = 1.8.dp.toPx(),
                         cap = StrokeCap.Round
                     )
                     drawLine(
                         color = tint,
-                        start = Offset(left + sW + 3.dp.toPx(), top + 6.dp.toPx()),
-                        end = Offset(left + sW + 9.dp.toPx(), top + 10.dp.toPx()),
-                        strokeWidth = 1.5.dp.toPx(),
+                        start = Offset(nozzleX, nozzleY),
+                        end = Offset(nozzleX + 6.dp.toPx(), nozzleY + 4.dp.toPx()),
+                        strokeWidth = 1.8.dp.toPx(),
                         cap = StrokeCap.Round
                     )
                 }
@@ -310,3 +482,4 @@ fun FormTypeIcon(
         }
     }
 }
+

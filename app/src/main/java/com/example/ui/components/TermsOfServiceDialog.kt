@@ -138,19 +138,16 @@ fun TermsOfServiceDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(48.dp)
+                            GlassCircleIcon(
+                                size = 48.dp,
+                                tintColor = MaterialTheme.colorScheme.primary
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Gavel,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(26.dp)
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Filled.Gavel,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -167,7 +164,7 @@ fun TermsOfServiceDialog(
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }

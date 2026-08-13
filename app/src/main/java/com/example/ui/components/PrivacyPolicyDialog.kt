@@ -138,19 +138,14 @@ fun PrivacyPolicyDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(48.dp)
+                            GlassCircleIcon(
+                                size = 48.dp,
+                                tintColor = MaterialTheme.colorScheme.primary
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Shield,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onPrimary,
-                                        modifier = Modifier.size(26.dp)
-                                    )
-                                }
+                                Text(
+                                    text = "🛡️",
+                                    style = MaterialTheme.typography.titleLarge
+                                )
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -167,7 +162,7 @@ fun PrivacyPolicyDialog(
                                     },
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }

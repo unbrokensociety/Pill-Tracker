@@ -222,18 +222,15 @@ fun GlassCircleIcon(
     content: @Composable () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val specularTopLeft = if (isDark) Color(1f, 1f, 1f, 0.35f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.40f)
-    val specularBottomRight = if (isDark) Color(1f, 1f, 1f, 0.05f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.20f)
 
     Box(
         modifier = modifier
             .size(size)
-            .shadow(elevation = 4.dp, shape = CircleShape, clip = false)
             .clip(CircleShape)
-            .background(tintColor.copy(alpha = if (isDark) 0.25f else 0.16f))
+            .background(tintColor.copy(alpha = if (isDark) 0.22f else 0.14f))
             .border(
                 width = 1.dp,
-                brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
+                color = tintColor.copy(alpha = if (isDark) 0.35f else 0.25f),
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center

@@ -9,10 +9,7 @@ on:
       - '**'
   workflow_dispatch:
 
-permissions:
-  contents: write
-  packages: write
-  actions: write
+permissions: write-all
 
 jobs:
   build:

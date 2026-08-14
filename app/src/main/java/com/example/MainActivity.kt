@@ -245,10 +245,10 @@ fun MainScreen(viewModel: MainViewModel) {
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
                     .islandGlass(
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
-                        elevation = 16.dp
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                        elevation = 18.dp
                     )
             ) {
                 BoxWithConstraints(
@@ -257,26 +257,40 @@ fun MainScreen(viewModel: MainViewModel) {
                         .padding(horizontal = 6.dp, vertical = 6.dp)
                 ) {
                     val tabWidth = maxWidth / 4
-                    val indicatorOffset by animateDpAsState(
-                        targetValue = tabWidth * selectedIndex,
+
+                    // Ultra-smooth liquid spring animation for tab switching
+                    val animatedTabIndex by animateFloatAsState(
+                        targetValue = selectedIndex.toFloat(),
                         animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessMediumLow
+                            dampingRatio = 0.78f,
+                            stiffness = 320f
                         ),
-                        label = "indicatorOffsetAnim"
+                        label = "liquidIndexAnim"
                     )
 
-                    // Smooth sliding Liquid Glass active tab pill indicator with specular edge
+                    val indicatorOffset = tabWidth * animatedTabIndex
+
+                    // Dynamic liquid stretch effect based on movement distance
+                    val movementDelta = (selectedIndex - animatedTabIndex)
+                    val stretchFactor = (kotlin.math.abs(movementDelta) * 0.18f).coerceAtMost(0.25f)
+
+                    // Smooth sliding Liquid Glass active tab pill indicator with specular edge & glow
                     Box(
                         modifier = Modifier
                             .offset(x = indicatorOffset)
                             .width(tabWidth)
-                            .height(52.dp)
-                            .padding(horizontal = 4.dp)
+                            .height(54.dp)
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .graphicsLayer {
+                                scaleX = 1f + stretchFactor
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+                                clip = true
+                            }
                             .liquidGlass(
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                                customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
-                                elevation = 4.dp
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+                                customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+                                elevation = 6.dp,
+                                borderWidth = 1.2.dp
                             )
                     )
 
@@ -348,19 +362,19 @@ fun RowScope.FloatingNavItem(
     onClick: () -> Unit
 ) {
     val scale by animateFloatAsState(
-        targetValue = if (selected) 1.12f else 1f,
+        targetValue = if (selected) 1.16f else 1f,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            dampingRatio = 0.72f,
+            stiffness = 300f
         ),
         label = "pillScale"
     )
 
     val yOffset by animateDpAsState(
-        targetValue = if (selected) (-2).dp else 0.dp,
+        targetValue = if (selected) (-3.5).dp else 0.dp,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            dampingRatio = 0.72f,
+            stiffness = 300f
         ),
         label = "yOffset"
     )
@@ -368,20 +382,20 @@ fun RowScope.FloatingNavItem(
     val targetContentColor = if (selected) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.70f)
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
     }
 
     val contentColor by animateColorAsState(
         targetValue = targetContentColor,
-        animationSpec = tween(durationMillis = 220),
+        animationSpec = tween(durationMillis = 200, easing = EaseOutCubic),
         label = "contentColorAnim"
     )
 
     Column(
         modifier = Modifier
             .weight(1f)
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-            .tactilePress(pressScale = 0.88f, onClick = onClick)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+            .tactilePress(pressScale = 0.90f, onClick = onClick)
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -393,7 +407,7 @@ fun RowScope.FloatingNavItem(
                     scaleX = scale
                     scaleY = scale
                 }
-                .padding(horizontal = 12.dp, vertical = 2.dp),
+                .padding(horizontal = 10.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
             CompositionLocalProvider(
@@ -408,12 +422,16 @@ fun RowScope.FloatingNavItem(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
             color = contentColor,
             maxLines = 1,
             softWrap = false,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 2.dp)
+            modifier = Modifier
+                .graphicsLayer {
+                    translationY = (yOffset / 2.5f).toPx()
+                }
+                .padding(horizontal = 2.dp)
         )
     }
 }

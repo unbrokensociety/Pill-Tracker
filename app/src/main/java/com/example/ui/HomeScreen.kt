@@ -198,10 +198,10 @@ fun HomeScreen(
             AnimatedContent(
                 targetState = selectedDate,
                 transitionSpec = {
-                    (fadeIn(animationSpec = tween(150, easing = EaseOutCubic)) + 
-                     scaleIn(initialScale = 0.98f, animationSpec = tween(150, easing = EaseOutCubic))
+                    (fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing)) + 
+                     scaleIn(initialScale = 0.985f, animationSpec = tween(220, easing = LinearOutSlowInEasing))
                     ).togetherWith(
-                     fadeOut(animationSpec = tween(90, easing = FastOutLinearInEasing))
+                     fadeOut(animationSpec = tween(160, easing = FastOutLinearInEasing))
                     )
                 },
                 contentAlignment = Alignment.TopCenter,

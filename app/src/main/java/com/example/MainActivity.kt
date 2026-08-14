@@ -19,9 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -30,7 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.navigation.compose.*
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.ui.AddMedicationScreen
@@ -46,6 +51,9 @@ import com.example.ui.components.tactilePress
 import com.example.ui.components.GlassFAB
 import com.example.ui.theme.MyApplicationTheme
 import com.example.data.ThemeMode
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
@@ -105,9 +113,95 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
-    val currentBackStack by navController.currentBackStackEntryAsState()
-    val currentDestination = currentBackStack?.destination?.route ?: "home"
-    val showBottomBar = currentDestination in listOf("home", "calendar", "meds", "settings")
+
+    NavHost(
+        navController = navController,
+        startDestination = "main",
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        enterTransition = {
+            if (targetState.destination.route?.startsWith("add") == true) {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = spring(
+                        dampingRatio = 0.82f,
+                        stiffness = 320f
+                    )
+                ) + fadeIn(animationSpec = tween(220, easing = EaseOutCubic))
+            } else {
+                fadeIn(animationSpec = tween(200, easing = EaseOutCubic))
+            }
+        },
+        exitTransition = {
+            if (initialState.destination.route?.startsWith("add") == true) {
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(220, easing = FastOutLinearInEasing)
+                ) + fadeOut(animationSpec = tween(180))
+            } else {
+                fadeOut(animationSpec = tween(180, easing = FastOutLinearInEasing))
+            }
+        }
+    ) {
+        composable("main") {
+            MainPagerScreen(
+                viewModel = viewModel,
+                onNavigateToAdd = { medId ->
+                    if (medId != null) {
+                        navController.navigate("add?medicationId=$medId")
+                    } else {
+                        navController.navigate("add")
+                    }
+                }
+            )
+        }
+        composable(
+            route = "add?medicationId={medicationId}",
+            arguments = listOf(
+                navArgument("medicationId") {
+                    type = NavType.IntType
+                    defaultValue = -1
+                }
+            )
+        ) { backStackEntry ->
+            val medIdArg = backStackEntry.arguments?.getInt("medicationId") ?: -1
+            val editMedId = if (medIdArg != -1) medIdArg else null
+            AddMedicationScreen(
+                editingMedicationId = editMedId,
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = viewModel
+            )
+        }
+    }
+}
+
+@Composable
+fun MainPagerScreen(
+    viewModel: MainViewModel,
+    onNavigateToAdd: (Int?) -> Unit
+) {
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    val coroutineScope = rememberCoroutineScope()
+    val density = LocalDensity.current
+
+    val pagerFraction by remember {
+        derivedStateOf {
+            (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 3f)
+        }
+    }
+
+    val islandFractionAnim = remember { Animatable(0f) }
+    var isDraggingIsland by remember { mutableStateOf(false) }
+
+    // Synchronize bubble position with pager when not manually dragging
+    LaunchedEffect(pagerFraction, isDraggingIsland) {
+        if (!isDraggingIsland) {
+            islandFractionAnim.snapTo(pagerFraction)
+        }
+    }
+
+    val liveFraction = if (isDraggingIsland) islandFractionAnim.value else pagerFraction
 
     Box(
         modifier = Modifier
@@ -117,237 +211,251 @@ fun MainScreen(viewModel: MainViewModel) {
         Scaffold(
             containerColor = Color.Transparent,
             floatingActionButton = {
-                if (showBottomBar) {
-                    GlassFAB(
-                        onClick = { navController.navigate("add") },
-                        modifier = Modifier
-                            .navigationBarsPadding()
-                            .padding(bottom = 80.dp),
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_add), modifier = Modifier.size(26.dp))
-                    }
+                GlassFAB(
+                    onClick = { onNavigateToAdd(null) },
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .padding(bottom = 84.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(
+                        Icons.Filled.Add, 
+                        contentDescription = stringResource(R.string.action_add), 
+                        modifier = Modifier.size(26.dp)
+                    )
                 }
             }
         ) { innerPadding ->
-            val getRouteIndex = { route: String? ->
-                when (route) {
-                    "home" -> 0
-                    "calendar" -> 1
-                    "meds" -> 2
-                    "settings" -> 3
-                    else -> 0
-                }
-            }
-
-            NavHost(
-                navController = navController,
-                startDestination = "home",
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                enterTransition = {
-                    val targetRoute = targetState.destination.route
-                    val initialRoute = initialState.destination.route
-                    if (targetRoute?.startsWith("add") == true) {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Up,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        ) + fadeIn(animationSpec = tween(200))
-                    } else if (initialRoute?.startsWith("add") == true) {
-                        fadeIn(animationSpec = tween(160)) + scaleIn(initialScale = 0.98f, animationSpec = tween(160, easing = EaseOutCubic))
-                    } else {
-                        fadeIn(animationSpec = tween(180, easing = EaseOutCubic)) + scaleIn(
-                            initialScale = 0.985f,
-                            animationSpec = tween(180, easing = EaseOutCubic)
-                        )
-                    }
-                },
-                exitTransition = {
-                    val targetRoute = targetState.destination.route
-                    val initialRoute = initialState.destination.route
-                    if (initialRoute?.startsWith("add") == true) {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Down,
-                            animationSpec = tween(200, easing = FastOutLinearInEasing)
-                        ) + fadeOut(animationSpec = tween(150))
-                    } else if (targetRoute?.startsWith("add") == true) {
-                        fadeOut(animationSpec = tween(150)) + scaleOut(
-                            targetScale = 0.98f,
-                            animationSpec = tween(200, easing = FastOutLinearInEasing)
-                        )
-                    } else {
-                        fadeOut(animationSpec = tween(120, easing = FastOutLinearInEasing))
-                    }
-                }
-            ) {
-                composable("home") { 
-                    HomeScreen(
-                        viewModel = viewModel, 
-                        bottomPadding = 120.dp
-                    ) 
-                }
-                composable("calendar") { 
-                    CalendarScreen(
-                        viewModel = viewModel, 
-                        bottomPadding = 120.dp
-                    )
-                }
-                composable("meds") { 
-                    MedicationsListScreen(
-                        viewModel = viewModel, 
-                        bottomPadding = 120.dp,
-                        onEditMedication = { medId ->
-                            navController.navigate("add?medicationId=$medId")
-                        }
-                    )
-                }
-                composable("settings") { 
-                    SettingsScreen(
+                beyondViewportPageCount = 1,
+                userScrollEnabled = true
+            ) { page ->
+                when (page) {
+                    0 -> HomeScreen(
                         viewModel = viewModel,
                         bottomPadding = 120.dp
                     )
-                }
-                composable(
-                    route = "add?medicationId={medicationId}",
-                    arguments = listOf(
-                        navArgument("medicationId") {
-                            type = NavType.IntType
-                            defaultValue = -1
-                        }
+                    1 -> CalendarScreen(
+                        viewModel = viewModel,
+                        bottomPadding = 120.dp
                     )
-                ) { backStackEntry ->
-                    val medIdArg = backStackEntry.arguments?.getInt("medicationId") ?: -1
-                    val editMedId = if (medIdArg != -1) medIdArg else null
-                    AddMedicationScreen(
-                        editingMedicationId = editMedId,
-                        onNavigateBack = { navController.popBackStack() },
-                        viewModel = viewModel
+                    2 -> MedicationsListScreen(
+                        viewModel = viewModel,
+                        bottomPadding = 120.dp,
+                        onEditMedication = { medId -> onNavigateToAdd(medId) }
+                    )
+                    3 -> SettingsScreen(
+                        viewModel = viewModel,
+                        bottomPadding = 120.dp
                     )
                 }
             }
         }
 
-        if (showBottomBar) {
-            val selectedIndex = when (currentDestination) {
-                "home" -> 0
-                "calendar" -> 1
-                "meds" -> 2
-                "settings" -> 3
-                else -> 0
-            }
-
-            // Floating Tactile Glass Navigation Island Capsule with Backdrop Blur & Specular Rim
-            Box(
+        // Floating Tactile Glass Navigation Island Capsule with Backdrop Blur, Specular Rim & Fluid Dragging
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .islandGlass(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
+                    elevation = 18.dp
+                )
+        ) {
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .islandGlass(
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
-                        elevation = 18.dp
-                    )
+                    .padding(horizontal = 6.dp, vertical = 6.dp)
             ) {
-                BoxWithConstraints(
+                val tabWidth = maxWidth / 4
+
+                val indicatorOffset = tabWidth * liveFraction
+
+                // Dynamic liquid stretch effect proportional to movement
+                val stretchFactor = if (isDraggingIsland) 0.08f else {
+                    val offsetFraction = pagerState.currentPageOffsetFraction
+                    (abs(offsetFraction) * 0.16f).coerceAtMost(0.22f)
+                }
+
+                // Smooth sliding Liquid Glass active tab pill indicator with specular edge & glow
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffset)
+                        .width(tabWidth)
+                        .height(54.dp)
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .graphicsLayer {
+                            scaleX = 1f + stretchFactor
+                            scaleY = if (isDraggingIsland) 1.05f else 1f
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+                            clip = true
+                        }
+                        .liquidGlass(
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+                            customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+                            elevation = if (isDraggingIsland) 8.dp else 6.dp,
+                            borderWidth = 1.2.dp
+                        )
+                )
+
+                // Navigation Row with Interactive Drag Gesture & Smooth Snapping
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 6.dp, vertical = 6.dp)
-                ) {
-                    val tabWidth = maxWidth / 4
-
-                    // Ultra-smooth liquid spring animation for tab switching
-                    val animatedTabIndex by animateFloatAsState(
-                        targetValue = selectedIndex.toFloat(),
-                        animationSpec = spring(
-                            dampingRatio = 0.78f,
-                            stiffness = 320f
-                        ),
-                        label = "liquidIndexAnim"
-                    )
-
-                    val indicatorOffset = tabWidth * animatedTabIndex
-
-                    // Dynamic liquid stretch effect based on movement distance
-                    val movementDelta = (selectedIndex - animatedTabIndex)
-                    val stretchFactor = (kotlin.math.abs(movementDelta) * 0.18f).coerceAtMost(0.25f)
-
-                    // Smooth sliding Liquid Glass active tab pill indicator with specular edge & glow
-                    Box(
-                        modifier = Modifier
-                            .offset(x = indicatorOffset)
-                            .width(tabWidth)
-                            .height(54.dp)
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                            .graphicsLayer {
-                                scaleX = 1f + stretchFactor
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
-                                clip = true
-                            }
-                            .liquidGlass(
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
-                                customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
-                                elevation = 6.dp,
-                                borderWidth = 1.2.dp
+                        .pointerInput(Unit) {
+                            detectDragGestures(
+                                onDragStart = { offset ->
+                                    isDraggingIsland = true
+                                    val tabW = size.width / 4f
+                                    if (tabW > 0f) {
+                                        val targetFrac = (offset.x / tabW - 0.5f).coerceIn(0f, 3f)
+                                        coroutineScope.launch {
+                                            islandFractionAnim.animateTo(
+                                                targetValue = targetFrac,
+                                                animationSpec = spring(
+                                                    dampingRatio = 0.85f,
+                                                    stiffness = 500f
+                                                )
+                                            )
+                                        }
+                                    }
+                                },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    val tabW = size.width / 4f
+                                    if (tabW > 0f) {
+                                        val newFrac = (islandFractionAnim.value + dragAmount.x / tabW).coerceIn(0f, 3f)
+                                        coroutineScope.launch {
+                                            islandFractionAnim.snapTo(newFrac)
+                                        }
+                                    }
+                                },
+                                onDragEnd = {
+                                    val targetTab = islandFractionAnim.value.roundToInt().coerceIn(0, 3)
+                                    coroutineScope.launch {
+                                        launch {
+                                            islandFractionAnim.animateTo(
+                                                targetValue = targetTab.toFloat(),
+                                                animationSpec = spring(
+                                                    dampingRatio = 0.76f,
+                                                    stiffness = 340f
+                                                )
+                                            )
+                                            isDraggingIsland = false
+                                        }
+                                        pagerState.animateScrollToPage(
+                                            targetTab,
+                                            animationSpec = spring(
+                                                dampingRatio = 0.80f,
+                                                stiffness = 340f
+                                            )
+                                        )
+                                    }
+                                },
+                                onDragCancel = {
+                                    val targetTab = islandFractionAnim.value.roundToInt().coerceIn(0, 3)
+                                    coroutineScope.launch {
+                                        launch {
+                                            islandFractionAnim.animateTo(
+                                                targetValue = targetTab.toFloat(),
+                                                animationSpec = spring(
+                                                    dampingRatio = 0.76f,
+                                                    stiffness = 340f
+                                                )
+                                            )
+                                            isDraggingIsland = false
+                                        }
+                                        pagerState.animateScrollToPage(
+                                            targetTab,
+                                            animationSpec = spring(
+                                                dampingRatio = 0.80f,
+                                                stiffness = 340f
+                                            )
+                                        )
+                                    }
+                                }
                             )
+                        },
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FloatingNavItem(
+                        icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.nav_today)) },
+                        label = stringResource(R.string.nav_today),
+                        itemIndex = 0,
+                        currentFraction = liveFraction,
+                        onClick = {
+                            isDraggingIsland = false
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    0,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.80f,
+                                        stiffness = 340f
+                                    )
+                                )
+                            }
+                        }
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FloatingNavItem(
-                            icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.nav_today)) },
-                            label = stringResource(R.string.nav_today),
-                            selected = currentDestination == "home",
-                            onClick = {
-                                navController.navigate("home") {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                    FloatingNavItem(
+                        icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
+                        label = stringResource(R.string.nav_calendar),
+                        itemIndex = 1,
+                        currentFraction = liveFraction,
+                        onClick = {
+                            isDraggingIsland = false
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    1,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.80f,
+                                        stiffness = 340f
+                                    )
+                                )
                             }
-                        )
-                        FloatingNavItem(
-                            icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
-                            label = stringResource(R.string.nav_calendar),
-                            selected = currentDestination == "calendar",
-                            onClick = {
-                                navController.navigate("calendar") {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                        }
+                    )
+                    FloatingNavItem(
+                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
+                        label = stringResource(R.string.nav_meds),
+                        itemIndex = 2,
+                        currentFraction = liveFraction,
+                        onClick = {
+                            isDraggingIsland = false
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    2,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.80f,
+                                        stiffness = 340f
+                                    )
+                                )
                             }
-                        )
-                        FloatingNavItem(
-                            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
-                            label = stringResource(R.string.nav_meds),
-                            selected = currentDestination == "meds",
-                            onClick = {
-                                navController.navigate("meds") {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
+                        }
+                    )
+                    FloatingNavItem(
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
+                        label = stringResource(R.string.nav_settings),
+                        itemIndex = 3,
+                        currentFraction = liveFraction,
+                        onClick = {
+                            isDraggingIsland = false
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    3,
+                                    animationSpec = spring(
+                                        dampingRatio = 0.80f,
+                                        stiffness = 340f
+                                    )
+                                )
                             }
-                        )
-                        FloatingNavItem(
-                            icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
-                            label = stringResource(R.string.nav_settings),
-                            selected = currentDestination == "settings",
-                            onClick = {
-                                navController.navigate("settings") {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }
@@ -358,38 +466,20 @@ fun MainScreen(viewModel: MainViewModel) {
 fun RowScope.FloatingNavItem(
     icon: @Composable () -> Unit,
     label: String,
-    selected: Boolean,
+    itemIndex: Int,
+    currentFraction: Float,
     onClick: () -> Unit
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.16f else 1f,
-        animationSpec = spring(
-            dampingRatio = 0.72f,
-            stiffness = 300f
-        ),
-        label = "pillScale"
-    )
+    // Calculate continuous proximity (1.0 = fully active, 0.0 = inactive)
+    val distance = abs(currentFraction - itemIndex)
+    val proximity = (1f - distance).coerceIn(0f, 1f)
 
-    val yOffset by animateDpAsState(
-        targetValue = if (selected) (-3.5).dp else 0.dp,
-        animationSpec = spring(
-            dampingRatio = 0.72f,
-            stiffness = 300f
-        ),
-        label = "yOffset"
-    )
+    val scale = 1f + 0.16f * proximity
+    val yOffset = (-3.5f * proximity).dp
 
-    val targetContentColor = if (selected) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-    }
-
-    val contentColor by animateColorAsState(
-        targetValue = targetContentColor,
-        animationSpec = tween(durationMillis = 200, easing = EaseOutCubic),
-        label = "contentColorAnim"
-    )
+    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+    val activeColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val contentColor = lerp(inactiveColor, activeColor, proximity)
 
     Column(
         modifier = Modifier
@@ -422,7 +512,7 @@ fun RowScope.FloatingNavItem(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+            fontWeight = if (proximity > 0.5f) FontWeight.ExtraBold else FontWeight.Medium,
             color = contentColor,
             maxLines = 1,
             softWrap = false,

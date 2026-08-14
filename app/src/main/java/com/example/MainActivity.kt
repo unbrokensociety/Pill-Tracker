@@ -25,6 +25,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -187,7 +188,7 @@ fun MainPagerScreen(
 
     val pagerFraction by remember {
         derivedStateOf {
-            (pagerState.currentPage + pagerState.currentPageOffsetFraction).coerceIn(0f, 3f)
+            pagerState.currentPage + pagerState.currentPageOffsetFraction
         }
     }
 
@@ -201,7 +202,34 @@ fun MainPagerScreen(
         }
     }
 
-    val liveFraction = if (isDraggingIsland) islandFractionAnim.value else pagerFraction
+    val rawFraction = if (isDraggingIsland) islandFractionAnim.value else pagerFraction
+
+    // Rubber-band edge physics: Asymptotically resist when dragged beyond boundaries [0..3]
+    val effectiveFraction = when {
+        rawFraction < 0f -> rawFraction * 0.25f
+        rawFraction > 3f -> 3f + (rawFraction - 3f) * 0.25f
+        else -> rawFraction
+    }
+
+    // Dynamic Liquid Stretch & Wall Squeeze Calculation
+    val (bubbleScaleX, bubbleScaleY) = remember(rawFraction, isDraggingIsland) {
+        if (rawFraction < 0f) {
+            // Squish against left wall
+            val squish = (abs(rawFraction) * 0.35f).coerceIn(0f, 0.40f)
+            (1f - squish) to (1f + squish * 0.5f)
+        } else if (rawFraction > 3f) {
+            // Squish against right wall
+            val squish = ((rawFraction - 3f) * 0.35f).coerceIn(0f, 0.40f)
+            (1f - squish) to (1f + squish * 0.5f)
+        } else {
+            // Liquid horizontal stretch proportional to fractional distance from nearest tab
+            val distFromCenter = abs(rawFraction - rawFraction.roundToInt())
+            val stretch = (distFromCenter * 0.38f).coerceIn(0f, 0.30f)
+            val sx = 1f + stretch
+            val sy = (1f / kotlin.math.sqrt(sx)) * (if (isDraggingIsland) 0.94f else 1f)
+            sx to sy
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -231,26 +259,47 @@ fun MainPagerScreen(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
                 beyondViewportPageCount = 1,
-                userScrollEnabled = true
+                userScrollEnabled = true,
+                flingBehavior = PagerDefaults.flingBehavior(
+                    state = pagerState,
+                    snapAnimationSpec = spring(
+                        dampingRatio = 0.86f,
+                        stiffness = 320f
+                    )
+                )
             ) { page ->
-                when (page) {
-                    0 -> HomeScreen(
-                        viewModel = viewModel,
-                        bottomPadding = 120.dp
-                    )
-                    1 -> CalendarScreen(
-                        viewModel = viewModel,
-                        bottomPadding = 120.dp
-                    )
-                    2 -> MedicationsListScreen(
-                        viewModel = viewModel,
-                        bottomPadding = 120.dp,
-                        onEditMedication = { medId -> onNavigateToAdd(medId) }
-                    )
-                    3 -> SettingsScreen(
-                        viewModel = viewModel,
-                        bottomPadding = 120.dp
-                    )
+                val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                val pageAlpha = 1f - (abs(pageOffset) * 0.12f).coerceIn(0f, 0.25f)
+                val pageScale = 1f - (abs(pageOffset) * 0.03f).coerceIn(0f, 0.04f)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            alpha = pageAlpha
+                            scaleX = pageScale
+                            scaleY = pageScale
+                        }
+                ) {
+                    when (page) {
+                        0 -> HomeScreen(
+                            viewModel = viewModel,
+                            bottomPadding = 120.dp
+                        )
+                        1 -> CalendarScreen(
+                            viewModel = viewModel,
+                            bottomPadding = 120.dp
+                        )
+                        2 -> MedicationsListScreen(
+                            viewModel = viewModel,
+                            bottomPadding = 120.dp,
+                            onEditMedication = { medId -> onNavigateToAdd(medId) }
+                        )
+                        3 -> SettingsScreen(
+                            viewModel = viewModel,
+                            bottomPadding = 120.dp
+                        )
+                    }
                 }
             }
         }
@@ -274,15 +323,9 @@ fun MainPagerScreen(
             ) {
                 val tabWidth = maxWidth / 4
 
-                val indicatorOffset = tabWidth * liveFraction
+                val indicatorOffset = tabWidth * effectiveFraction
 
-                // Dynamic liquid stretch effect proportional to movement
-                val stretchFactor = if (isDraggingIsland) 0.08f else {
-                    val offsetFraction = pagerState.currentPageOffsetFraction
-                    (abs(offsetFraction) * 0.16f).coerceAtMost(0.22f)
-                }
-
-                // Smooth sliding Liquid Glass active tab pill indicator with specular edge & glow
+                // Smooth sliding Liquid Glass active tab pill indicator with jelly stretch & specular glow
                 Box(
                     modifier = Modifier
                         .offset(x = indicatorOffset)
@@ -290,20 +333,20 @@ fun MainPagerScreen(
                         .height(54.dp)
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                         .graphicsLayer {
-                            scaleX = 1f + stretchFactor
-                            scaleY = if (isDraggingIsland) 1.05f else 1f
+                            scaleX = bubbleScaleX
+                            scaleY = bubbleScaleY
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
                             clip = true
                         }
                         .liquidGlass(
                             shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
-                            customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
-                            elevation = if (isDraggingIsland) 8.dp else 6.dp,
-                            borderWidth = 1.2.dp
+                            customGlassColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (isDraggingIsland) 0.88f else 0.78f),
+                            elevation = if (isDraggingIsland) 10.dp else 6.dp,
+                            borderWidth = 1.3.dp
                         )
                 )
 
-                // Navigation Row with Interactive Drag Gesture & Smooth Snapping
+                // Navigation Row with Direct Finger Scrubbing, Edge Resistance & Snap Physics
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -313,13 +356,13 @@ fun MainPagerScreen(
                                     isDraggingIsland = true
                                     val tabW = size.width / 4f
                                     if (tabW > 0f) {
-                                        val targetFrac = (offset.x / tabW - 0.5f).coerceIn(0f, 3f)
+                                        val targetFrac = (offset.x / tabW - 0.5f)
                                         coroutineScope.launch {
                                             islandFractionAnim.animateTo(
                                                 targetValue = targetFrac,
                                                 animationSpec = spring(
-                                                    dampingRatio = 0.85f,
-                                                    stiffness = 500f
+                                                    dampingRatio = 0.75f,
+                                                    stiffness = 450f
                                                 )
                                             )
                                         }
@@ -329,7 +372,10 @@ fun MainPagerScreen(
                                     change.consume()
                                     val tabW = size.width / 4f
                                     if (tabW > 0f) {
-                                        val newFrac = (islandFractionAnim.value + dragAmount.x / tabW).coerceIn(0f, 3f)
+                                        val currentVal = islandFractionAnim.value
+                                        // When past boundaries, apply drag resistance
+                                        val resistance = if (currentVal < 0f || currentVal > 3f) 0.35f else 1f
+                                        val newFrac = currentVal + (dragAmount.x / tabW) * resistance
                                         coroutineScope.launch {
                                             islandFractionAnim.snapTo(newFrac)
                                         }
@@ -342,8 +388,8 @@ fun MainPagerScreen(
                                             islandFractionAnim.animateTo(
                                                 targetValue = targetTab.toFloat(),
                                                 animationSpec = spring(
-                                                    dampingRatio = 0.76f,
-                                                    stiffness = 340f
+                                                    dampingRatio = 0.68f,
+                                                    stiffness = 300f
                                                 )
                                             )
                                             isDraggingIsland = false
@@ -351,8 +397,8 @@ fun MainPagerScreen(
                                         pagerState.animateScrollToPage(
                                             targetTab,
                                             animationSpec = spring(
-                                                dampingRatio = 0.80f,
-                                                stiffness = 340f
+                                                dampingRatio = 0.84f,
+                                                stiffness = 320f
                                             )
                                         )
                                     }
@@ -364,8 +410,8 @@ fun MainPagerScreen(
                                             islandFractionAnim.animateTo(
                                                 targetValue = targetTab.toFloat(),
                                                 animationSpec = spring(
-                                                    dampingRatio = 0.76f,
-                                                    stiffness = 340f
+                                                    dampingRatio = 0.68f,
+                                                    stiffness = 300f
                                                 )
                                             )
                                             isDraggingIsland = false
@@ -373,8 +419,8 @@ fun MainPagerScreen(
                                         pagerState.animateScrollToPage(
                                             targetTab,
                                             animationSpec = spring(
-                                                dampingRatio = 0.80f,
-                                                stiffness = 340f
+                                                dampingRatio = 0.84f,
+                                                stiffness = 320f
                                             )
                                         )
                                     }
@@ -388,15 +434,15 @@ fun MainPagerScreen(
                         icon = { Icon(Icons.Filled.Home, contentDescription = stringResource(R.string.nav_today)) },
                         label = stringResource(R.string.nav_today),
                         itemIndex = 0,
-                        currentFraction = liveFraction,
+                        currentFraction = effectiveFraction,
                         onClick = {
                             isDraggingIsland = false
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(
                                     0,
                                     animationSpec = spring(
-                                        dampingRatio = 0.80f,
-                                        stiffness = 340f
+                                        dampingRatio = 0.84f,
+                                        stiffness = 320f
                                     )
                                 )
                             }
@@ -406,15 +452,15 @@ fun MainPagerScreen(
                         icon = { Icon(Icons.Filled.DateRange, contentDescription = stringResource(R.string.nav_calendar)) },
                         label = stringResource(R.string.nav_calendar),
                         itemIndex = 1,
-                        currentFraction = liveFraction,
+                        currentFraction = effectiveFraction,
                         onClick = {
                             isDraggingIsland = false
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(
                                     1,
                                     animationSpec = spring(
-                                        dampingRatio = 0.80f,
-                                        stiffness = 340f
+                                        dampingRatio = 0.84f,
+                                        stiffness = 320f
                                     )
                                 )
                             }
@@ -424,15 +470,15 @@ fun MainPagerScreen(
                         icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.nav_meds)) },
                         label = stringResource(R.string.nav_meds),
                         itemIndex = 2,
-                        currentFraction = liveFraction,
+                        currentFraction = effectiveFraction,
                         onClick = {
                             isDraggingIsland = false
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(
                                     2,
                                     animationSpec = spring(
-                                        dampingRatio = 0.80f,
-                                        stiffness = 340f
+                                        dampingRatio = 0.84f,
+                                        stiffness = 320f
                                     )
                                 )
                             }
@@ -442,15 +488,15 @@ fun MainPagerScreen(
                         icon = { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) },
                         label = stringResource(R.string.nav_settings),
                         itemIndex = 3,
-                        currentFraction = liveFraction,
+                        currentFraction = effectiveFraction,
                         onClick = {
                             isDraggingIsland = false
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(
                                     3,
                                     animationSpec = spring(
-                                        dampingRatio = 0.80f,
-                                        stiffness = 340f
+                                        dampingRatio = 0.84f,
+                                        stiffness = 320f
                                     )
                                 )
                             }

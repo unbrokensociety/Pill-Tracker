@@ -46,6 +46,7 @@ import com.example.ui.components.GlassChip
 import com.example.ui.components.BobbingIcon
 import com.example.ui.components.StaggeredAppear
 import com.example.ui.components.tactilePress
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,15 +152,9 @@ fun HomeScreen(
                 .padding(top = padding.calculateTopPadding())
                 .fillMaxSize()
         ) {
-            
+
             // Streak motivation banner
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                StreakBanner(streakDays = streakDays)
-            }
+            StreakBanner(streakDays = streakDays)
 
             val lowStockMeds by viewModel.lowStockMedications.collectAsState()
             AnimatedVisibility(
@@ -174,7 +169,15 @@ fun HomeScreen(
             }
 
             // Horizontal Date strip (recomputed live so it stays correct past midnight)
-            val today = LocalDate.now()
+            // BUG FIX: "today" is now a state that refreshes every minute — the old
+            // version captured LocalDate.now() once and went stale after midnight.
+            var today by remember { mutableStateOf(LocalDate.now()) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    delay(60_000L)
+                    today = LocalDate.now()
+                }
+            }
             val dateStrip = (-2..2).map { today.plusDays(it.toLong()) }
             Row(
                 modifier = Modifier
@@ -186,6 +189,7 @@ fun HomeScreen(
                     DateItem(
                         date = d,
                         isSelected = d == selectedDate,
+                        isToday = d == today,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.setSelectedDate(d) }
                     )
@@ -322,11 +326,10 @@ fun HomeScreen(
 fun DateItem(
     date: LocalDate, 
     isSelected: Boolean, 
+    isToday: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val isToday = remember(date) { date == LocalDate.now() }
-    
     val animatedContentColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.onPrimary
@@ -423,7 +426,8 @@ fun MedicationCard(
         if (schedule.scheduleType == "as_needed" || schedule.timeHour < 0) {
             null
         } else {
-            String.format("%02d:%02d", schedule.timeHour, schedule.timeMinute)
+            // explicit locale keeps digit rendering stable in every language
+            String.format(java.util.Locale.US, "%02d:%02d", schedule.timeHour, schedule.timeMinute)
         }
     }
 

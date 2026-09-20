@@ -323,7 +323,9 @@ fun MainPagerScreen(
         }
 
         // Floating REAL Liquid Glass Navigation Island:
-        // live backdrop blur + refraction + specular rim + fluid dragging.
+        // live Telegram-grade backdrop blur (RenderEffect, CLAMP edges) + scrim
+        // + specular rim + fluid dragging. Content scrolls under it and stays
+        // readable through the frost.
         LiquidGlassPanel(
             contentLayer = contentLayer,
             sourceOriginProvider = { sourceOrigin },
@@ -334,8 +336,8 @@ fun MainPagerScreen(
                 .fillMaxWidth(),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            blurRadius = 26.dp,
-            refraction = 1.08f
+            blurRadius = 30.dp,
+            refraction = 1.02f
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -366,10 +368,10 @@ fun MainPagerScreen(
                             .padding(horizontal = 4.dp, vertical = 2.dp),
                         shape = RoundedCornerShape(22.dp),
                         elevation = if (isDraggingIsland) 10.dp else 6.dp,
-                        blurRadius = 16.dp,
-                        refraction = 1.14f,
+                        blurRadius = 20.dp,
+                        refraction = 1.06f,
                         tint = MaterialTheme.colorScheme.primaryContainer.copy(
-                            alpha = if (isDraggingIsland) 0.85f else 0.72f
+                            alpha = if (isDraggingIsland) 0.62f else 0.50f
                         )
                     ) { }
                 }

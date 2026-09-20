@@ -813,7 +813,8 @@ fun AddMedicationScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 // Time Slot Glass Card
-                                val formattedTime = String.format("%02d:%02d", time.hour, time.minute)
+                                // explicit locale keeps digit rendering stable in every language
+                                val formattedTime = String.format(java.util.Locale.US, "%02d:%02d", time.hour, time.minute)
                                 
                                 GlassCard(
                                     modifier = Modifier.weight(1f),

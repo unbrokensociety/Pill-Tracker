@@ -226,8 +226,12 @@ fun SettingsScreen(
                             Triple(ThemeMode.BRAND, stringResource(R.string.settings_theme_brand), Icons.Filled.BlurOn)
                         )
 
+                        // BUG FIX: the weight modifier is now passed in from the RowScope
+                        // call-site — the old version resolved ColumnScope.weight inside
+                        // this local function, which Row silently ignores (the theme
+                        // buttons did not stretch to equal widths).
                         @Composable
-                        fun ThemeOption(mode: ThemeMode, label: String, icon: ImageVector) {
+                        fun ThemeOption(mode: ThemeMode, label: String, icon: ImageVector, modifier: Modifier) {
                             val isSelected = themeMode == mode
                             val optionScale by animateFloatAsState(
                                 targetValue = if (isSelected) 1.04f else 1f,
@@ -238,8 +242,7 @@ fun SettingsScreen(
                                 label = "themeOptionScale"
                             )
                             Surface(
-                                modifier = Modifier
-                                    .weight(1f)
+                                modifier = modifier
                                     .graphicsLayer {
                                         scaleX = optionScale
                                         scaleY = optionScale
@@ -279,7 +282,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             themes.take(2).forEach { (mode, label, icon) ->
-                                ThemeOption(mode, label, icon)
+                                ThemeOption(mode, label, icon, Modifier.weight(1f))
                             }
                         }
 
@@ -290,7 +293,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             themes.drop(2).forEach { (mode, label, icon) ->
-                                ThemeOption(mode, label, icon)
+                                ThemeOption(mode, label, icon, Modifier.weight(1f))
                             }
                         }
                     }

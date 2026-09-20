@@ -47,10 +47,18 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /* ------------------------------------------------------------------------- */
-/*  REAL LIQUID GLASS ENGINE                                                  */
-/*  Real-time backdrop blur via GraphicsLayer recording + RenderEffect,       */
-/*  plus refraction magnification, specular rim, sheen and tint overlays.     */
-/*  Falls back gracefully to translucent glass on Android < 12 (API 31).      */
+/*  REAL LIQUID GLASS ENGINE v2 — "Telegram-grade" backdrop blur              */
+/*                                                                           */
+/*  Mirrors the technique used by Telegram for Android:                       */
+/*   • API 31+ (Android 12): live backdrop blur through                       */
+/*     RenderEffect.createBlurEffect(radius, radius, CLAMP) — the exact       */
+/*     same native path Telegram uses (BlurringShader: dp(35), TileMode       */
+/*     .CLAMP) — fed by a shared GraphicsLayer that records the app           */
+/*     content every frame.                                                   */
+/*   • Below API 31: milky frosted-glass fallback (no RenderEffect exists     */
+/*     on those versions — Telegram also falls back to a plain scrim).       */
+/*  On top of the blur: a subtle Telegram-style scrim, glass tint, top        */
+/*  sheen, a diagonal specular streak and a high-contrast rim.                */
 /* ------------------------------------------------------------------------- */
 
 /** True when the device supports RenderEffect based backdrop blur (Android 12+). */
@@ -61,6 +69,9 @@ val BackdropBlurSupported: Boolean
  * Records everything drawn inside the modified node into [contentLayer] and
  * keeps drawing it normally. Attach to the content that should appear
  * blurred behind liquid glass panels (e.g. the pager behind the bottom bar).
+ *
+ * The layer is re-recorded on every draw, so glass panels always show the
+ * live content behind them (scrolling lists, animations, everything).
  */
 fun Modifier.glassSource(contentLayer: GraphicsLayer): Modifier =
     this.drawWithCache {
@@ -74,8 +85,10 @@ fun Modifier.glassSource(contentLayer: GraphicsLayer): Modifier =
 
 /**
  * Soft ambient "aurora" gradient decor drawn behind app content.
- * Gives the liquid glass real colorful content to refract and blur,
- * and lifts the overall look with a premium tinted depth.
+ * Gives the liquid glass real colorful content to refract and blur —
+ * even when list content does not reach under the navigation island,
+ * the bar always has something rich to blur (this is what makes glass
+ * READ as glass instead of a flat translucent panel).
  */
 @Composable
 fun Modifier.auroraBackdrop(): Modifier {
@@ -84,8 +97,8 @@ fun Modifier.auroraBackdrop(): Modifier {
     val secondary = MaterialTheme.colorScheme.secondary
     val tertiary = MaterialTheme.colorScheme.tertiary
 
-    val blobAlpha = if (isDark) 0.17f else 0.12f
-    val washTop = if (isDark) Color(0x14FFFFFF) else Color.White.copy(alpha = 0.28f)
+    val blobAlpha = if (isDark) 0.26f else 0.20f
+    val washTop = if (isDark) Color(0x1CFFFFFF) else Color.White.copy(alpha = 0.35f)
 
     return this.drawBehind {
         val w = size.width
@@ -100,50 +113,64 @@ fun Modifier.auroraBackdrop(): Modifier {
             )
         )
 
-        // soft color blobs (blurred beautifully by the liquid glass above)
+        // rich color blobs — the fuel the liquid glass blurs into soft washes
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(primary.copy(alpha = blobAlpha), Color.Transparent),
-                center = Offset(0f, h * 0.10f),
+                center = Offset(0f, h * 0.08f),
                 radius = w * 0.85f
             ),
             radius = w * 0.85f,
-            center = Offset(0f, h * 0.10f)
+            center = Offset(0f, h * 0.08f)
         )
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(tertiary.copy(alpha = blobAlpha * 0.75f), Color.Transparent),
-                center = Offset(w, h * 0.42f),
-                radius = w * 0.70f
+                colors = listOf(tertiary.copy(alpha = blobAlpha * 0.8f), Color.Transparent),
+                center = Offset(w, h * 0.40f),
+                radius = w * 0.75f
             ),
-            radius = w * 0.70f,
-            center = Offset(w, h * 0.42f)
+            radius = w * 0.75f,
+            center = Offset(w, h * 0.40f)
+        )
+        // bottom-heavy secondary blob: guarantees color right under the glass bar
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(secondary.copy(alpha = blobAlpha * 0.9f), Color.Transparent),
+                center = Offset(w * 0.5f, h * 1.02f),
+                radius = w * 0.95f
+            ),
+            radius = w * 0.95f,
+            center = Offset(w * 0.5f, h * 1.02f)
         )
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(secondary.copy(alpha = blobAlpha * 0.65f), Color.Transparent),
-                center = Offset(w * 0.35f, h),
-                radius = w * 0.80f
+                colors = listOf(primary.copy(alpha = blobAlpha * 0.6f), Color.Transparent),
+                center = Offset(w * 0.10f, h * 0.78f),
+                radius = w * 0.55f
             ),
-            radius = w * 0.80f,
-            center = Offset(w * 0.35f, h)
+            radius = w * 0.55f,
+            center = Offset(w * 0.10f, h * 0.78f)
         )
     }
 }
 
 /**
- * THE real liquid glass panel.
+ * THE real liquid glass panel — Telegram-style live backdrop blur.
  *
- * Draws a live blurred + refracted (magnified) copy of the content recorded by
- * [glassSource] behind this panel, then layers on top: glass tint, a top sheen
- * gradient, a diagonal specular streak, and a high-contrast specular rim.
- * On Android < 12 it falls back to a translucent tinted glass (still looks good).
+ * Draws a live blurred copy of the content recorded by [glassSource] behind
+ * this panel (RenderEffect gaussian, CLAMP edges — identical to Telegram's
+ * native blur path), then layers on top: a subtle scrim, the glass tint,
+ * a top sheen gradient, a diagonal specular streak, and a high-contrast
+ * specular rim. On Android < 12 it falls back to a milky frosted glass.
  *
  * @param contentLayer shared layer recorded via [glassSource] on the background content.
  * @param sourceOriginProvider position (in root coordinates) of the node carrying [glassSource];
- *        used to translate the recorded drawing to this panel's position. May return null
+ *        used to align the recorded drawing to this panel's position. May return null
  *        until the source has been positioned.
- * @param refraction subtle lens magnification of the blurred background (1f = none).
+ * @param blurRadius gaussian blur radius. Telegram uses dp(35) for full-screen
+ *        blurs; bars/panels read best around 24–34.dp.
+ * @param refraction subtle lens magnification of the blurred background (1f = none,
+ *        aligned 1:1 with the content behind — most glass-like).
  * @param tint color cast of the glass. Use null for the theme default translucent surface.
  */
 @Composable
@@ -153,8 +180,8 @@ fun LiquidGlassPanel(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(32.dp),
     elevation: Dp = 16.dp,
-    blurRadius: Dp = 24.dp,
-    refraction: Float = 1.10f,
+    blurRadius: Dp = 30.dp,
+    refraction: Float = 1.02f,
     tint: Color? = null,
     borderWidth: Dp = 1.dp,
     content: @Composable BoxScope.() -> Unit
@@ -162,22 +189,26 @@ fun LiquidGlassPanel(
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     val glassTint = tint ?: MaterialTheme.colorScheme.surface.copy(
-        alpha = if (isDark) 0.40f else 0.26f
+        alpha = if (isDark) 0.46f else 0.38f
     )
 
-    // Specular rim: bright at the top, softly lit at the bottom (Apple-like dual light)
-    val rimTop = if (isDark) Color(1f, 1f, 1f, 0.34f) else Color(1f, 1f, 1f, 0.85f)
-    val rimMid = if (isDark) Color(1f, 1f, 1f, 0.06f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)
-    val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.16f) else Color(1f, 1f, 1f, 0.55f)
+    // Specular rim: bright at the top, softly lit at the bottom (dual light)
+    val rimTop = if (isDark) Color(1f, 1f, 1f, 0.36f) else Color(1f, 1f, 1f, 0.85f)
+    val rimMid = if (isDark) Color(1f, 1f, 1f, 0.07f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)
+    val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.17f) else Color(1f, 1f, 1f, 0.55f)
     val rimBrush = Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
 
     val ambientShadowColor = if (isDark) Color(0x59000000) else Color(0x14000000)
     val spotShadowColor = if (isDark) Color(0x7A000000) else Color(0x29000000)
 
-    val sheenTop = if (isDark) Color(1f, 1f, 1f, 0.09f) else Color(1f, 1f, 1f, 0.22f)
+    val sheenTop = if (isDark) Color(1f, 1f, 1f, 0.10f) else Color(1f, 1f, 1f, 0.22f)
     val sheenMid = if (isDark) Color(1f, 1f, 1f, 0.03f) else Color(1f, 1f, 1f, 0.08f)
     val bottomShade = if (isDark) Color(0x33000000) else Color(0x0A000000)
     val streak = if (isDark) Color(1f, 1f, 1f, 0.05f) else Color(1f, 1f, 1f, 0.13f)
+
+    // Telegram-style scrim over the blurred content (they draw 0x1a000000)
+    val scrimTop = if (isDark) Color(0x26000000) else Color(0x14000000)
+    val scrimBottom = if (isDark) Color(0x12000000) else Color(0x06000000)
 
     var panelOrigin by remember { mutableStateOf<Offset?>(null) }
 
@@ -195,14 +226,18 @@ fun LiquidGlassPanel(
             .then(
                 if (BackdropBlurSupported) Modifier
                 else Modifier.background(
-                    MaterialTheme.colorScheme.surface.copy(
-                        alpha = if (isDark) 0.88f else 0.94f
+                    // milky frosted fallback for Android 8–11
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.84f)
+                        )
                     )
                 )
             )
     ) {
         if (BackdropBlurSupported) {
-            // 1) Live blurred backdrop with subtle refraction magnification
+            // 1) Live blurred backdrop (RenderEffect gaussian, CLAMP edges)
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -226,12 +261,19 @@ fun LiquidGlassPanel(
             )
         }
 
-        // 2) Glass tint + top sheen + bottom depth shading
+        // 2) Telegram-style scrim + glass tint + top sheen + bottom depth shading
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .drawBehind {
                     drawRect(color = glassTint)
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(scrimTop, scrimBottom),
+                            startY = 0f,
+                            endY = size.height
+                        )
+                    )
                     drawRect(
                         brush = Brush.verticalGradient(
                             colors = listOf(sheenTop, sheenMid, Color.Transparent),

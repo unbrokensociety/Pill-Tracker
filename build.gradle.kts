@@ -34,6 +34,12 @@ val flatSources: Map<String, String> = mapOf(
     "PrivacyPolicyDialog.kt" to "app/src/main/java/com/example/ui/components/PrivacyPolicyDialog.kt",
     "TermsOfServiceDialog.kt" to "app/src/main/java/com/example/ui/components/TermsOfServiceDialog.kt",
     "LocaleHelper.kt" to "app/src/main/java/com/example/ui/locale/LocaleHelper.kt",
+    // Localized string resources. Kept flat in the repo root and synced into
+    // the standard res folders before every build (same mechanism as the
+    // sources above), so translations update via simple file uploads.
+    "strings_en.xml" to "app/src/main/res/values/strings.xml",
+    "strings_ru.xml" to "app/src/main/res/values-ru/strings.xml",
+    "strings_uk.xml" to "app/src/main/res/values-uk/strings.xml",
     // Fixed launcher icons: the original xxhdpi/xxxhdpi webp files were corrupt
     // (they declared absurd multi-million-pixel dimensions and could fail to
     // decode on some launchers). These are proper 144/192 px replacements.

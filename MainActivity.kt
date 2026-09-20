@@ -18,14 +18,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.pager.HorizontalPager
@@ -37,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.navigation.compose.*
@@ -53,6 +52,7 @@ import com.example.ui.components.LiquidGlassPanel
 import com.example.ui.components.GlassFAB
 import com.example.ui.components.auroraBackdrop
 import com.example.ui.components.glassSource
+import com.example.ui.components.rememberGlassBackdrop
 import com.example.ui.components.tactilePress
 import com.example.ui.theme.MyApplicationTheme
 import com.example.data.ThemeMode
@@ -220,36 +220,32 @@ fun MainPagerScreen(
     }
 
     // Dynamic Liquid Stretch & Wall Squeeze Calculation
-    val (bubbleScaleX, bubbleScaleY) = remember(rawFraction, isDraggingIsland) {
-        if (rawFraction < 0f) {
-            // Squish against left wall
-            val squish = (abs(rawFraction) * 0.35f).coerceIn(0f, 0.40f)
-            (1f - squish) to (1f + squish * 0.5f)
-        } else if (rawFraction > 3f) {
-            // Squish against right wall
-            val squish = ((rawFraction - 3f) * 0.35f).coerceIn(0f, 0.40f)
-            (1f - squish) to (1f + squish * 0.5f)
-        } else {
-            // Liquid horizontal stretch proportional to fractional distance from nearest tab
-            val distFromCenter = abs(rawFraction - rawFraction.roundToInt())
-            val stretch = (distFromCenter * 0.38f).coerceIn(0f, 0.30f)
-            val sx = 1f + stretch
-            val sy = (1f / kotlin.math.sqrt(sx)) * (if (isDraggingIsland) 0.94f else 1f)
-            sx to sy
-        }
+    val (bubbleScaleX, bubbleScaleY) = if (rawFraction < 0f) {
+        // Squish against left wall
+        val squish = (abs(rawFraction) * 0.35f).coerceIn(0f, 0.40f)
+        (1f - squish) to (1f + squish * 0.5f)
+    } else if (rawFraction > 3f) {
+        // Squish against right wall
+        val squish = ((rawFraction - 3f) * 0.35f).coerceIn(0f, 0.40f)
+        (1f - squish) to (1f + squish * 0.5f)
+    } else {
+        // Liquid horizontal stretch proportional to fractional distance from nearest tab
+        val distFromCenter = abs(rawFraction - rawFraction.roundToInt())
+        val stretch = (distFromCenter * 0.38f).coerceIn(0f, 0.30f)
+        val sx = 1f + stretch
+        val sy = (1f / kotlin.math.sqrt(sx)) * (if (isDraggingIsland) 0.94f else 1f)
+        sx to sy
     }
 
-    // --- REAL LIQUID GLASS: shared layer recording the app content ---
-    val contentLayer = rememberGraphicsLayer()
-    var sourceOrigin by remember { mutableStateOf<Offset?>(null) }
+    // --- REAL LIQUID GLASS: shared backdrop recording the app content ---
+    val backdrop = rememberGlassBackdrop()
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Content that gets blurred behind the liquid glass navigation island
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .onGloballyPositioned { sourceOrigin = it.positionInRoot() }
-                .glassSource(contentLayer)
+                .glassSource(backdrop)
                 .background(MaterialTheme.colorScheme.background)
                 .auroraBackdrop()
         ) {
@@ -323,12 +319,11 @@ fun MainPagerScreen(
         }
 
         // Floating REAL Liquid Glass Navigation Island:
-        // live Telegram-grade backdrop blur (RenderEffect, CLAMP edges) + scrim
-        // + specular rim + fluid dragging. Content scrolls under it and stays
-        // readable through the frost.
+        // live backdrop blur (hardware gaussian on Android 12+, CPU-blurred
+        // snapshot on older versions) + whisper-light scrim + specular rim
+        // + fluid dragging. Content scrolls under it and reads through the frost.
         LiquidGlassPanel(
-            contentLayer = contentLayer,
-            sourceOriginProvider = { sourceOrigin },
+            backdrop = backdrop,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
@@ -336,8 +331,7 @@ fun MainPagerScreen(
                 .fillMaxWidth(),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            blurRadius = 30.dp,
-            refraction = 1.02f
+            blurRadius = 28.dp
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -348,8 +342,10 @@ fun MainPagerScreen(
 
                 val indicatorOffset = tabWidth * effectiveFraction
 
-                // Smooth sliding Liquid Glass active tab pill indicator:
-                // blurred backdrop + colored glass tint + jelly stretch physics.
+                // Smooth sliding active-tab pill: clean, borderless, softly
+                // tinted — the blur of the bar does the glass work, the pill
+                // just marks the selected tab. Jelly stretch physics intact.
+                val pillColor = MaterialTheme.colorScheme.primary
                 Box(
                     modifier = Modifier
                         .offset(x = indicatorOffset)
@@ -360,20 +356,28 @@ fun MainPagerScreen(
                             scaleY = bubbleScaleY
                         }
                 ) {
-                    LiquidGlassPanel(
-                        contentLayer = contentLayer,
-                        sourceOriginProvider = { sourceOrigin },
+                    Box(
                         modifier = Modifier
                             .matchParentSize()
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                        shape = RoundedCornerShape(22.dp),
-                        elevation = if (isDraggingIsland) 10.dp else 6.dp,
-                        blurRadius = 20.dp,
-                        refraction = 1.06f,
-                        tint = MaterialTheme.colorScheme.primaryContainer.copy(
-                            alpha = if (isDraggingIsland) 0.62f else 0.50f
-                        )
-                    ) { }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .drawBehind {
+                                // soft vertical pill gradient: barely-there at the
+                                // top, a touch richer at the bottom — reads as
+                                // light pooling inside the glass
+                                val r = 20.dp.toPx()
+                                drawRoundRect(
+                                    brush = Brush.verticalGradient(
+                                        colors = listOf(
+                                            pillColor.copy(alpha = if (isDraggingIsland) 0.20f else 0.14f),
+                                            pillColor.copy(alpha = if (isDraggingIsland) 0.34f else 0.24f)
+                                        ),
+                                        startY = 0f,
+                                        endY = size.height
+                                    ),
+                                    cornerRadius = CornerRadius(r, r)
+                                )
+                            }
+                    )
                 }
 
                 // Navigation Row with Direct Finger Scrubbing, Edge Resistance & Snap Physics
@@ -563,8 +567,8 @@ fun RowScope.FloatingNavItem(
     val scale = 1f + 0.16f * proximity + 0.03f * activationPop
     val yOffset = (-3.5f * proximity).dp
 
-    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
-    val activeColor = MaterialTheme.colorScheme.onPrimaryContainer
+    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.66f)
+    val activeColor = MaterialTheme.colorScheme.primary
     val contentColor = lerp(inactiveColor, activeColor, proximity)
 
     Column(

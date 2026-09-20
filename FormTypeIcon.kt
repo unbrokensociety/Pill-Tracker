@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -20,7 +21,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.R
@@ -36,18 +39,18 @@ enum class FormType(val key: String, val stringRes: Int) {
 
     companion object {
         fun fromKey(key: String): FormType {
-            return values().find { it.key.equals(key, ignoreCase = true) } ?: CAPSULE
+            return entries.find { it.key.equals(key, ignoreCase = true) } ?: CAPSULE
         }
     }
 }
 
 /**
- * Redrawn high-fidelity medication form icons.
+ * High-fidelity medication form icons — v3.
  *
- * Every icon is vector-drawn with layered gradients (volumetric fill +
- * gloss highlight + bold outline) instead of flat alpha fills, so pills,
- * bottles, drops and syringes read as little 3D objects at any size.
- * All geometry is relative to the canvas size, strokes stay crisp.
+ * Redrawn for crispness: every glyph now fills ~90% of the canvas, keeps one
+ * consistent outline weight, and drops micro-details that turned to mush at
+ * 20–24dp. Volumetric shading (light top-left → saturated bottom-right) and
+ * one confident gloss stroke per icon make them read as tiny 3D objects.
  */
 @Composable
 fun FormTypeIcon(
@@ -59,11 +62,27 @@ fun FormTypeIcon(
     modifier: Modifier = Modifier
 ) {
     val formType = FormType.fromKey(formKey)
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val rim = tint.copy(alpha = if (isDark) 0.32f else 0.24f)
+
+    // radial badge highlight (needs px conversion for the gradient center)
+    val density = LocalDensity.current
+    val badgeRadiusPx = with(density) { size.toPx() } * 0.9f
+    val badgeCenter = Offset(badgeRadiusPx * 0.39f, badgeRadiusPx * 0.33f)
+    val badgeLight = lerp(backgroundColor, Color.White, if (isDark) 0.04f else 0.35f)
+
     Box(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(backgroundColor),
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(badgeLight, backgroundColor),
+                    center = badgeCenter,
+                    radius = badgeRadiusPx
+                )
+            )
+            .border(width = 1.dp, color = rim, shape = CircleShape),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.size(iconSize)) {
@@ -80,24 +99,30 @@ fun FormTypeIcon(
     }
 }
 
+/* Reading "luminance" for the radial badge background */
+private fun Color.luminance(): Float =
+    0.2126f * red + 0.7152f * green + 0.0722f * blue
+
 /* ------------------------------------------------------------------------- */
-/*  Tablet — volumetric round pill with radial shading + gloss arc            */
+/*  Tablet — bold round pill with score line                                  */
 /* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawTablet(tint: Color) {
     val w = size.width
     val h = size.height
     val center = Offset(w / 2f, h / 2f)
-    val radius = w * 0.42f
-    val light = lerp(tint, Color.White, 0.45f)
-    val dark = lerp(tint, Color.Black, 0.18f)
+    val radius = w * 0.46f
+    val light = lerp(tint, Color.White, 0.50f)
+    val mid = tint
+    val dark = lerp(tint, Color.Black, 0.16f)
+    val outline = 2.2.dp.toPx()
 
     // Volumetric body: light source top-left
     drawCircle(
         brush = Brush.radialGradient(
-            colors = listOf(light, tint, dark),
-            center = Offset(center.x - radius * 0.35f, center.y - radius * 0.45f),
-            radius = radius * 1.35f
+            colors = listOf(light, mid, dark),
+            center = Offset(center.x - radius * 0.32f, center.y - radius * 0.40f),
+            radius = radius * 1.40f
         ),
         radius = radius,
         center = center
@@ -106,232 +131,222 @@ private fun DrawScope.drawTablet(tint: Color) {
     // Crisp outline
     drawCircle(
         color = tint,
-        radius = radius,
+        radius = radius - outline / 2f,
         center = center,
-        style = Stroke(width = 2.dp.toPx())
+        style = Stroke(width = outline)
     )
 
-    // Glossy highlight arc on the top-left edge
-    drawArc(
-        brush = Brush.linearGradient(
-            colors = listOf(Color.White.copy(alpha = 0.85f), Color.White.copy(alpha = 0.15f)),
-            start = Offset(center.x - radius, center.y - radius),
-            end = Offset(center.x + radius * 0.1f, center.y - radius * 0.9f)
-        ),
-        startAngle = 195f,
-        sweepAngle = 70f,
-        useCenter = false,
-        topLeft = Offset(center.x - radius * 0.82f, center.y - radius * 0.82f),
-        size = Size(radius * 1.64f, radius * 1.64f),
-        style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round)
-    )
-
-    // Score line across the middle (embossed: dark under-stroke + light top-stroke)
-    val lineLen = radius * 0.72f
-    val dx = lineLen * 0.7071f
-    val dy = lineLen * 0.7071f
+    // Bold horizontal score line (embossed: dark under-stroke + light top-stroke)
+    val half = radius * 0.66f
     drawLine(
         color = dark.copy(alpha = 0.55f),
-        start = Offset(center.x - dx + 0.7.dp.toPx(), center.y - dy + 0.7.dp.toPx()),
-        end = Offset(center.x + dx + 0.7.dp.toPx(), center.y + dy + 0.7.dp.toPx()),
-        strokeWidth = 2.4.dp.toPx(),
+        start = Offset(center.x - half + 0.8.dp.toPx(), center.y + 0.8.dp.toPx()),
+        end = Offset(center.x + half + 0.8.dp.toPx(), center.y + 0.8.dp.toPx()),
+        strokeWidth = 3.dp.toPx(),
         cap = StrokeCap.Round
     )
     drawLine(
-        color = lerp(tint, Color.White, 0.55f),
-        start = Offset(center.x - dx, center.y - dy),
-        end = Offset(center.x + dx, center.y + dy),
-        strokeWidth = 2.2.dp.toPx(),
+        color = lerp(tint, Color.White, 0.62f),
+        start = Offset(center.x - half, center.y),
+        end = Offset(center.x + half, center.y),
+        strokeWidth = 2.6.dp.toPx(),
         cap = StrokeCap.Round
+    )
+
+    // Confident gloss arc across the upper edge
+    drawArc(
+        brush = Brush.linearGradient(
+            colors = listOf(Color.White.copy(alpha = 0.90f), Color.White.copy(alpha = 0.10f)),
+            start = Offset(center.x - radius, center.y - radius),
+            end = Offset(center.x + radius * 0.2f, center.y - radius * 0.8f)
+        ),
+        startAngle = 200f,
+        sweepAngle = 80f,
+        useCenter = false,
+        topLeft = Offset(center.x - radius * 0.78f, center.y - radius * 0.78f),
+        size = Size(radius * 1.56f, radius * 1.56f),
+        style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
     )
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Capsule — two-tone gradient capsule with cap seam and gloss streak        */
+/*  Capsule — two-tone diagonal capsule                                       */
 /* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawCapsule(tint: Color) {
     val w = size.width
     val h = size.height
-    rotate(degrees = -45f, pivot = Offset(w / 2f, h / 2f)) {
-        val capWidth = w * 0.46f
-        val capHeight = h * 0.88f
+    val light = lerp(tint, Color.White, 0.55f)
+    val outline = 2.2.dp.toPx()
+
+    rotate(degrees = -30f, pivot = Offset(w / 2f, h / 2f)) {
+        val capWidth = w * 0.50f
+        val capHeight = h * 0.96f
         val left = (w - capWidth) / 2f
         val top = (h - capHeight) / 2f
-        val cornerRadius = CornerRadius(capWidth / 2f, capWidth / 2f)
-        val capLight = lerp(tint, Color.White, 0.38f)
-        val bodyLight = lerp(tint, Color.White, 0.55f)
-        val dark = lerp(tint, Color.Black, 0.22f)
+        val half = top + capHeight / 2f
+        val corner = CornerRadius(capWidth / 2f, capWidth / 2f)
 
-        // Bottom half — translucent gradient body
+        // Lower half — tinted translucent body
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(bodyLight.copy(alpha = 0.75f), tint.copy(alpha = 0.45f)),
-                startY = top + capHeight / 2f,
+                colors = listOf(light.copy(alpha = 0.80f), tint.copy(alpha = 0.55f)),
+                startY = half,
                 endY = top + capHeight
             ),
-            topLeft = Offset(left, top + capHeight / 2f),
+            topLeft = Offset(left, half),
             size = Size(capWidth, capHeight / 2f),
-            cornerRadius = CornerRadius(capWidth / 2f, capWidth / 2f)
+            cornerRadius = corner
         )
 
-        // Top half — solid gradient cap
+        // Upper half — solid gradient cap (saturated)
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(capLight, tint),
+                colors = listOf(lerp(tint, Color.White, 0.30f), tint),
                 startY = top,
-                endY = top + capHeight / 2f
+                endY = half
             ),
             topLeft = Offset(left, top),
             size = Size(capWidth, capHeight / 2f),
-            cornerRadius = CornerRadius(capWidth / 2f, capWidth / 2f)
+            cornerRadius = corner
         )
 
-        // Outer border
+        // Bold outline
         drawRoundRect(
             color = tint,
             topLeft = Offset(left, top),
             size = Size(capWidth, capHeight),
-            cornerRadius = cornerRadius,
-            style = Stroke(width = 2.dp.toPx())
+            cornerRadius = corner,
+            style = Stroke(width = outline)
         )
 
         // Cap seam (embossed divider)
         drawLine(
-            color = dark.copy(alpha = 0.5f),
-            start = Offset(left, top + capHeight / 2f + 0.7.dp.toPx()),
-            end = Offset(left + capWidth, top + capHeight / 2f + 0.7.dp.toPx()),
-            strokeWidth = 2.2.dp.toPx()
+            color = lerp(tint, Color.Black, 0.20f),
+            start = Offset(left, half + 0.8.dp.toPx()),
+            end = Offset(left + capWidth, half + 0.8.dp.toPx()),
+            strokeWidth = 2.8.dp.toPx()
         )
         drawLine(
-            color = lerp(tint, Color.White, 0.5f),
-            start = Offset(left, top + capHeight / 2f),
-            end = Offset(left + capWidth, top + capHeight / 2f),
-            strokeWidth = 2.dp.toPx()
+            color = lerp(tint, Color.White, 0.55f),
+            start = Offset(left, half),
+            end = Offset(left + capWidth, half),
+            strokeWidth = 2.4.dp.toPx()
         )
 
-        // Glossy streak along the cap
+        // One confident gloss streak along the cap
         drawLine(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.05f),
-                    Color.White.copy(alpha = 0.75f),
-                    Color.White.copy(alpha = 0.05f)
+                    Color.White.copy(alpha = 0.10f),
+                    Color.White.copy(alpha = 0.85f),
+                    Color.White.copy(alpha = 0.10f)
                 ),
-                startY = top + capHeight * 0.12f,
-                endY = top + capHeight * 0.42f
+                startY = top + capHeight * 0.10f,
+                endY = top + capHeight * 0.46f
             ),
-            start = Offset(left + capWidth * 0.26f, top + capHeight * 0.12f),
-            end = Offset(left + capWidth * 0.26f, top + capHeight * 0.42f),
-            strokeWidth = 2.dp.toPx(),
-            cap = StrokeCap.Round
-        )
-
-        // Tiny bottom reflection
-        drawLine(
-            color = Color.White.copy(alpha = 0.35f),
-            start = Offset(left + capWidth * 0.60f, top + capHeight * 0.68f),
-            end = Offset(left + capWidth * 0.60f, top + capHeight * 0.84f),
-            strokeWidth = 1.6.dp.toPx(),
+            start = Offset(left + capWidth * 0.24f, top + capHeight * 0.10f),
+            end = Offset(left + capWidth * 0.24f, top + capHeight * 0.46f),
+            strokeWidth = 2.6.dp.toPx(),
             cap = StrokeCap.Round
         )
     }
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Liquid — syrup bottle with gradient liquid, cap and label                 */
+/*  Liquid — syrup bottle with shoulders, cap and liquid                      */
 /* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawLiquidBottle(tint: Color) {
     val w = size.width
     val h = size.height
-    val light = lerp(tint, Color.White, 0.40f)
-    val liquidTop = lerp(tint, Color.White, 0.22f)
+    val outline = 2.2.dp.toPx()
 
-    val bottleW = w * 0.54f
-    val bottleH = h * 0.60f
+    val bottleW = w * 0.62f
+    val bottleH = h * 0.68f
     val left = (w - bottleW) / 2f
-    val top = h * 0.32f
+    val top = h * 0.30f
+    val bodyCorner = CornerRadius(5.dp.toPx(), 5.dp.toPx())
 
-    // Cap with gradient
-    val capW = bottleW * 0.52f
-    val capH = h * 0.11f
+    // Cap (rounded, gradient)
+    val capW = bottleW * 0.46f
+    val capH = h * 0.12f
     drawRoundRect(
         brush = Brush.verticalGradient(
-            colors = listOf(light, tint),
-            startY = h * 0.14f,
-            endY = h * 0.14f + capH
+            colors = listOf(lerp(tint, Color.White, 0.30f), tint),
+            startY = h * 0.10f,
+            endY = h * 0.10f + capH
         ),
-        topLeft = Offset((w - capW) / 2f, h * 0.14f),
+        topLeft = Offset((w - capW) / 2f, h * 0.10f),
         size = Size(capW, capH),
-        cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+        cornerRadius = CornerRadius(2.5.dp.toPx(), 2.5.dp.toPx())
     )
 
     // Neck
     val neckW = bottleW * 0.34f
     drawRect(
         color = tint.copy(alpha = 0.85f),
-        topLeft = Offset((w - neckW) / 2f, h * 0.25f),
-        size = Size(neckW, h * 0.07f)
+        topLeft = Offset((w - neckW) / 2f, h * 0.22f),
+        size = Size(neckW, h * 0.08f)
     )
 
-    // Glass body fill
+    // Glass body (translucent side shading)
     drawRoundRect(
         brush = Brush.horizontalGradient(
             colors = listOf(
-                tint.copy(alpha = 0.10f),
-                tint.copy(alpha = 0.22f),
-                tint.copy(alpha = 0.10f)
+                tint.copy(alpha = 0.12f),
+                tint.copy(alpha = 0.28f),
+                tint.copy(alpha = 0.12f)
             ),
             startX = left,
             endX = left + bottleW
         ),
         topLeft = Offset(left, top),
         size = Size(bottleW, bottleH),
-        cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
+        cornerRadius = bodyCorner
     )
 
-    // Liquid inside (65% full, gradient + soft surface)
-    val liquidH = bottleH * 0.65f
+    // Liquid inside (70% full) with rounded meniscus
+    val liquidH = bottleH * 0.70f
     val liquidTopY = top + bottleH - liquidH
     drawRoundRect(
         brush = Brush.verticalGradient(
-            colors = listOf(liquidTop.copy(alpha = 0.85f), tint.copy(alpha = 0.92f)),
+            colors = listOf(lerp(tint, Color.White, 0.28f), tint),
             startY = liquidTopY,
             endY = top + bottleH
         ),
-        topLeft = Offset(left + 1.5.dp.toPx(), liquidTopY),
-        size = Size(bottleW - 3.dp.toPx(), liquidH),
-        cornerRadius = CornerRadius(0f, 0f)
+        topLeft = Offset(left + outline, liquidTopY),
+        size = Size(bottleW - outline * 2f, liquidH),
+        cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
     )
     // Meniscus highlight
     drawLine(
-        color = Color.White.copy(alpha = 0.5f),
-        start = Offset(left + 2.5.dp.toPx(), liquidTopY + 1.dp.toPx()),
-        end = Offset(left + bottleW - 2.5.dp.toPx(), liquidTopY + 1.dp.toPx()),
-        strokeWidth = 1.2.dp.toPx(),
+        color = Color.White.copy(alpha = 0.65f),
+        start = Offset(left + 4.dp.toPx(), liquidTopY + 1.2.dp.toPx()),
+        end = Offset(left + bottleW - 4.dp.toPx(), liquidTopY + 1.2.dp.toPx()),
+        strokeWidth = 1.6.dp.toPx(),
         cap = StrokeCap.Round
     )
 
-    // Label band
-    val labelY = top + bottleH * 0.48f
+    // Label band with a dosage mark
+    val labelY = top + bottleH * 0.42f
     drawRect(
-        color = Color.White.copy(alpha = 0.28f),
-        topLeft = Offset(left + 1.5.dp.toPx(), labelY),
-        size = Size(bottleW - 3.dp.toPx(), bottleH * 0.18f)
+        color = Color.White.copy(alpha = 0.35f),
+        topLeft = Offset(left + outline, labelY),
+        size = Size(bottleW - outline * 2f, bottleH * 0.22f)
     )
     drawLine(
         color = tint,
-        start = Offset(left + bottleW * 0.30f, labelY + bottleH * 0.07f),
-        end = Offset(left + bottleW * 0.70f, labelY + bottleH * 0.07f),
-        strokeWidth = 1.2.dp.toPx(),
+        start = Offset(left + bottleW * 0.32f, labelY + bottleH * 0.09f),
+        end = Offset(left + bottleW * 0.68f, labelY + bottleH * 0.09f),
+        strokeWidth = 1.8.dp.toPx(),
         cap = StrokeCap.Round
     )
     drawLine(
         color = tint.copy(alpha = 0.7f),
-        start = Offset(left + bottleW * 0.36f, labelY + bottleH * 0.12f),
-        end = Offset(left + bottleW * 0.64f, labelY + bottleH * 0.12f),
-        strokeWidth = 1.dp.toPx(),
+        start = Offset(left + bottleW * 0.40f, labelY + bottleH * 0.15f),
+        end = Offset(left + bottleW * 0.60f, labelY + bottleH * 0.15f),
+        strokeWidth = 1.4.dp.toPx(),
         cap = StrokeCap.Round
     )
 
@@ -340,136 +355,158 @@ private fun DrawScope.drawLiquidBottle(tint: Color) {
         color = tint,
         topLeft = Offset(left, top),
         size = Size(bottleW, bottleH),
-        cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx()),
-        style = Stroke(width = 2.dp.toPx())
+        cornerRadius = bodyCorner,
+        style = Stroke(width = outline)
     )
 
-    // Glossy reflection on the right edge of the glass
+    // One glossy reflection along the right edge
     drawLine(
-        color = Color.White.copy(alpha = 0.55f),
+        color = Color.White.copy(alpha = 0.60f),
         start = Offset(left + bottleW - 3.5.dp.toPx(), top + 3.dp.toPx()),
         end = Offset(left + bottleW - 3.5.dp.toPx(), top + bottleH - 3.dp.toPx()),
-        strokeWidth = 1.5.dp.toPx(),
+        strokeWidth = 2.dp.toPx(),
         cap = StrokeCap.Round
     )
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Drops — volumetric teardrop with big gloss                                */
+/*  Drops — bold teardrop with companion drop                                 */
 /* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawDroplet(tint: Color) {
     val w = size.width
     val h = size.height
+    val outline = 2.2.dp.toPx()
 
-    val dropPath = Path().apply {
-        moveTo(w / 2f, h * 0.08f)
-        cubicTo(
-            w * 0.90f, h * 0.48f,
-            w * 0.90f, h * 0.92f,
-            w / 2f, h * 0.92f
+    // Main teardrop — slightly offset left so the small drop fits
+    scale(scale = 0.88f, pivot = Offset(w * 0.44f, h * 0.5f)) {
+        val dropPath = Path().apply {
+            moveTo(w / 2f, h * 0.04f)
+            cubicTo(
+                w * 0.96f, h * 0.48f,
+                w * 0.96f, h * 0.94f,
+                w / 2f, h * 0.94f
+            )
+            cubicTo(
+                w * 0.04f, h * 0.94f,
+                w * 0.04f, h * 0.48f,
+                w / 2f, h * 0.04f
+            )
+            close()
+        }
+
+        // Volumetric fill
+        drawPath(
+            path = dropPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    lerp(tint, Color.White, 0.42f),
+                    tint,
+                    lerp(tint, Color.Black, 0.14f)
+                ),
+                startY = h * 0.04f,
+                endY = h * 0.94f
+            )
         )
-        cubicTo(
-            w * 0.10f, h * 0.92f,
-            w * 0.10f, h * 0.48f,
-            w / 2f, h * 0.08f
+        drawPath(
+            path = dropPath,
+            color = tint,
+            style = Stroke(width = outline)
         )
+
+        // Bold glossy curve on the left side
+        val highlightPath = Path().apply {
+            moveTo(w * 0.38f, h * 0.34f)
+            cubicTo(w * 0.24f, h * 0.52f, w * 0.24f, h * 0.74f, w * 0.34f, h * 0.84f)
+        }
+        drawPath(
+            path = highlightPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.25f)),
+                startY = h * 0.34f,
+                endY = h * 0.84f
+            ),
+            style = Stroke(width = 2.8.dp.toPx(), cap = StrokeCap.Round)
+        )
+    }
+
+    // Companion mini-drop (reads as plural "drops")
+    val miniPath = Path().apply {
+        val cx = w * 0.84f
+        val cy = h * 0.30f
+        val r = w * 0.13f
+        moveTo(cx, cy - r * 1.6f)
+        cubicTo(cx + r, cy - r * 0.4f, cx + r, cy + r * 0.6f, cx, cy + r)
+        cubicTo(cx - r, cy + r * 0.6f, cx - r, cy - r * 0.4f, cx, cy - r * 1.6f)
         close()
     }
-
-    // Volumetric fill: light at the top fading into saturated tint
     drawPath(
-        path = dropPath,
-        brush = Brush.verticalGradient(
-            colors = listOf(
-                lerp(tint, Color.White, 0.40f),
-                tint,
-                lerp(tint, Color.Black, 0.12f)
-            ),
-            startY = h * 0.08f,
-            endY = h * 0.92f
-        )
+        path = miniPath,
+        color = lerp(tint, Color.White, 0.25f)
     )
-
-    // Outline
     drawPath(
-        path = dropPath,
+        path = miniPath,
         color = tint,
-        style = Stroke(width = 2.dp.toPx())
+        style = Stroke(width = 1.6.dp.toPx())
     )
 
-    // Big glossy curve on the left side
-    val highlightPath = Path().apply {
-        moveTo(w * 0.36f, h * 0.36f)
-        cubicTo(w * 0.24f, h * 0.52f, w * 0.24f, h * 0.72f, w * 0.33f, h * 0.82f)
-    }
-    drawPath(
-        path = highlightPath,
-        brush = Brush.verticalGradient(
-            colors = listOf(Color.White.copy(alpha = 0.85f), Color.White.copy(alpha = 0.25f)),
-            startY = h * 0.36f,
-            endY = h * 0.82f
-        ),
-        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-    )
-
-    // Small sharp sparkle top-right
+    // Sparkle
     drawCircle(
-        color = Color.White.copy(alpha = 0.85f),
-        radius = 1.3.dp.toPx(),
-        center = Offset(w * 0.68f, h * 0.30f)
+        color = Color.White.copy(alpha = 0.9f),
+        radius = 1.6.dp.toPx(),
+        center = Offset(w * 0.60f, h * 0.22f)
     )
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Injection — detailed syringe with gradient barrel and fluid               */
+/*  Injection — clean syringe, diagonal                                        */
 /* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawSyringe(tint: Color) {
     val w = size.width
     val h = size.height
-    val light = lerp(tint, Color.White, 0.35f)
+    val light = lerp(tint, Color.White, 0.40f)
+    val outline = 2.2.dp.toPx()
 
     rotate(degrees = -45f, pivot = Offset(w / 2f, h / 2f)) {
-        val barrelW = w * 0.34f
-        val barrelH = h * 0.48f
+        val barrelW = w * 0.42f
+        val barrelH = h * 0.46f
         val barrelLeft = (w - barrelW) / 2f
-        val barrelTop = h * 0.28f
+        val barrelTop = h * 0.26f
 
         // 1. Needle
-        val needleTop = h * 0.05f
-        val needleBottom = barrelTop - h * 0.05f
+        val needleTop = h * 0.03f
+        val needleBottom = barrelTop - h * 0.03f
         drawLine(
             brush = Brush.verticalGradient(
-                colors = listOf(lerp(tint, Color.White, 0.6f), tint),
+                colors = listOf(lerp(tint, Color.White, 0.65f), tint),
                 startY = needleTop,
                 endY = needleBottom
             ),
             start = Offset(w / 2f, needleBottom),
             end = Offset(w / 2f, needleTop),
-            strokeWidth = 1.8.dp.toPx(),
+            strokeWidth = 2.2.dp.toPx(),
             cap = StrokeCap.Round
         )
-        // Beveled tip highlight
+        // Beveled tip glint
         drawLine(
             color = Color.White,
             start = Offset(w / 2f, needleTop + 1.dp.toPx()),
-            end = Offset(w / 2f, needleTop + 3.dp.toPx()),
-            strokeWidth = 1.1.dp.toPx()
+            end = Offset(w / 2f, needleTop + 3.5.dp.toPx()),
+            strokeWidth = 1.2.dp.toPx()
         )
 
         // 2. Luer-lock hub
-        val hubW = barrelW * 0.50f
-        val hubH = h * 0.06f
+        val hubW = barrelW * 0.56f
+        val hubH = h * 0.07f
         val hubLeft = (w - hubW) / 2f
-        val hubTop = barrelTop - hubH
         drawRoundRect(
             brush = Brush.horizontalGradient(
                 colors = listOf(light, tint),
                 startX = hubLeft,
                 endX = hubLeft + hubW
             ),
-            topLeft = Offset(hubLeft, hubTop),
+            topLeft = Offset(hubLeft, barrelTop - hubH),
             size = Size(hubW, hubH),
             cornerRadius = CornerRadius(1.5.dp.toPx(), 1.5.dp.toPx())
         )
@@ -478,9 +515,9 @@ private fun DrawScope.drawSyringe(tint: Color) {
         drawRoundRect(
             brush = Brush.horizontalGradient(
                 colors = listOf(
-                    tint.copy(alpha = 0.14f),
-                    tint.copy(alpha = 0.30f),
-                    tint.copy(alpha = 0.14f)
+                    tint.copy(alpha = 0.16f),
+                    tint.copy(alpha = 0.34f),
+                    tint.copy(alpha = 0.16f)
                 ),
                 startX = barrelLeft,
                 endX = barrelLeft + barrelW
@@ -490,49 +527,48 @@ private fun DrawScope.drawSyringe(tint: Color) {
             cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
         )
 
-        // 4. Fluid dose with gradient
-        val fluidH = barrelH * 0.58f
+        // 4. Fluid dose
+        val fluidH = barrelH * 0.55f
         val fluidTop = barrelTop + barrelH - fluidH
         drawRect(
             brush = Brush.verticalGradient(
-                colors = listOf(lerp(tint, Color.White, 0.30f), tint),
+                colors = listOf(lerp(tint, Color.White, 0.32f), tint),
                 startY = fluidTop,
                 endY = fluidTop + fluidH
             ),
-            topLeft = Offset(barrelLeft + 1.5.dp.toPx(), fluidTop),
-            size = Size(barrelW - 3.dp.toPx(), fluidH)
+            topLeft = Offset(barrelLeft + outline, fluidTop),
+            size = Size(barrelW - outline * 2f, fluidH)
         )
 
-        // 5. Piston stopper on top of the fluid
-        val stopperH = 4.5.dp.toPx()
+        // 5. Piston stopper
+        val stopperH = 5.dp.toPx()
         drawRoundRect(
             color = tint,
-            topLeft = Offset(barrelLeft + 1.dp.toPx(), fluidTop - stopperH),
-            size = Size(barrelW - 2.dp.toPx(), stopperH),
+            topLeft = Offset(barrelLeft + 1.2.dp.toPx(), fluidTop - stopperH),
+            size = Size(barrelW - 2.4.dp.toPx(), stopperH),
             cornerRadius = CornerRadius(1.dp.toPx(), 1.dp.toPx())
         )
 
-        // 6. Graduation marks
-        val markX1 = barrelLeft + 2.dp.toPx()
-        val markLongX2 = barrelLeft + barrelW * 0.42f
-        val markShortX2 = barrelLeft + barrelW * 0.28f
-        for (i in 1..8) {
-            val markY = barrelTop + barrelH * (i * 0.11f)
-            val isLong = (i % 2 == 0)
+        // 6. Three bold graduation marks (long/short/long)
+        val markX1 = barrelLeft + 2.5.dp.toPx()
+        val marksY = listOf(0.22f, 0.45f, 0.68f)
+        marksY.forEachIndexed { i, f ->
+            val markY = barrelTop + barrelH * f
+            val xEnd = barrelLeft + barrelW * if (i == 1) 0.28f else 0.42f
             drawLine(
-                color = if (markY >= fluidTop) Color.White.copy(alpha = 0.9f) else tint,
+                color = if (markY >= fluidTop) Color.White.copy(alpha = 0.95f) else tint,
                 start = Offset(markX1, markY),
-                end = Offset(if (isLong) markLongX2 else markShortX2, markY),
-                strokeWidth = 1.2.dp.toPx()
+                end = Offset(xEnd, markY),
+                strokeWidth = 1.8.dp.toPx()
             )
         }
 
-        // Glossy glass reflection along the right edge
+        // Glossy reflection along the right edge
         drawLine(
-            color = Color.White.copy(alpha = 0.6f),
+            color = Color.White.copy(alpha = 0.65f),
             start = Offset(barrelLeft + barrelW - 3.dp.toPx(), barrelTop + 3.dp.toPx()),
             end = Offset(barrelLeft + barrelW - 3.dp.toPx(), barrelTop + barrelH - 3.dp.toPx()),
-            strokeWidth = 1.5.dp.toPx()
+            strokeWidth = 1.8.dp.toPx()
         )
 
         // Barrel outline
@@ -541,11 +577,11 @@ private fun DrawScope.drawSyringe(tint: Color) {
             topLeft = Offset(barrelLeft, barrelTop),
             size = Size(barrelW, barrelH),
             cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()),
-            style = Stroke(width = 2.dp.toPx())
+            style = Stroke(width = outline)
         )
 
         // 7. Finger flange
-        val flangeW = barrelW * 1.75f
+        val flangeW = barrelW * 1.85f
         val flangeLeft = (w - flangeW) / 2f
         drawRoundRect(
             brush = Brush.horizontalGradient(
@@ -554,18 +590,18 @@ private fun DrawScope.drawSyringe(tint: Color) {
                 endX = flangeLeft + flangeW
             ),
             topLeft = Offset(flangeLeft, barrelTop + barrelH),
-            size = Size(flangeW, 4.dp.toPx()),
+            size = Size(flangeW, 4.5.dp.toPx()),
             cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
         )
 
         // 8. Plunger shaft
-        val shaftW = barrelW * 0.24f
+        val shaftW = barrelW * 0.26f
         val shaftLeft = (w - shaftW) / 2f
-        val shaftTop = barrelTop + barrelH + 4.dp.toPx()
-        val shaftBottom = h * 0.92f
+        val shaftTop = barrelTop + barrelH + 4.5.dp.toPx()
+        val shaftBottom = h * 0.90f
         drawRect(
             brush = Brush.horizontalGradient(
-                colors = listOf(lerp(tint, Color.White, 0.5f), tint),
+                colors = listOf(lerp(tint, Color.White, 0.55f), tint),
                 startX = shaftLeft,
                 endX = shaftLeft + shaftW
             ),
@@ -574,7 +610,7 @@ private fun DrawScope.drawSyringe(tint: Color) {
         )
 
         // 9. Thumb disc
-        val discW = barrelW * 1.40f
+        val discW = barrelW * 1.50f
         val discLeft = (w - discW) / 2f
         drawRoundRect(
             brush = Brush.horizontalGradient(
@@ -583,148 +619,146 @@ private fun DrawScope.drawSyringe(tint: Color) {
                 endX = discLeft + discW
             ),
             topLeft = Offset(discLeft, shaftBottom),
-            size = Size(discW, 4.dp.toPx()),
+            size = Size(discW, 4.5.dp.toPx()),
             cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
         )
     }
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Spray — bottle with pump, nozzle and radiating mist                       */
+/*  Spray — pump bottle with bold mist                                        */
 /* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawSprayBottle(tint: Color) {
     val w = size.width
     val h = size.height
-    val light = lerp(tint, Color.White, 0.38f)
+    val light = lerp(tint, Color.White, 0.42f)
+    val outline = 2.2.dp.toPx()
 
-    val sW = w * 0.42f
-    val sH = h * 0.50f
-    val left = w * 0.14f
-    val top = h * 0.40f
+    val sW = w * 0.52f
+    val sH = h * 0.56f
+    val left = w * 0.10f
+    val top = h * 0.38f
+    val corner = CornerRadius(5.dp.toPx(), 5.dp.toPx())
 
-    // Liquid fill (gradient, 70% full)
-    val liquidTopY = top + sH * 0.30f
+    // Liquid fill (75%)
+    val liquidTopY = top + sH * 0.25f
     drawRoundRect(
         brush = Brush.verticalGradient(
-            colors = listOf(lerp(tint, Color.White, 0.25f), tint),
+            colors = listOf(lerp(tint, Color.White, 0.28f), tint),
             startY = liquidTopY,
             endY = top + sH
         ),
-        topLeft = Offset(left + 1.dp.toPx(), liquidTopY),
-        size = Size(sW - 2.dp.toPx(), sH * 0.70f - 1.dp.toPx()),
-        cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+        topLeft = Offset(left + outline, liquidTopY),
+        size = Size(sW - outline * 2f, sH * 0.75f - outline),
+        cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
     )
 
-    // Bottle glass body (translucent side shading)
+    // Translucent glass body
     drawRoundRect(
         brush = Brush.horizontalGradient(
             colors = listOf(
-                tint.copy(alpha = 0.12f),
-                tint.copy(alpha = 0.26f),
-                tint.copy(alpha = 0.12f)
+                tint.copy(alpha = 0.14f),
+                tint.copy(alpha = 0.30f),
+                tint.copy(alpha = 0.14f)
             ),
             startX = left,
             endX = left + sW
         ),
         topLeft = Offset(left, top),
         size = Size(sW, sH),
-        cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
+        cornerRadius = corner
     )
 
-    // Bottle outline
+    // Outline
     drawRoundRect(
         color = tint,
         topLeft = Offset(left, top),
         size = Size(sW, sH),
-        cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx()),
-        style = Stroke(width = 1.8.dp.toPx())
+        cornerRadius = corner,
+        style = Stroke(width = outline)
     )
 
     // Pump neck
     drawLine(
         brush = Brush.verticalGradient(
             colors = listOf(light, tint),
-            startY = top - 6.dp.toPx(),
+            startY = top - 7.dp.toPx(),
             endY = top
         ),
         start = Offset(left + sW / 2f, top),
-        end = Offset(left + sW / 2f, top - 6.dp.toPx()),
-        strokeWidth = 2.6.dp.toPx(),
+        end = Offset(left + sW / 2f, top - 7.dp.toPx()),
+        strokeWidth = 3.dp.toPx(),
         cap = StrokeCap.Round
     )
 
     // Pump head + nozzle pointing right
-    val headH = 3.5.dp.toPx()
     drawRoundRect(
         brush = Brush.horizontalGradient(
             colors = listOf(light, tint),
-            startX = left + sW / 2f - sW * 0.30f,
-            endX = left + sW / 2f + sW * 0.34f
+            startX = left + sW / 2f - sW * 0.32f,
+            endX = left + sW / 2f + sW * 0.36f
         ),
-        topLeft = Offset(left + sW / 2f - sW * 0.30f, top - 9.dp.toPx()),
-        size = Size(sW * 0.64f, headH),
+        topLeft = Offset(left + sW / 2f - sW * 0.32f, top - 11.dp.toPx()),
+        size = Size(sW * 0.68f, 4.2.dp.toPx()),
         cornerRadius = CornerRadius(1.dp.toPx(), 1.dp.toPx())
     )
     drawRoundRect(
         color = tint,
-        topLeft = Offset(left + sW / 2f + sW * 0.30f, top - 8.6.dp.toPx()),
-        size = Size(sW * 0.32f, 2.6.dp.toPx()),
+        topLeft = Offset(left + sW / 2f + sW * 0.30f, top - 10.4.dp.toPx()),
+        size = Size(sW * 0.34f, 3.dp.toPx()),
         cornerRadius = CornerRadius(0.8.dp.toPx(), 0.8.dp.toPx())
     )
 
-    // Radiating mist: fading dots + streaks
-    val nozzleX = left + sW / 2f + sW * 0.62f
-    val nozzleY = top - 7.5.dp.toPx()
-    val mistDot = 1.1.dp.toPx()
-    val mistColor = tint
-    // streaks
-    drawLine(color = mistColor, start = Offset(nozzleX + 2.dp.toPx(), nozzleY - 1.dp.toPx()), end = Offset(nozzleX + 8.dp.toPx(), nozzleY - 5.dp.toPx()), strokeWidth = 1.6.dp.toPx(), cap = StrokeCap.Round)
-    drawLine(color = mistColor, start = Offset(nozzleX + 2.dp.toPx(), nozzleY), end = Offset(nozzleX + 10.dp.toPx(), nozzleY), strokeWidth = 1.6.dp.toPx(), cap = StrokeCap.Round)
-    drawLine(color = mistColor, start = Offset(nozzleX + 2.dp.toPx(), nozzleY + 1.dp.toPx()), end = Offset(nozzleX + 8.dp.toPx(), nozzleY + 5.dp.toPx()), strokeWidth = 1.6.dp.toPx(), cap = StrokeCap.Round)
-    // fading dots further out
-    drawCircle(color = mistColor.copy(alpha = 0.80f), radius = mistDot, center = Offset(nozzleX + 10.dp.toPx(), nozzleY - 6.dp.toPx()))
-    drawCircle(color = mistColor.copy(alpha = 0.65f), radius = mistDot, center = Offset(nozzleX + 12.dp.toPx(), nozzleY - 1.dp.toPx()))
-    drawCircle(color = mistColor.copy(alpha = 0.70f), radius = mistDot, center = Offset(nozzleX + 11.dp.toPx(), nozzleY + 4.dp.toPx()))
-    drawCircle(color = mistColor.copy(alpha = 0.45f), radius = mistDot, center = Offset(nozzleX + 14.dp.toPx(), nozzleY - 8.dp.toPx()))
-    drawCircle(color = mistColor.copy(alpha = 0.40f), radius = mistDot, center = Offset(nozzleX + 15.dp.toPx(), nozzleY + 2.dp.toPx()))
+    // Bold radiating mist: 3 streaks + fading dots
+    val nozzleX = left + sW / 2f + sW * 0.66f
+    val nozzleY = top - 9.dp.toPx()
+    drawLine(color = tint, start = Offset(nozzleX + 2.dp.toPx(), nozzleY - 1.5.dp.toPx()), end = Offset(nozzleX + 9.dp.toPx(), nozzleY - 6.dp.toPx()), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
+    drawLine(color = tint, start = Offset(nozzleX + 2.dp.toPx(), nozzleY), end = Offset(nozzleX + 12.dp.toPx(), nozzleY), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
+    drawLine(color = tint, start = Offset(nozzleX + 2.dp.toPx(), nozzleY + 1.5.dp.toPx()), end = Offset(nozzleX + 9.dp.toPx(), nozzleY + 6.dp.toPx()), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
+    val mistDot = 1.5.dp.toPx()
+    drawCircle(color = tint.copy(alpha = 0.75f), radius = mistDot, center = Offset(nozzleX + 12.dp.toPx(), nozzleY - 7.dp.toPx()))
+    drawCircle(color = tint.copy(alpha = 0.60f), radius = mistDot, center = Offset(nozzleX + 14.dp.toPx(), nozzleY - 1.dp.toPx()))
+    drawCircle(color = tint.copy(alpha = 0.65f), radius = mistDot, center = Offset(nozzleX + 13.dp.toPx(), nozzleY + 5.dp.toPx()))
 
-    // Glossy reflection on the bottle
+    // Glossy reflection
     drawLine(
-        color = Color.White.copy(alpha = 0.5f),
-        start = Offset(left + sW - 3.dp.toPx(), top + 4.dp.toPx()),
-        end = Offset(left + sW - 3.dp.toPx(), top + sH - 4.dp.toPx()),
-        strokeWidth = 1.4.dp.toPx(),
+        color = Color.White.copy(alpha = 0.60f),
+        start = Offset(left + sW - 3.5.dp.toPx(), top + 4.dp.toPx()),
+        end = Offset(left + sW - 3.5.dp.toPx(), top + sH - 4.dp.toPx()),
+        strokeWidth = 2.dp.toPx(),
         cap = StrokeCap.Round
     )
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Patch — medical plaster with gauze pad and perforated wings               */
+/*  Patch — plaster with gauze pad and ventilation dots                        */
 /* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawPatch(tint: Color) {
     val w = size.width
     val h = size.height
-    val light = lerp(tint, Color.White, 0.30f)
+    val light = lerp(tint, Color.White, 0.34f)
+    val outline = 2.2.dp.toPx()
 
     rotate(degrees = -12f, pivot = Offset(w / 2f, h / 2f)) {
-        val patchW = w * 0.92f
-        val patchH = h * 0.48f
+        val patchW = w * 0.96f
+        val patchH = h * 0.52f
         val left = (w - patchW) / 2f
         val top = (h - patchH) / 2f
-        val radiusPx = 7.dp.toPx()
+        val radius = 9.dp.toPx()
+        val corner = CornerRadius(radius, radius)
 
-        // Plaster body with vertical gradient
+        // Plaster body
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(light.copy(alpha = 0.85f), tint.copy(alpha = 0.55f)),
+                colors = listOf(light.copy(alpha = 0.90f), tint.copy(alpha = 0.58f)),
                 startY = top,
                 endY = top + patchH
             ),
             topLeft = Offset(left, top),
             size = Size(patchW, patchH),
-            cornerRadius = CornerRadius(radiusPx, radiusPx)
+            cornerRadius = corner
         )
 
         // Border
@@ -732,18 +766,18 @@ private fun DrawScope.drawPatch(tint: Color) {
             color = tint,
             topLeft = Offset(left, top),
             size = Size(patchW, patchH),
-            cornerRadius = CornerRadius(radiusPx, radiusPx),
-            style = Stroke(width = 2.dp.toPx())
+            cornerRadius = corner,
+            style = Stroke(width = outline)
         )
 
-        // Central absorbent gauze pad (elevated look)
-        val padW = patchW * 0.36f
+        // Central gauze pad (elevated)
+        val padW = patchW * 0.34f
         val padLeft = (w - padW) / 2f
-        val padTop = top + 1.5.dp.toPx()
-        val padH = patchH - 3.dp.toPx()
+        val padTop = top + 2.dp.toPx()
+        val padH = patchH - 4.dp.toPx()
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(lerp(tint, Color.White, 0.65f), lerp(tint, Color.White, 0.35f)),
+                colors = listOf(lerp(tint, Color.White, 0.70f), lerp(tint, Color.White, 0.38f)),
                 startY = padTop,
                 endY = padTop + padH
             ),
@@ -751,40 +785,29 @@ private fun DrawScope.drawPatch(tint: Color) {
             size = Size(padW, padH),
             cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
         )
-        // Woven crosshatch on the gauze
-        val step = 2.6.dp.toPx()
-        var x = padLeft + step
-        while (x < padLeft + padW - 0.5.dp.toPx()) {
-            drawLine(
-                color = tint.copy(alpha = 0.35f),
-                start = Offset(x, padTop + 1.dp.toPx()),
-                end = Offset(x, padTop + padH - 1.dp.toPx()),
-                strokeWidth = 0.8.dp.toPx()
-            )
-            x += step
-        }
-        var y = padTop + step
-        while (y < padTop + padH - 0.5.dp.toPx()) {
-            drawLine(
-                color = tint.copy(alpha = 0.35f),
-                start = Offset(padLeft + 1.dp.toPx(), y),
-                end = Offset(padLeft + padW - 1.dp.toPx(), y),
-                strokeWidth = 0.8.dp.toPx()
-            )
-            y += step
-        }
+        // Woven cross on the gauze (2 + 2 confident strokes)
+        val crossStroke = 1.6.dp.toPx()
+        val crossColor = tint.copy(alpha = 0.55f)
+        val cx1 = padLeft + padW * 0.30f
+        val cx2 = padLeft + padW * 0.70f
+        val cy1 = padTop + padH * 0.30f
+        val cy2 = padTop + padH * 0.70f
+        drawLine(color = crossColor, start = Offset(cx1, cy1), end = Offset(cx1, cy2), strokeWidth = crossStroke, cap = StrokeCap.Round)
+        drawLine(color = crossColor, start = Offset(cx2, cy1), end = Offset(cx2, cy2), strokeWidth = crossStroke, cap = StrokeCap.Round)
+        drawLine(color = crossColor, start = Offset(cx1, cy1), end = Offset(cx2, cy1), strokeWidth = crossStroke, cap = StrokeCap.Round)
+        drawLine(color = crossColor, start = Offset(cx1, cy2), end = Offset(cx2, cy2), strokeWidth = crossStroke, cap = StrokeCap.Round)
         drawRoundRect(
             color = tint,
             topLeft = Offset(padLeft, padTop),
             size = Size(padW, padH),
             cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()),
-            style = Stroke(width = 1.4.dp.toPx())
+            style = Stroke(width = 1.6.dp.toPx())
         )
 
-        // Perforated ventilation dots on the adhesive wings
-        val dotRadius = 1.1.dp.toPx()
-        val wingCols = listOf(0.10f, 0.17f, 0.24f)
-        val wingRows = listOf(0.30f, 0.55f, 0.80f)
+        // Ventilation dots on the wings (2 per wing, bold)
+        val dotRadius = 1.6.dp.toPx()
+        val wingCols = listOf(0.13f, 0.24f)
+        val wingRows = listOf(0.34f, 0.66f)
         for (fx in wingCols) {
             for (fy in wingRows) {
                 drawCircle(color = tint, radius = dotRadius, center = Offset(left + patchW * fx, top + patchH * fy))

@@ -73,7 +73,7 @@ fun CalendarScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = 16.dp,
-                bottom = bottomPadding + 88.dp // Fully scroll behind bottom navigation dock
+                bottom = bottomPadding + 24.dp // Fully scroll behind bottom navigation dock
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

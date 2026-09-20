@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <b>Pill Tracker</b> is a modern, high-performance, and reliable Android application designed to manage daily medication schedules, send exact intake reminders, and track adherence history. Built with modern Jetpack Compose, an experimental <b>Liquid Glass</b> design system, and modern Android architecture.
+  <b>Pill Tracker</b> is a modern, high-performance, and reliable Android application designed to manage daily medication schedules, send exact intake reminders, and track adherence history. Built with modern Jetpack Compose, a true <b>Liquid Glass</b> design system, and modern Android architecture.
 </p>
 
 ---
@@ -30,15 +30,14 @@
 
 ### 🌟 Key Highlights
 * ⏰ **Exact Alarm Engine (`AlarmManager.setAlarmClock`)**: Guarantees alarm notifications trigger precisely on time without OS battery-saver or Doze mode delays.
-* ⚡ **Automatic Cloud Sync**: Real-time two-way synchronization between local Room DB and Firebase Firestore.
-* 🔐 **Secure Firebase Authentication**: Email & Password validation with email link verification and instant Password Reset.
-* 🩺 **Smart Doctor Reports & Barcode/QR Generator**: Export clinical summary reports with compliance analytics and dual-format scanner card (Code 128 & QR Code).
-* 🧪 **Liquid Glass Design**: Experimental glassmorphism UI with real hardware blur (`RenderEffect`), light reflections, and translucent frosted surfaces.
-* 🎯 **Smooth Tab Navigation**: Dynamic liquid capsule indicator that glides across bottom navigation tabs with spring physics.
+* 🧪 **True Liquid Glass Design**: The floating navigation island blurs the live content behind it — hardware gaussian blur (`RenderEffect`) on Android 12+, and a CPU-rendered frosted snapshot on Android 8–11, so real glass works on every device.
+* 🎯 **Fluid Tab Navigation**: A soft tinted pill glides across the bottom bar with jelly stretch physics, drag-scrubbing and edge resistance.
 * 📅 **Interactive Calendar & Tracker**: Track daily doses, mark intakes as taken/skipped, and review historical compliance.
-* 💊 **Comprehensive Medication Management**: Customize dose amounts, pill shapes/icons, color coding, start dates, and multiple daily reminders.
-* 📊 **Adherence Analytics**: Real-time progress bars, completion percentages, and streak tracking.
-* 🌍 **Full Localization**: Dynamic in-app language switching between English, Ukrainian, and Russian.
+* 💊 **Comprehensive Medication Management**: Customize dose amounts, medication form (capsule, tablet, syrup, drops, injection, spray, patch), color coding, start dates, and multiple daily reminders.
+* 🪄 **Redrawn Medication Icons**: All seven form icons are vector-painted with volumetric gradients and glossy highlights — crisp at any size.
+* 📊 **Adherence Analytics**: Animated compliance ring, completion percentages, and streak tracking.
+* 🌍 **Full Localization**: Polished English, Ukrainian, and Russian translations with dynamic in-app language switching.
+* ⚡ **Performance-First Rendering**: Cached gradients, consolidated draw passes, staggered entrance animations and spring physics everywhere — smooth at 120 Hz.
 
 ### 🛠 Tech Stack & Architecture
 | Layer | Technologies |
@@ -46,7 +45,7 @@
 | **Language** | 100% Kotlin |
 | **UI Framework** | Jetpack Compose, Material 3, Navigation Compose, Compose Animation |
 | **Architecture** | Clean Architecture + MVVM (Model-View-ViewModel) |
-| **Database** | Room Persistence Library with KSP & Firebase Firestore |
+| **Database** | Room Persistence Library with KSP |
 | **Asynchronous** | Kotlin Coroutines & `StateFlow` / `SharedFlow` |
 | **Notifications** | `AlarmManager`, `BroadcastReceiver`, Android Notification Channels |
 
@@ -57,15 +56,14 @@
 
 ### 🌟 Основні можливості
 * ⏰ **Точні нагадування (`setAlarmClock`)**: Апаратний системний будильник спрацьовує хвилина в хвилину навіть у режимі глибокого сну пристрою (Doze mode).
-* ⚡ **Автоматична хмарна синхронізація**: Двостороння синхронізація бази даних Room із Firebase Firestore в реальному часі.
-* 🔐 **Захищена автентифікація**: Валідація пароля через Firebase Auth, підтвердження пошти та функція відновлення пароля ("Забули пароль?").
-* 🩺 **Розумні звіти та QR/Штрихкод для лікаря**: Експорт клінічного звіту з відсотком дотримання розкладу та двоформатним кодом (Code 128 та QR).
-* 🧪 **Ефект "Рідке Скло" (Liquid Glass)**: Сучасний напівпрозорий інтерфейс із системним розмиттям, світловими відблисками та м'якими тінями.
-* 🎯 **Плавна анімована навігація**: Плаваючий індикатор нижньої панелі, який м'яко ковзає між вкладками з фізикою пружини.
+* 🧪 **Справжнє «Рідке Скло»**: Плаваюча навігаційна панель розмиває контент під собою в реальному часі — апаратне гаусове розмиття на Android 12+ і програмний морозний ефект на Android 8–11. Стекло працює на будь-якому пристрої.
+* 🎯 **Плавна анімована навігація**: М'який індикатор-пігулка ковзає між вкладками з фізикою пружини, підтримкою перетягування пальцем та опором на краях.
 * 📅 **Інтерактивний Календар**: Зручний перегляд розкладу на будь-який день із можливістю відмітити прийом ліків в один дотик.
-* 💊 **Гнучкий каталог ліків**: Налаштування дозування, часу прийому, дати початку курсів та індивідуального колірного оформлення.
-* 📊 **Аналітика та Статистика**: Відстеження відсотка успішного дотримання графіку та аналіз регулярності.
-* 🌍 **Багатомовний інтерфейс**: Миттєве переключення мови додатку (Українська, Англійська, Російська).
+* 💊 **Гнучкий каталог ліків**: Налаштування дозування, форми випуску (капсула, таблетка, сироп, краплі, ін'єкція, спрей, пластир), дати початку курсів та індивідуального колірного оформлення.
+* 🪄 **Перемальовані іконки ліків**: Усі сім форм намальовані векторно з об'ємними градієнтами та відблисками — чіткі на будь-якому розмірі.
+* 📊 **Аналітика та Статистика**: Анімоване кільце дотримання розкладу, відсотки виконання та серії регулярності.
+* 🌍 **Багатомовний інтерфейс**: Вдосконалені переклади (Українська, Англійська, Російська) з миттєвим переключенням мови.
+* ⚡ **Продуктивність**: Кешовані градієнти, об'єднані проходи малювання та пружинна фізика анімацій — плавно навіть на 120 Гц.
 
 ---
 
@@ -74,20 +72,19 @@
 
 ### 🌟 Основные возможности
 * ⏰ **Точные напоминания (`setAlarmClock`)**: Системный будильник срабатывает точно в указанную минуту без задержек режима энергосбережения.
-* ⚡ **Автоматическая облачная синхронизация**: Двусторонняя синхронизация локальной БД Room с Firebase Firestore в реальном времени.
-* 🔐 **Защищенная авторизация**: Проверка пароля через Firebase Auth, подтверждение почты и сброс пароля при утере ("Забыли пароль?").
-* 🩺 **Умные отчёты и QR/Штрихкод для врача**: Экспорт медицинского отчёта с процентом регулярности приёма и выбор формата (Code 128 или QR-код).
-* 🧪 **Эффект "Жидкое Стекло" (Liquid Glass)**: Современный интерфейс с аппаратным фоновым размытием (`RenderEffect`) и стеклянными карточками.
-* 🎯 **Плавная скользящая навигация**: Скользящий индикатор переключения вкладок нижней панели с физикой пружинных анимаций.
+* 🧪 **Настоящее «Жидкое Стекло»**: Плавающая навигационная панель размывает контент под собой в реальном времени — аппаратное гауссово размытие на Android 12+ и программный морозный эффект на Android 8–11. Стекло работает на любом устройстве.
+* 🎯 **Плавная скользящая навигация**: Мягкий индикатор-пилюля скользит между вкладками с физикой пружины, перетаскиванием пальцем и сопротивлением на краях.
 * 📅 **Интерактивный Календарь**: Удобный график приема на выбранный день с подтверждением в один клик.
-* 💊 **Персональный каталог**: Настройка дозировки, нескольких времен приема, формы препарата и цветовых меток.
-* 📊 **Аналитика приемов**: Отслеживание процента выполнения дневного плана и серии регулярности.
-* 🌍 **Мультиязычность**: Динамическое переключение языка интерфейса без перезапуска приложения.
+* 💊 **Персональный каталог**: Настройка дозировки, формы выпуска (капсула, таблетка, сироп, капли, инъекция, спрей, пластырь), нескольких времён приёма и цветовых меток.
+* 🪄 **Перерисованные иконки лекарств**: Все семь форм нарисованы векторно с объёмными градиентами и бликами — чёткие на любом размере.
+* 📊 **Аналитика приёмов**: Анимированное кольцо дисциплины, проценты выполнения дневного плана и серии регулярности.
+* 🌍 **Мультиязычность**: Улучшенные переводы (Русский, Английский, Украинский) с динамическим переключением языка без перезапуска.
+* ⚡ **Производительность**: Кешированные градиенты, объединённые проходы отрисовки и пружинная физика анимаций — плавно даже на 120 Гц.
 
 ---
 
 <a id="privacy-terms"></a>
-## 📜 Privacy Policy & Terms of Service / Політика конфіденційності / Политика конфиденциальности
+## 📜 Privacy Policy & Terms of Service / Політика конфіденційності / Политика конфиденциальності
 
 ### 🇬🇧 English - Privacy Policy & Terms of Service
 1. **Data Protection & Encryption**: All medication records, intake schedules, and health metrics are strictly encrypted locally in an Android Room database and securely synchronized with Firebase Firestore using TLS 1.3 encryption.
@@ -118,11 +115,14 @@ This repository includes a full **GitHub Actions CI/CD pipeline** (`.github/work
 ### Local Build
 ```bash
 # Clone the repository
-git clone https://github.com/user/pill-tracker.git
-cd pill-tracker
+git clone https://github.com/unbrokensociety/Pill-Tracker.git
+cd Pill-Tracker
 
 # Build debug APK
 ./gradlew assembleDebug
 ```
 The compiled `.apk` will be generated at:
 `app/build/outputs/apk/debug/pill-tracker.apk`
+
+### Project Layout
+Kotlin sources are kept flat in the repository root next to `build.gradle.kts` — the root build script syncs them into the standard Android source tree (`app/src/main/java/...`) automatically before every build, so GitHub Actions always compiles the newest code.

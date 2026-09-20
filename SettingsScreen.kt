@@ -23,7 +23,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -107,7 +113,7 @@ fun SettingsScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = 16.dp,
-                bottom = bottomPadding + 88.dp
+                bottom = bottomPadding + 24.dp
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -147,31 +153,67 @@ fun SettingsScreen(
                         
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = stringResource(R.string.settings_stats_today_ratio),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "$takenSchedules / $totalSchedules ($ratioPercent%)",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.settings_stats_today_ratio),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "$takenSchedules / $totalSchedules ($ratioPercent%)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            // Animated compliance ring — sweeps to the current
+                            // ratio with a spring, gradient stroke, % in center
+                            Box(
+                                modifier = Modifier.size(76.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val ringColor = MaterialTheme.colorScheme.primary
+                                val ringTrack = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                val ringAccent = MaterialTheme.colorScheme.tertiary
+                                Canvas(modifier = Modifier.fillMaxSize()) {
+                                    val stroke = 9.dp.toPx()
+                                    val inset = stroke / 2f + 2.dp.toPx()
+                                    val arcSize = Size(size.width - inset * 2f, size.height - inset * 2f)
+                                    val tl = Offset(inset, inset)
+                                    drawArc(
+                                        color = ringTrack,
+                                        startAngle = 0f,
+                                        sweepAngle = 360f,
+                                        useCenter = false,
+                                        topLeft = tl,
+                                        size = arcSize,
+                                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                    )
+                                    drawArc(
+                                        brush = Brush.sweepGradient(
+                                            colors = listOf(ringColor, ringAccent, ringColor)
+                                        ),
+                                        startAngle = -90f,
+                                        sweepAngle = 360f * animatedRatio,
+                                        useCenter = false,
+                                        topLeft = tl,
+                                        size = arcSize,
+                                        style = Stroke(width = stroke, cap = StrokeCap.Round)
+                                    )
+                                }
+                                Text(
+                                    text = "$ratioPercent%",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
-                        
-                        LinearProgressIndicator(
-                            progress = { animatedRatio },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(RoundedCornerShape(5.dp)),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        )
 
                         Text(
                             text = stringResource(R.string.settings_stats_active_meds, medications.size),

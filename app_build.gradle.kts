@@ -16,14 +16,14 @@ android {
     minSdk = 26
     targetSdk = 36
     // Monotonic versioning, never conflicts:
-    //   • every GitHub CI build:   versionCode = 2000 + run_number (2001, 2002, …)
-    //   • the ready-made APK from the delivery site: versionCode = 2000
-    //   • all older CI builds:     1000 + run_number (< 2000)
+    //   • every GitHub CI build:   versionCode = 2100 + run_number (2101, 2102, …)
+    //   • the ready-made APK from the delivery site: versionCode = 2100
+    //   • all older CI builds:     1000/2000 + run_number (< 2100)
     // So the site APK installs over any previous build, and every future CI
     // release installs over the site APK — no uninstall ever needed.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
-    versionCode = 2000 + runNumber
-    versionName = "2.0.$runNumber"
+    versionCode = 2100 + runNumber
+    versionName = "2.1.$runNumber"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

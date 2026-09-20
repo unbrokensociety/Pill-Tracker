@@ -1,0 +1,274 @@
+<resources>
+    <string name="app_name">Pill Tracker</string>
+    <string name="nav_today">Головна</string>
+    <string name="nav_calendar">Календар</string>
+    <string name="nav_meds">Ліки</string>
+    <string name="nav_settings">Налаштування</string>
+    
+    <string name="home_no_schedules">На цей день прийомів немає</string>
+    <string name="home_greeting_morning">Доброго ранку</string>
+    <string name="home_greeting_afternoon">Доброго дня</string>
+    <string name="home_greeting_evening">Доброго вечора</string>
+    
+    <string name="add_med_title">Додати ліки</string>
+    <string name="add_med_name_label">Назва препарату</string>
+    <string name="add_med_dosage_label">Дозування (наприклад, 1 таблетка)</string>
+    <string name="add_med_time_label">Час прийому</string>
+    <string name="add_med_add_time">Додати час</string>
+    
+    <string name="action_save">Зберегти</string>
+    <string name="action_add">Додати</string>
+    <string name="action_delete">Вилучити</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_edit">Редагувати</string>
+    
+    <string name="dialog_delete_title">Вилучити ліки</string>
+    <string name="dialog_delete_msg">Ви впевнені, що хочете вилучити %1$s? Усю історію розкладу для цього препарату буде видалено.</string>
+    
+    <string name="calendar_history">Історія прийому</string>
+    <string name="calendar_placeholder">Виберіть день на головному екрані, щоб переглянути історію прийомів.</string>
+    
+    <string name="meds_my_meds">Мої ліки</string>
+    <string name="meds_no_meds">Ви ще не додали жодного препарату</string>
+    <string name="meds_intakes_per_day">Прийомів на день: %1$d</string>
+    
+    <string name="alarm_default_med">Препарат</string>
+    <string name="alarm_title">Час прийняти %1$s</string>
+    <string name="alarm_text">Не забудьте прийняти свої ліки!</string>
+    <string name="alarm_channel_name">Сповіщення про ліки</string>
+    <string name="alarm_channel_desc">Нагадування про прийом препаратів</string>
+    
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_system">Системна</string>
+    <string name="settings_theme_light">Світла</string>
+    <string name="settings_theme_dark">Темна</string>
+    <string name="settings_theme_brand">Фірмова</string>
+    <string name="settings_notifications">Сповіщення</string>
+    
+    <string name="settings_language">Мова</string>
+    <string name="settings_lang_system">Системна мова</string>
+    <string name="settings_lang_en">Англійська (English)</string>
+    <string name="settings_lang_uk">Українська (Українська)</string>
+    <string name="settings_lang_ru">Російська (Русский)</string>
+    
+    <string name="settings_stats">Прогрес прийому</string>
+    <string name="settings_stats_today_ratio">Прийнято сьогодні</string>
+    <string name="settings_stats_active_meds">Зареєстровано ліків: %1$d</string>
+    <string name="settings_about">Про застосунок</string>
+    <string name="settings_about_desc">Pill Tracker — ваш персональний медичний помічник. Приймайте ліки вчасно та будьте здорові!</string>
+    <string name="settings_version">Версія 2.1.0</string>
+    
+    <string name="status_taken">Прийнято</string>
+    
+    <!-- Add Medication localization elements -->
+    <string name="add_med_info_title">Інформація про препарат</string>
+    <string name="add_med_name_placeholder">Наприклад: Аспірин</string>
+    <string name="add_med_dosage_placeholder">Наприклад: 1 таблетка / 5 мл</string>
+    <string name="add_med_empty_time_warning">Будь ласка, додайте хоча б один час прийому</string>
+    <string name="add_med_intake_number">Прийом №%1$d</string>
+    <string name="add_med_delete_time">Вилучити час прийому</string>
+    <string name="add_med_color_label">Колір маркування</string>
+    <string name="add_med_start_date_label">Дата початку прийому</string>
+    <string name="edit_med_title">Редагувати ліки</string>
+    <string name="add_med_notes_label">Примітки та вказівки</string>
+    <string name="add_med_notes_placeholder">Наприклад: Після їжі / Перед сном</string>
+    <string name="food_before_meal">До їжі</string>
+    <string name="food_with_meal">З їжею</string>
+    <string name="food_after_meal">Після їжі</string>
+    <string name="food_before_bed">Перед сном</string>
+    
+    <!-- Settings section localization elements -->
+    <string name="settings_group_general">Загальні параметри</string>
+    <string name="settings_notif_active">Так</string>
+    <string name="settings_notif_disabled">Ні</string>
+    <string name="settings_my_profile">Мій профіль</string>
+    <string name="settings_active_user">Активний користувач</string>
+
+    <!-- Streak and Flame Mini-Game strings -->
+    <string name="streak_title">Серія прийому: %1$d %2$s 🔥</string>
+    <string name="streak_zero_title">Серія прийому: 0 днів</string>
+    <string name="streak_sub_active">Чудовий результат! Не пропускайте прийом</string>
+    <string name="streak_sub_zero">Позначте прийом сьогодні, щоб розпочати серію</string>
+    <string name="streak_day_1">день</string>
+    <string name="streak_day_2_4">дні</string>
+    <string name="streak_day_5">днів</string>
+    <string name="streak_menu_title">Вогняна серія та досягнення 🔥</string>
+    <string name="streak_menu_level">Рівень полум\'я: %1$d</string>
+    <string name="streak_menu_keep_flame">Міні-гра: підтримуйте вогонь!</string>
+    <string name="streak_menu_tap_flame">Натискайте на полум\'я!</string>
+    <string name="streak_menu_sparks">Зібрано іскор: %1$d</string>
+    <string name="streak_menu_achievements">Досягнення полум\'я</string>
+    <string name="streak_achievement_1">Перша іскра (1 день)</string>
+    <string name="streak_achievement_3">Розпалювач (3 дні)</string>
+    <string name="streak_achievement_7">Тиждень сили (7 днів)</string>
+    <string name="streak_achievement_30">Незгасне полум\'я (30 днів)</string>
+
+    <!-- Auth & Database Onboarding strings -->
+    <string name="auth_welcome_title">Ласкаво просимо в PillTracker</string>
+    <string name="auth_welcome_subtitle">Контролюйте здоров\'я та прийом ліків безпечно</string>
+    <string name="auth_tab_signin">Вхід</string>
+    <string name="auth_tab_signup">Реєстрація</string>
+    <string name="auth_field_name">Ім\'я та прізвище</string>
+    <string name="auth_field_email">Електронна пошта</string>
+    <string name="auth_field_password">Пароль</string>
+    <string name="auth_btn_signin">Увійти та синхронізувати</string>
+    <string name="auth_btn_signup">Створити акаунт</string>
+    <string name="auth_btn_skip">Пропустити / Увійти як гість</string>
+    <string name="auth_skip_desc">Усі функції працюють локально без реєстрації. Створення акаунту необ\'язкове.</string>
+    <string name="auth_guest_title">Гостьовий профіль</string>
+    <string name="auth_guest_subtitle">Локальний режим бази даних (Офлайн)</string>
+    <string name="auth_cloud_title">Хмарний акаунт</string>
+    <string name="auth_cloud_subtitle">База даних синхронізована</string>
+    <string name="auth_action_link_account">Увійти через Google / Акаунт</string>
+    <string name="auth_action_sign_out">Вийти (Перейти в гостьовий режим)</string>
+    <string name="db_export_title">Резервна копія бази даних</string>
+    <string name="db_export_desc">Локальна база даних активна та захищена</string>
+    <string name="db_export_success">Локальний знімок бази даних збережено!</string>
+
+    <string name="auth_btn_google">Увійти через Google</string>
+    <string name="auth_google_select_account">Оберіть акаунт Google</string>
+    <string name="auth_google_simulated_subtitle">Оберіть профіль Google для входу та синхронізації з PillTracker</string>
+    <string name="auth_registered_users">Збережені профілі (локально)</string>
+    <string name="auth_error_invalid_email">Введіть коректну адресу електронної пошти</string>
+    <string name="auth_error_short_password">Пароль має містити щонайменше 6 символів</string>
+    <string name="auth_provider_google">Акаунт Google</string>
+    <string name="auth_provider_email">Email / Пароль</string>
+
+    <string name="stock_title">Запас ліків</string>
+    <string name="stock_remaining">Залишилося: %1$d шт.</string>
+    <string name="stock_low_warning">Запаси на завершенні!</string>
+    <string name="stock_refill_btn">+ Поповнити запас</string>
+    <string name="stock_refill_30">+30 шт.</string>
+    <string name="stock_refill_success">Запас успішно поповнено!</string>
+
+    <string name="report_export_title">Експорт звіту для лікаря</string>
+    <string name="report_export_desc">Поділитися історією прийому та статистикою</string>
+    <string name="report_share_btn">Поділитися звітом</string>
+
+    <string name="qr_doctor_title">QR-картка для лікаря</string>
+    <string name="qr_doctor_desc">Показати QR-код зі списком препаратів та розкладом</string>
+    <string name="qr_dialog_title">Медичний QR-код</string>
+
+    <string name="ai_advisor_title">Gemini AI Консультант</string>
+    <string name="ai_advisor_desc">Поставити запитання про прийом ліків, сумісність та поради</string>
+    <string name="ai_advisor_prompt_hint">Спитайте про здоров\'я чи ліки…</string>
+
+    <string name="privacy_policy_title">Політика конфіденційності та HIPAA</string>
+    <string name="privacy_policy_desc">Захист персональних даних, умови Firestore та скасування доступу</string>
+
+    <string name="welcome_message">Ласкаво просимо до PillTracker, %1$s! 🎉</string>
+    <string name="welcome_back_message">З поверненням, %1$s! 👋</string>
+    <string name="account_created_message">Ласкаво просимо до PillTracker, %1$s! 🎉 Акаунт створено.</string>
+    <string name="verification_email_sent">Посилання для підтвердження надіслано на %1$s! (Перевірте папку СПАМ)</string>
+
+    <string name="auth_verification_title">Перевірте вашу пошту</string>
+    <string name="auth_verification_desc">Посилання для активації надіслано на %1$s.\n\n1. Відкрийте застосунок пошти\n2. Перейдіть за посиланням у листі\n3. Перевірте папку СПАМ, якщо лист затримується\n\nЗастосунок автоматично увійде в акаунт, щойно пошту буде підтверджено!</string>
+    <string name="auth_verification_auto_checking">Авто-перевірка статусу посилання…</string>
+    <string name="auth_verification_confirm">Підтвердити та увійти</string>
+    <string name="auth_verification_wrong_code">Пошту ще не підтверджено. Перевірте папку СПАМ і натисніть посилання в листі.</string>
+    <string name="auth_verification_check_link">Я відкрив(ла) посилання з листа</string>
+    <string name="auth_verification_resend">Надіслати лист повторно</string>
+    <string name="auth_verification_skip">Продовжити без акаунта (офлайн-режим)</string>
+    <string name="auth_privacy_checkbox">Я приймаю Політику конфіденційності та юридичні умови</string>
+    <string name="auth_privacy_required_error">Для реєстрації необхідно прийняти Політику конфіденційності.</string>
+    <string name="auth_forgot_password">Забули пароль?</string>
+    <string name="auth_reset_password_title">Скидання пароля</string>
+    <string name="auth_reset_password_desc">Введіть ваш email, і ми надішлемо посилання для відновлення пароля.</string>
+    <string name="auth_btn_send_reset">Надіслати посилання</string>
+    <string name="auth_reset_email_sent">Посилання для скидання пароля надіслано на %1$s!</string>
+    <string name="auth_invalid_credentials">Невірний email або пароль.</string>
+    <string name="auth_user_not_found">Користувача з таким email не знайдено.</string>
+    <string name="barcode_format_qr">QR-код</string>
+    <string name="barcode_format_1d">Штрихкод (Code 128)</string>
+
+    <string name="settings_cloud_sync_title">Хмарна синхронізація</string>
+    <string name="settings_cloud_sync_enabled">Синхронізація увімкнена</string>
+    <string name="settings_cloud_sync_disabled">Синхронізацію вимкнено</string>
+    <string name="settings_alarm_clock_title">Режим будильника</string>
+    <string name="settings_alarm_clock_loud">Гучний сигнал та вібрація</string>
+    <string name="settings_alarm_clock_standard">Стандартні нагадування</string>
+    <string name="settings_alarm_repeat_title">Повтор нагадувань</string>
+    <string name="settings_alarm_repeat_1">1 раз</string>
+    <string name="settings_alarm_repeat_2">2 рази</string>
+    <string name="settings_alarm_repeat_3">3 рази</string>
+    <string name="settings_delete_account_btn">Видалити обліковий запис та дані</string>
+    <string name="terms_of_service_title">Умови використання</string>
+    <string name="terms_of_service_desc">Правила сервісу та умови надання послуг</string>
+    <string name="edit_profile_title">Редагувати профіль</string>
+    <string name="edit_profile_nickname">Ім\'я / Нікнейм</string>
+    <string name="edit_profile_change_photo">Натисніть на аватар, щоб змінити фото</string>
+    <string name="edit_profile_camera">Зробити фото з камери</string>
+    <string name="edit_profile_gallery">Обрати з галереї</string>
+
+    <!-- Profile Screen strings -->
+    <string name="profile_sync_active">Синхронізація активна</string>
+    <string name="profile_synced_at">Синхронізовано о %1$s</string>
+    <string name="profile_synced">Синхронізовано</string>
+    <string name="profile_guest_user">Гостьовий Користувач</string>
+    <string name="profile_default_user">Користувач</string>
+    <string name="profile_guest_mode_local">Гостьовий режим (Локальні дані)</string>
+    <string name="profile_authorized_account">Авторизований акаунт</string>
+    <string name="profile_edit_name_photo">Редагувати ім\'я та фото</string>
+    <string name="profile_account_info">Інформація про акаунт</string>
+    <string name="profile_account_status">Статус акаунту</string>
+    <string name="profile_status_guest">ГІСТЬ</string>
+    <string name="profile_status_authorized">АВТОРИЗОВАНО</string>
+    <string name="profile_cloud_status">Хмарний статус</string>
+    <string name="profile_account_management">Керування обліковим записом</string>
+    <string name="profile_deletion_scheduled">⚠️ Акаунт буде видалено через %1$d дн. (пільговий період 30 днів)</string>
+    <string name="profile_cancel_deletion">Скасувати видалення акаунту</string>
+    <string name="profile_signin_or_register">Увійти або зареєструватися</string>
+
+    <!-- Auth Guest Terms strings -->
+    <string name="auth_guest_terms_title">Умови для гостьового режиму</string>
+    <string name="auth_guest_terms_desc">Для продовження роботи в гостьовому режимі без реєстрації акаунту необхідно підтвердити згоду з Умовами використання та Політикою конфіденційності.</string>
+    <string name="auth_guest_terms_bullet1">• Усі дані ліків зберігаються лише на цьому пристрої.</string>
+    <string name="auth_guest_terms_bullet2">• Хмарна резервна копія вимкнена до створення акаунту.</string>
+    <string name="auth_guest_terms_checkbox">Я приймаю Умови використання та Політику конфіденційності</string>
+    <string name="auth_guest_terms_error">Будь ласка, погодьтеся з умовами для продовження</string>
+    <string name="auth_guest_terms_continue">Продовжити як гість</string>
+
+    <!-- Settings section extensions -->
+    <string name="settings_cloud_sync_auto">Автоматична резервна копія ввімкнена</string>
+    <string name="settings_cloud_sync_local">Дані зберігаються локально на пристрої</string>
+    <string name="settings_export_and_docs">Експорт та Документи</string>
+
+    <!-- New Features Strings -->
+    <string name="snooze_15m">На 15 хв</string>
+    <string name="snooze_30m">На 30 хв</string>
+    <string name="snooze_60m">На 1 год</string>
+    <string name="snooze_title">Відкласти нагадування</string>
+    
+    <string name="form_capsule">Капсула</string>
+    <string name="form_tablet">Таблетка</string>
+    <string name="form_liquid">Сироп</string>
+    <string name="form_drops">Краплі</string>
+    <string name="form_injection">Ін\'єкція</string>
+    <string name="form_spray">Спрей</string>
+    <string name="form_patch">Пластир</string>
+
+    <string name="sched_daily">Щодня</string>
+    <string name="sched_interval">Кожні %1$d дн.</string>
+    <string name="sched_interval_label">Інтервал прийому (днів)</string>
+    <string name="sched_as_needed">За потреби</string>
+    <string name="add_med_form_type_label">Форма випуску ліків</string>
+    <string name="add_med_schedule_type_label">Режим прийому</string>
+
+    <string name="stock_track_label">Відстежувати залишок в упаковці</string>
+    <string name="stock_total_label">Початковий запас (шт.)</string>
+    <string name="stock_pcs">%1$d шт.</string>
+    <string name="stock_low_tag">Мало: %1$d шт.</string>
+    <string name="stock_empty_tag">Закінчились (0 шт.)</string>
+
+    <string name="adherence_title">Дисципліна прийому</string>
+    <string name="adherence_subtitle">За останні 30 днів</string>
+    <string name="adherence_taken">Вчасно</string>
+    <string name="adherence_taken_count">%1$d з %2$d прийнято</string>
+    <string name="adherence_rate">Дисципліна</string>
+    <string name="adherence_as_needed_section">Ліки за потреби</string>
+    <string name="take_now">Прийняти зараз</string>
+
+    <string name="dialog_cancel">Скасувати</string>
+    <string name="adherence_discipline">Дисципліна</string>
+</resources>

@@ -142,7 +142,7 @@ fun MedicationsListScreen(
                         start = 16.dp,
                         end = 16.dp,
                         top = 16.dp,
-                        bottom = bottomPadding + 88.dp
+                        bottom = bottomPadding + 24.dp
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
@@ -194,9 +194,9 @@ fun MedicationInfoCard(
             com.example.ui.components.FormTypeIcon(
                 formKey = medication.formType,
                 tint = medColor,
-                backgroundColor = medColor.copy(alpha = 0.15f),
-                size = 52.dp,
-                iconSize = 24.dp
+                backgroundColor = medColor.copy(alpha = 0.18f),
+                size = 56.dp,
+                iconSize = 26.dp
             )
 
             Column(modifier = Modifier.weight(1f)) {

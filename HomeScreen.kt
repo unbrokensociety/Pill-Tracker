@@ -134,12 +134,39 @@ fun HomeScreen(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { 
-                    Text(
-                        text = stringResource(R.string.nav_today),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
-                    ) 
+                title = {
+                    // Time-of-day greeting + fully localized date subtitle
+                    val greetingRes = remember {
+                        val hour = java.time.LocalTime.now().hour
+                        when {
+                            hour < 12 -> R.string.home_greeting_morning
+                            hour < 18 -> R.string.home_greeting_afternoon
+                            else -> R.string.home_greeting_evening
+                        }
+                    }
+                    val dateLine = remember {
+                        val today = java.time.LocalDate.now()
+                        today.format(
+                            java.time.format.DateTimeFormatter
+                                .ofPattern("EEEE, d MMMM")
+                                .withLocale(Locale.getDefault())
+                        ).replaceFirstChar {
+                            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                        }
+                    }
+                    Column {
+                        Text(
+                            text = stringResource(greetingRes),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = dateLine,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -254,7 +281,7 @@ fun HomeScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 10.dp,
-                            bottom = bottomPadding + 88.dp
+                            bottom = bottomPadding + 24.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
@@ -469,8 +496,8 @@ fun MedicationCard(
                 formKey = schedule.formType,
                 tint = medColor,
                 backgroundColor = medColor.copy(alpha = 0.18f),
-                size = 52.dp,
-                iconSize = 24.dp
+                size = 56.dp,
+                iconSize = 26.dp
             )
 
             Column(modifier = Modifier.weight(1f)) {

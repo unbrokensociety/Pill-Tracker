@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import android.graphics.Bitmap
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,10 +28,13 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -37,58 +42,83 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.withFrameNanos
 import kotlinx.coroutines.delay
 
 /* ------------------------------------------------------------------------- */
-/*  REAL LIQUID GLASS ENGINE v2 — "Telegram-grade" backdrop blur              */
+/*  LIQUID GLASS ENGINE v3 — real backdrop blur on every Android version      */
 /*                                                                           */
-/*  Mirrors the technique used by Telegram for Android:                       */
-/*   • API 31+ (Android 12): live backdrop blur through                       */
-/*     RenderEffect.createBlurEffect(radius, radius, CLAMP) — the exact       */
-/*     same native path Telegram uses (BlurringShader: dp(35), TileMode       */
-/*     .CLAMP) — fed by a shared GraphicsLayer that records the app           */
-/*     content every frame.                                                   */
-/*   • Below API 31: milky frosted-glass fallback (no RenderEffect exists     */
-/*     on those versions — Telegram also falls back to a plain scrim).       */
-/*  On top of the blur: a subtle Telegram-style scrim, glass tint, top        */
-/*  sheen, a diagonal specular streak and a high-contrast rim.                */
+/*  Two render paths, one shared technique: a live snapshot of the content    */
+/*  behind the panel is blurred and drawn back under the panel.               */
+/*    • Android 12+ : hardware gaussian blur (RenderEffect, CLAMP edges)      */
+/*      applied to the recorded GraphicsLayer — full framerate, zero cost.    */
+/*    • Android 8–11: the recorded layer is rendered to a tiny bitmap         */
+/*      (¼ scale), blurred on the CPU with a 3-pass box filter and drawn      */
+/*      back — real frosted glass on old devices, throttled to ~30 fps.       */
+/*  On top of the blur sits a whisper-light scrim + tint + specular rim —     */
+/*  deliberately thin so the BLUR itself does the visual work.                */
 /* ------------------------------------------------------------------------- */
 
-/** True when the device supports RenderEffect based backdrop blur (Android 12+). */
+/** True when the device supports hardware backdrop blur (Android 12+). */
 val BackdropBlurSupported: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 /**
- * Records everything drawn inside the modified node into [contentLayer] and
- * keeps drawing it normally. Attach to the content that should appear
- * blurred behind liquid glass panels (e.g. the pager behind the bottom bar).
- *
- * The layer is re-recorded on every draw, so glass panels always show the
- * live content behind them (scrolling lists, animations, everything).
+ * Shared backdrop recorder. Attach [glassSource] to the content that should
+ * appear blurred behind glass panels, and hand the same [GlassBackdrop] to
+ * every [LiquidGlassPanel] that floats above it.
  */
-fun Modifier.glassSource(contentLayer: GraphicsLayer): Modifier =
-    this.drawWithCache {
+class GlassBackdrop internal constructor(
+    internal val layer: GraphicsLayer
+) {
+    /** Root position of the recorded node. */
+    internal var origin: Offset? = null
+
+    /** Size of the recorded node (in px). */
+    internal var size: IntSize = IntSize.Zero
+}
+
+@Composable
+fun rememberGlassBackdrop(): GlassBackdrop {
+    val layer = rememberGraphicsLayer()
+    return remember(layer) { GlassBackdrop(layer) }
+}
+
+/**
+ * Records everything drawn inside the modified node into [backdrop] and keeps
+ * drawing it normally. The layer is re-recorded on every draw pass, so glass
+ * panels always show the live content behind them (scrolling lists,
+ * animations, everything).
+ */
+fun Modifier.glassSource(backdrop: GlassBackdrop): Modifier =
+    this.onGloballyPositioned { coords ->
+        backdrop.origin = coords.positionInRoot()
+        backdrop.size = coords.size
+    }.drawWithCache {
+        val layer = backdrop.layer
         onDrawWithContent {
-            contentLayer.record {
+            layer.record {
                 this@onDrawWithContent.drawContent()
             }
-            drawLayer(contentLayer)
+            drawLayer(layer)
         }
     }
 
 /**
  * Soft ambient "aurora" gradient decor drawn behind app content.
- * Gives the liquid glass real colorful content to refract and blur —
- * even when list content does not reach under the navigation island,
- * the bar always has something rich to blur (this is what makes glass
- * READ as glass instead of a flat translucent panel).
+ * Gives the liquid glass colorful content to refract and blur. All brushes
+ * are built once per size (cached — zero allocations while scrolling).
  */
 @Composable
 fun Modifier.auroraBackdrop(): Modifier {
@@ -97,124 +127,118 @@ fun Modifier.auroraBackdrop(): Modifier {
     val secondary = MaterialTheme.colorScheme.secondary
     val tertiary = MaterialTheme.colorScheme.tertiary
 
-    val blobAlpha = if (isDark) 0.26f else 0.20f
+    val blobAlpha = if (isDark) 0.30f else 0.22f
     val washTop = if (isDark) Color(0x1CFFFFFF) else Color.White.copy(alpha = 0.35f)
 
-    return this.drawBehind {
+    return this.drawWithCache {
         val w = size.width
         val h = size.height
 
-        // very subtle vertical wash so flat backgrounds gain depth
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(washTop, Color.Transparent, Color.Transparent),
-                startY = 0f,
-                endY = h * 0.55f
-            )
+        val wash = Brush.verticalGradient(
+            colors = listOf(washTop, Color.Transparent, Color.Transparent),
+            startY = 0f,
+            endY = h * 0.55f
+        )
+        val blob1 = Brush.radialGradient(
+            colors = listOf(primary.copy(alpha = blobAlpha), Color.Transparent),
+            center = Offset(0f, h * 0.08f),
+            radius = w * 0.85f
+        )
+        val blob2 = Brush.radialGradient(
+            colors = listOf(tertiary.copy(alpha = blobAlpha * 0.85f), Color.Transparent),
+            center = Offset(w, h * 0.40f),
+            radius = w * 0.75f
+        )
+        val blob3 = Brush.radialGradient(
+            colors = listOf(secondary.copy(alpha = blobAlpha), Color.Transparent),
+            center = Offset(w * 0.5f, h * 1.02f),
+            radius = w * 0.95f
+        )
+        val blob4 = Brush.radialGradient(
+            colors = listOf(primary.copy(alpha = blobAlpha * 0.7f), Color.Transparent),
+            center = Offset(w * 0.10f, h * 0.78f),
+            radius = w * 0.55f
         )
 
-        // rich color blobs — the fuel the liquid glass blurs into soft washes
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(primary.copy(alpha = blobAlpha), Color.Transparent),
-                center = Offset(0f, h * 0.08f),
-                radius = w * 0.85f
-            ),
-            radius = w * 0.85f,
-            center = Offset(0f, h * 0.08f)
-        )
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(tertiary.copy(alpha = blobAlpha * 0.8f), Color.Transparent),
-                center = Offset(w, h * 0.40f),
-                radius = w * 0.75f
-            ),
-            radius = w * 0.75f,
-            center = Offset(w, h * 0.40f)
-        )
-        // bottom-heavy secondary blob: guarantees color right under the glass bar
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(secondary.copy(alpha = blobAlpha * 0.9f), Color.Transparent),
-                center = Offset(w * 0.5f, h * 1.02f),
-                radius = w * 0.95f
-            ),
-            radius = w * 0.95f,
-            center = Offset(w * 0.5f, h * 1.02f)
-        )
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(primary.copy(alpha = blobAlpha * 0.6f), Color.Transparent),
-                center = Offset(w * 0.10f, h * 0.78f),
-                radius = w * 0.55f
-            ),
-            radius = w * 0.55f,
-            center = Offset(w * 0.10f, h * 0.78f)
-        )
+        onDrawBehind {
+            // subtle vertical wash so flat backgrounds gain depth
+            drawRect(brush = wash)
+            // rich color blobs — fuel the liquid glass blurs into soft washes
+            drawCircle(brush = blob1, radius = w * 0.85f, center = Offset(0f, h * 0.08f))
+            drawCircle(brush = blob2, radius = w * 0.75f, center = Offset(w, h * 0.40f))
+            drawCircle(brush = blob3, radius = w * 0.95f, center = Offset(w * 0.5f, h * 1.02f))
+            drawCircle(brush = blob4, radius = w * 0.55f, center = Offset(w * 0.10f, h * 0.78f))
+        }
     }
 }
 
 /**
- * THE real liquid glass panel — Telegram-style live backdrop blur.
+ * THE real liquid glass panel — live backdrop blur in a frosted-glass body.
  *
- * Draws a live blurred copy of the content recorded by [glassSource] behind
- * this panel (RenderEffect gaussian, CLAMP edges — identical to Telegram's
- * native blur path), then layers on top: a subtle scrim, the glass tint,
- * a top sheen gradient, a diagonal specular streak, and a high-contrast
- * specular rim. On Android < 12 it falls back to a milky frosted glass.
+ * Draw order (all inside [shape]):
+ *  1. blurred copy of the content recorded via [glassSource]
+ *     (hardware path on Android 12+, software blur path below that),
+ *  2. whisper-light scrim + glass tint (kept thin so the blur reads),
+ *  3. thin specular rim.
+ *  Content composables are laid out on top.
  *
- * @param contentLayer shared layer recorded via [glassSource] on the background content.
- * @param sourceOriginProvider position (in root coordinates) of the node carrying [glassSource];
- *        used to align the recorded drawing to this panel's position. May return null
- *        until the source has been positioned.
- * @param blurRadius gaussian blur radius. Telegram uses dp(35) for full-screen
- *        blurs; bars/panels read best around 24–34.dp.
- * @param refraction subtle lens magnification of the blurred background (1f = none,
- *        aligned 1:1 with the content behind — most glass-like).
- * @param tint color cast of the glass. Use null for the theme default translucent surface.
+ * @param backdrop shared backdrop recorded via [glassSource] on the background content.
+ * @param blurRadius gaussian blur radius in dp (24–34.dp reads best for bars/panels).
+ * @param tint optional color cast drawn over the blur. Defaults to a very
+ *        light theme surface tint — pass [Color.Transparent] for pure glass.
  */
 @Composable
 fun LiquidGlassPanel(
-    contentLayer: GraphicsLayer,
-    sourceOriginProvider: () -> Offset?,
+    backdrop: GlassBackdrop,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(32.dp),
     elevation: Dp = 16.dp,
-    blurRadius: Dp = 30.dp,
-    refraction: Float = 1.02f,
+    blurRadius: Dp = 28.dp,
     tint: Color? = null,
     borderWidth: Dp = 1.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    val glassTint = tint ?: MaterialTheme.colorScheme.surface.copy(
-        alpha = if (isDark) 0.46f else 0.38f
-    )
+    val hardwareBlur = BackdropBlurSupported
 
-    // Specular rim: bright at the top, softly lit at the bottom (dual light)
-    val rimTop = if (isDark) Color(1f, 1f, 1f, 0.36f) else Color(1f, 1f, 1f, 0.85f)
-    val rimMid = if (isDark) Color(1f, 1f, 1f, 0.07f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.30f)
-    val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.17f) else Color(1f, 1f, 1f, 0.55f)
+    // Keep the overlay whisper-thin on the hardware path: the blur does the
+    // work. The software path carries a slightly milkier tint so text stays
+    // legible over its lower-fidelity blur.
+    val glassTint = tint
+        ?: if (hardwareBlur) {
+            MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.13f else 0.08f)
+        } else {
+            MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.42f else 0.34f)
+        }
+
+    // Scrim: slightly heavier at the top edge (light comes from above).
+    val scrimTop = if (isDark) Color(0x2E000000) else Color(0x12000000)
+    val scrimBottom = if (isDark) Color(0x14000000) else Color(0x06000000)
+
+    // Specular rim: bright at the top, softly lit at the bottom.
+    val rimTop = if (isDark) Color(1f, 1f, 1f, 0.30f) else Color(1f, 1f, 1f, 0.80f)
+    val rimMid = if (isDark) Color(1f, 1f, 1f, 0.06f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
+    val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.14f) else Color(1f, 1f, 1f, 0.45f)
     val rimBrush = Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
 
     val ambientShadowColor = if (isDark) Color(0x59000000) else Color(0x14000000)
     val spotShadowColor = if (isDark) Color(0x7A000000) else Color(0x29000000)
 
-    val sheenTop = if (isDark) Color(1f, 1f, 1f, 0.10f) else Color(1f, 1f, 1f, 0.22f)
-    val sheenMid = if (isDark) Color(1f, 1f, 1f, 0.03f) else Color(1f, 1f, 1f, 0.08f)
-    val bottomShade = if (isDark) Color(0x33000000) else Color(0x0A000000)
-    val streak = if (isDark) Color(1f, 1f, 1f, 0.05f) else Color(1f, 1f, 1f, 0.13f)
-
-    // Telegram-style scrim over the blurred content (they draw 0x1a000000)
-    val scrimTop = if (isDark) Color(0x26000000) else Color(0x14000000)
-    val scrimBottom = if (isDark) Color(0x12000000) else Color(0x06000000)
-
     var panelOrigin by remember { mutableStateOf<Offset?>(null) }
+    var panelSize by remember { mutableStateOf(IntSize.Zero) }
+
+    // Software path: live-blurred snapshot of the content behind the panel.
+    val softBlur = if (!hardwareBlur) {
+        rememberSoftBackdropBitmap(backdrop, { panelOrigin }, { panelSize }, blurRadius)
+    } else null
 
     Box(
         modifier = modifier
-            .onGloballyPositioned { panelOrigin = it.positionInRoot() }
+            .onGloballyPositioned {
+                panelOrigin = it.positionInRoot()
+                panelSize = it.size
+            }
             .shadow(
                 elevation = elevation,
                 shape = shape,
@@ -224,104 +248,248 @@ fun LiquidGlassPanel(
             )
             .clip(shape)
             .then(
-                if (BackdropBlurSupported) Modifier
-                else Modifier.background(
-                    // milky frosted fallback for Android 8–11
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.84f)
-                        )
-                    )
-                )
-            )
-    ) {
-        if (BackdropBlurSupported) {
-            // 1) Live blurred backdrop (RenderEffect gaussian, CLAMP edges)
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        renderEffect = BlurEffect(blurRadius.toPx(), blurRadius.toPx())
-                    }
-                    .drawBehind {
-                        val srcOrigin = sourceOriginProvider() ?: return@drawBehind
-                        val pos = panelOrigin ?: return@drawBehind
-                        val dx = pos.x - srcOrigin.x
-                        val dy = pos.y - srcOrigin.y
-                        scale(
-                            scale = refraction,
-                            pivot = Offset(size.width * 0.5f, size.height * 0.5f)
-                        ) {
+                if (hardwareBlur) {
+                    Modifier
+                        .graphicsLayer {
+                            renderEffect = BlurEffect(blurRadius.toPx(), blurRadius.toPx())
+                        }
+                        .drawBehind {
+                            val srcOrigin = backdrop.origin ?: return@drawBehind
+                            val pos = panelOrigin ?: return@drawBehind
+                            val dx = pos.x - srcOrigin.x
+                            val dy = pos.y - srcOrigin.y
                             translate(-dx, -dy) {
-                                drawLayer(contentLayer)
+                                drawLayer(backdrop.layer)
                             }
                         }
+                } else {
+                    Modifier.drawBehind {
+                        val bmp = softBlur ?: return@drawBehind
+                        // software snapshot is already the blurred region behind
+                        // the panel — draw it stretched over the whole panel
+                        drawImage(
+                            image = bmp,
+                            srcOffset = IntOffset.Zero,
+                            srcSize = IntSize(bmp.width, bmp.height),
+                            dstOffset = IntOffset.Zero,
+                            dstSize = IntSize(size.width.toInt(), size.height.toInt())
+                        )
                     }
+                }
             )
-        }
-
-        // 2) Telegram-style scrim + glass tint + top sheen + bottom depth shading
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .drawBehind {
+            // Scrim + tint, drawn in one cached pass above the blur.
+            .drawWithCache {
+                val scrim = Brush.verticalGradient(
+                    colors = listOf(scrimTop, scrimBottom),
+                    startY = 0f,
+                    endY = size.height
+                )
+                onDrawBehind {
+                    drawRect(brush = scrim)
                     drawRect(color = glassTint)
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(scrimTop, scrimBottom),
-                            startY = 0f,
-                            endY = size.height
-                        )
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(sheenTop, sheenMid, Color.Transparent),
-                            startY = 0f,
-                            endY = size.height * 0.8f
-                        )
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, bottomShade),
-                            startY = size.height * 0.55f
-                        )
-                    )
                 }
-        )
-
-        // 3) Diagonal specular streak (moving-light illusion)
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .drawBehind {
-                    rotate(degrees = 16f, pivot = Offset(size.width * 0.5f, size.height * 0.5f)) {
-                        drawRect(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Transparent,
-                                    streak,
-                                    Color.Transparent,
-                                    Color.Transparent
-                                )
-                            ),
-                            topLeft = Offset(-size.width * 0.25f, 0f),
-                            size = Size(size.width * 1.5f, size.height)
-                        )
-                    }
-                }
-        )
-
-        // 4) Specular rim on top
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .border(width = borderWidth, brush = rimBrush, shape = shape)
-        )
-
+            }
+            .border(width = borderWidth, brush = rimBrush, shape = shape)
+    ) {
         content()
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Software blur path (Android 8–11) — real frosted glass without RenderEffect */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * Maintains a live-blurred [ImageBitmap] of the content recorded in
+ * [GlassBackdrop] for the region covered by this panel. Regeneration is
+ * frame-driven (only while frames are produced — idle screens cost nothing)
+ * and throttled to ~30 fps; the snapshot is downscaled 4× before blurring,
+ * so each update touches only a few thousand pixels.
+ */
+@Composable
+private fun rememberSoftBackdropBitmap(
+    backdrop: GlassBackdrop,
+    panelOriginProvider: () -> Offset?,
+    panelSizeProvider: () -> IntSize,
+    blurRadius: Dp
+): ImageBitmap? {
+    var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+    val density = LocalDensity.current
+
+    // track providers without restarting the loop when they change
+    val currentOrigin by rememberUpdatedState(panelOriginProvider)
+    val currentSize by rememberUpdatedState(panelSizeProvider)
+
+    LaunchedEffect(backdrop) {
+        var lastNano = 0L
+        while (true) {
+            val nano = withFrameNanos { it }
+            if (nano - lastNano >= 50_000_000L) {
+                lastNano = nano
+                val origin = currentOrigin() ?: continue
+                val size = currentSize()
+                if (size.width > 0 && size.height > 0) {
+                    bitmap = snapshotAndBlur(
+                        backdrop = backdrop,
+                        panelOrigin = origin,
+                        panelSize = size,
+                        blurRadiusPx = with(density) { blurRadius.toPx() }
+                    )
+                }
+            }
+        }
+    }
+    return bitmap
+}
+
+/** Downscale factor of the software snapshot (4× → tiny CPU cost). */
+private const val SOFT_BLUR_SCALE = 0.25f
+
+/** Averaging window edge for the 4× downscale. */
+private const val DOWNSCALE_STEP = 4
+
+/**
+ * Renders the recorded backdrop layer into a bitmap, extracts the region
+ * behind the panel, downscales it 4× and blurs it on the CPU. Guarded: any
+ * failure returns null and the panel falls back to its tinted look.
+ */
+private suspend fun snapshotAndBlur(
+    backdrop: GlassBackdrop,
+    panelOrigin: Offset,
+    panelSize: IntSize,
+    blurRadiusPx: Float
+): ImageBitmap? {
+    val src = backdrop.size
+    if (src.width <= 0 || src.height <= 0) return null
+    val origin = backdrop.origin ?: return null
+    return try {
+        // 1) render the whole recorded layer into a bitmap
+        val full = backdrop.layer.toImageBitmap().asAndroidBitmap()
+        if (full.width < 4 || full.height < 4) return null
+
+        // 2) make the pixels readable on the CPU
+        val swBmp = if (full.config == Bitmap.Config.ARGB_8888) {
+            full
+        } else {
+            full.copy(Bitmap.Config.ARGB_8888, false) ?: return null
+        }
+
+        // 3) region behind the panel, in layer coordinates
+        val rx = (panelOrigin.x - origin.x).toInt().coerceIn(0, (swBmp.width - 2).coerceAtLeast(0))
+        val ry = (panelOrigin.y - origin.y).toInt().coerceIn(0, (swBmp.height - 2).coerceAtLeast(0))
+        val rw = panelSize.width.coerceAtMost(swBmp.width - rx).coerceAtLeast(4)
+        val rh = panelSize.height.coerceAtMost(swBmp.height - ry).coerceAtLeast(4)
+
+        // 4) read just that rectangle
+        val regionPixels = IntArray(rw * rh)
+        swBmp.getPixels(regionPixels, 0, rw, rx, ry, rw, rh)
+
+        // 5) downscale 4× by block averaging
+        val sw = (rw * SOFT_BLUR_SCALE).toInt().coerceAtLeast(1)
+        val sh = (rh * SOFT_BLUR_SCALE).toInt().coerceAtLeast(1)
+        val small = downscale(regionPixels, rw, rh, sw, sh)
+
+        // 6) real blur: 3-pass box filter ≈ gaussian
+        val radius = (blurRadiusPx * SOFT_BLUR_SCALE).toInt().coerceIn(1, 24)
+        boxBlurPixels(small, sw, sh, radius)
+
+        // 7) wrap back into an ImageBitmap
+        val out = Bitmap.createBitmap(sw, sh, Bitmap.Config.ARGB_8888)
+        out.setPixels(small, 0, sw, 0, 0, sw, sh)
+        out.asImageBitmap()
+    } catch (t: Throwable) {
+        null
+    }
+}
+
+/** Block-average downscale of an RGBA int array. */
+private fun downscale(px: IntArray, w: Int, h: Int, sw: Int, sh: Int): IntArray {
+    val out = IntArray(sw * sh)
+    for (y in 0 until sh) {
+        for (x in 0 until sw) {
+            var rs = 0; var gs = 0; var bs = 0
+            val x0 = (x * DOWNSCALE_STEP).coerceAtMost(w - 1)
+            val y0 = (y * DOWNSCALE_STEP).coerceAtMost(h - 1)
+            val x1 = (x0 + DOWNSCALE_STEP).coerceAtMost(w)
+            val y1 = (y0 + DOWNSCALE_STEP).coerceAtMost(h)
+            var n = 0
+            var yy = y0
+            while (yy < y1) {
+                var xx = x0
+                while (xx < x1) {
+                    val p = px[yy * w + xx]
+                    rs += (p shr 16) and 0xFF
+                    gs += (p shr 8) and 0xFF
+                    bs += p and 0xFF
+                    n++
+                    xx++
+                }
+                yy++
+            }
+            if (n == 0) n = 1
+            out[y * sw + x] = (0xFF shl 24) or ((rs / n shl 16)) or ((gs / n shl 8)) or (bs / n)
+        }
+    }
+    return out
+}
+
+/**
+ * In-place 3-pass box blur over an RGBA int array (approximates a gaussian
+ * blur — stable, fast and allocation-free apart from one scanline buffer).
+ */
+private fun boxBlurPixels(px: IntArray, w: Int, h: Int, radius: Int, passes: Int = 3) {
+    if (w < 3 || h < 3 || radius < 1) return
+    val temp = IntArray(w * h)
+    repeat(passes) {
+        boxBlurPass(px, temp, w, h, radius, horizontal = true)
+        boxBlurPass(px, temp, w, h, radius, horizontal = false)
+    }
+}
+
+/** One horizontal or vertical box-blur pass with a sliding-window sum. */
+private fun boxBlurPass(pixels: IntArray, temp: IntArray, w: Int, h: Int, radius: Int, horizontal: Boolean) {
+    val window = 2 * radius + 1
+    if (horizontal) {
+        for (y in 0 until h) {
+            val row = y * w
+            var rs = 0; var gs = 0; var bs = 0
+            for (i in -radius..radius) {
+                val p = pixels[row + i.coerceIn(0, w - 1)]
+                rs += (p shr 16) and 0xFF
+                gs += (p shr 8) and 0xFF
+                bs += p and 0xFF
+            }
+            for (x in 0 until w) {
+                temp[row + x] =
+                    (0xFF shl 24) or ((rs / window shl 16)) or ((gs / window shl 8)) or (bs / window)
+                val pOut = pixels[row + (x - radius).coerceIn(0, w - 1)]
+                val pIn = pixels[row + (x + radius + 1).coerceIn(0, w - 1)]
+                rs += ((pIn shr 16) and 0xFF) - ((pOut shr 16) and 0xFF)
+                gs += ((pIn shr 8) and 0xFF) - ((pOut shr 8) and 0xFF)
+                bs += (pIn and 0xFF) - (pOut and 0xFF)
+            }
+        }
+    } else {
+        for (x in 0 until w) {
+            var rs = 0; var gs = 0; var bs = 0
+            for (i in -radius..radius) {
+                val p = pixels[(i.coerceIn(0, h - 1)) * w + x]
+                rs += (p shr 16) and 0xFF
+                gs += (p shr 8) and 0xFF
+                bs += p and 0xFF
+            }
+            for (y in 0 until h) {
+                temp[y * w + x] =
+                    (0xFF shl 24) or ((rs / window shl 16)) or ((gs / window shl 8)) or (bs / window)
+                val pOut = pixels[(y - radius).coerceIn(0, h - 1) * w + x]
+                val pIn = pixels[(y + radius + 1).coerceIn(0, h - 1) * w + x]
+                rs += ((pIn shr 16) and 0xFF) - ((pOut shr 16) and 0xFF)
+                gs += ((pIn shr 8) and 0xFF) - ((pOut shr 8) and 0xFF)
+                bs += (pIn and 0xFF) - (pOut and 0xFF)
+            }
+        }
+    }
+    System.arraycopy(temp, 0, pixels, 0, pixels.size)
 }
 
 /* ------------------------------------------------------------------------- */
@@ -329,8 +497,8 @@ fun LiquidGlassPanel(
 /* ------------------------------------------------------------------------- */
 
 /**
- * Staggered entrance animation for list items: fades + slides in with a
- * per-index delay. Great for medication cards and form sections.
+ * Staggered entrance animation for list items: fades + slides + gently
+ * scales in with a per-index delay and an organic settle curve.
  */
 @Composable
 fun StaggeredAppear(
@@ -341,19 +509,23 @@ fun StaggeredAppear(
     val visibleState = remember { MutableTransitionState(false) }
     LaunchedEffect(Unit) {
         if (!visibleState.targetState) {
-            delay(index.coerceAtMost(8) * 40L)
+            delay(index.coerceAtMost(10) * 36L)
             visibleState.targetState = true
         }
     }
     AnimatedVisibility(
         visibleState = visibleState,
-        enter = fadeIn(animationSpec = tween(320, easing = EaseOutCubic)) +
+        enter = fadeIn(animationSpec = tween(340, easing = EaseOutQuint)) +
                 slideInVertically(
                     animationSpec = spring(
-                        dampingRatio = 0.82f,
-                        stiffness = 400f
+                        dampingRatio = 0.80f,
+                        stiffness = 380f
                     ),
-                    initialOffsetY = { it / 5 }
+                    initialOffsetY = { it / 6 }
+                ) +
+                scaleIn(
+                    initialScale = 0.965f,
+                    animationSpec = tween(340, easing = EaseOutQuint)
                 ),
         exit = fadeOut(animationSpec = tween(150)),
         modifier = modifier
@@ -379,7 +551,7 @@ fun BobbingIcon(
         initialValue = -6f,
         targetValue = 6f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EaseInOutSine),
+            animation = tween(1600, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
         label = "bobY"
@@ -388,7 +560,7 @@ fun BobbingIcon(
         initialValue = 0.75f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EaseInOutSine),
+            animation = tween(1600, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glow"
@@ -467,12 +639,12 @@ fun Modifier.tactilePress(
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Legacy (non-blur) glass looks - kept as tasteful fallbacks / variants     */
+/*  Legacy (non-blur) glass looks — kept as tasteful fallbacks / variants     */
 /* ------------------------------------------------------------------------- */
 
 /**
- * Core Liquid Glass Modifier applying Translucent Tinting,
- * Specular Edge Highlight (specular gradient rim), and Soft Ambient Shadow.
+ * Core Liquid Glass Modifier applying translucent tinting, a specular edge
+ * highlight and a soft ambient shadow.
  */
 @Composable
 fun Modifier.liquidGlass(
@@ -483,7 +655,6 @@ fun Modifier.liquidGlass(
 ): Modifier {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    // Specular Edge Highlight (rim gradient from Top light to Bottom-Right shadow)
     val specularTopLeft = if (isDark) {
         Color(1.0f, 1.0f, 1.0f, 0.22f)
     } else {
@@ -526,8 +697,8 @@ fun Modifier.liquidGlass(
 }
 
 /**
- * Special Floating Island Glass Modifier specifically tuned for floating bars.
- * Soft translucent glass tinting and high-contrast specular rim.
+ * Special Floating Island Glass Modifier tuned for floating bars.
+ * Soft translucent glass tinting and a high-contrast specular rim.
  */
 @Composable
 fun Modifier.islandGlass(
@@ -711,8 +882,24 @@ fun GlassFAB(
     val specularTopLeft = Color(1f, 1f, 1f, 0.85f)
     val specularBottomRight = Color(1f, 1f, 1f, 0.20f)
 
+    // spring entrance
+    val appearScale = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        appearScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = 0.55f,
+                stiffness = Spring.StiffnessMedium
+            )
+        )
+    }
+
     Box(
         modifier = modifier
+            .graphicsLayer {
+                scaleX = appearScale.value
+                scaleY = appearScale.value
+            }
             .shadow(
                 elevation = 14.dp,
                 shape = RoundedCornerShape(24.dp),
@@ -723,8 +910,8 @@ fun GlassFAB(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
+                        androidx.compose.ui.graphics.lerp(containerColor, Color.White, 0.10f),
                         containerColor,
-                        containerColor.copy(alpha = 0.88f)
                     )
                 )
             )

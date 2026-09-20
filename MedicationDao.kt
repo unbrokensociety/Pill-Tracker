@@ -1,0 +1,132 @@
+package com.example.data
+
+import androidx.room.*
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface MedicationDao {
+    @Query("SELECT * FROM medications ORDER BY name ASC")
+    fun getAllMedications(): Flow<List<Medication>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMedications(medications: List<Medication>)
+
+    @Query("SELECT * FROM schedules")
+    fun getAllSchedules(): Flow<List<Schedule>>
+
+    @Query("SELECT * FROM intake_logs")
+    fun getAllIntakeLogs(): Flow<List<IntakeLog>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMedication(medication: Medication): Long
+
+    @Delete
+    suspend fun deleteMedication(medication: Medication)
+
+    @Query("SELECT * FROM medications WHERE id = :id")
+    suspend fun getMedicationById(id: Int): Medication?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSchedules(schedules: List<Schedule>)
+
+    @Query("SELECT * FROM schedules WHERE medicationId = :medicationId")
+    suspend fun getSchedulesForMedication(medicationId: Int): List<Schedule>
+
+    @Query("DELETE FROM schedules WHERE medicationId = :medicationId")
+    suspend fun deleteSchedulesForMedication(medicationId: Int)
+
+    // A unified query to get today's schedules with medication info
+    @Query("""
+        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
+        FROM medications m 
+        INNER JOIN schedules s ON m.id = s.medicationId
+        WHERE :date >= m.startDate AND (m.endDate IS NULL OR :date <= m.endDate)
+        ORDER BY s.timeHour, s.timeMinute
+    """)
+    fun getDailySchedules(date: Long): Flow<List<DailyScheduleView>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertIntakeLog(log: IntakeLog)
+
+    @Query("SELECT * FROM intake_logs WHERE scheduledDateEpoch = :dateEpoch")
+    fun getIntakeLogsForDate(dateEpoch: Long): Flow<List<IntakeLog>>
+
+    @Query("DELETE FROM intake_logs WHERE scheduleId = :scheduleId AND scheduledDateEpoch = :dateEpoch")
+    suspend fun deleteIntakeLog(scheduleId: Int, dateEpoch: Long)
+
+    @Query("DELETE FROM intake_logs WHERE medicationId = :medicationId")
+    suspend fun deleteIntakeLogsForMedication(medicationId: Int)
+
+    @Query("DELETE FROM medications")
+    suspend fun deleteAllMedications()
+
+    @Query("DELETE FROM schedules")
+    suspend fun deleteAllSchedules()
+
+    @Query("DELETE FROM intake_logs")
+    suspend fun deleteAllIntakeLogs()
+    
+    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND scheduledDateEpoch = :dateEpoch LIMIT 1")
+    suspend fun getIntakeLog(scheduleId: Int, dateEpoch: Long): IntakeLog?
+
+    @Query("SELECT DISTINCT scheduledDateEpoch FROM intake_logs ORDER BY scheduledDateEpoch DESC")
+    fun getAllIntakeLogDates(): Flow<List<Long>>
+
+    @Query("UPDATE medications SET stockCount = MAX(0, stockCount - 1) WHERE id = :medicationId AND trackStock = 1")
+    suspend fun decrementStock(medicationId: Int)
+
+    @Query("UPDATE medications SET stockCount = stockCount + 1 WHERE id = :medicationId AND trackStock = 1")
+    suspend fun incrementStock(medicationId: Int)
+
+    @Query("UPDATE medications SET stockCount = stockCount + :amount WHERE id = :medicationId")
+    suspend fun refillStock(medicationId: Int, amount: Int)
+
+    @Query("SELECT * FROM medications WHERE trackStock = 1 AND stockCount <= lowStockThreshold")
+    fun getLowStockMedications(): Flow<List<Medication>>
+
+    @Query("""
+        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
+        FROM medications m 
+        INNER JOIN schedules s ON m.id = s.medicationId
+    """)
+    suspend fun getAllActiveScheduleViews(): List<DailyScheduleView>
+
+    @Query("""
+        SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
+        FROM medications m 
+        INNER JOIN schedules s ON m.id = s.medicationId
+        WHERE s.id = :scheduleId LIMIT 1
+    """)
+    suspend fun getActiveScheduleViewByScheduleId(scheduleId: Int): DailyScheduleView?
+
+    /**
+     * Re-attaches intake logs (history & "taken" state) to freshly recreated schedule rows
+     * after a medication edit, matching by medication + intake time. This prevents
+     * orphaned logs, lost "taken" state and duplicated entries.
+     */
+    @Query("""
+        UPDATE intake_logs SET scheduleId = :newScheduleId
+        WHERE medicationId = :medicationId AND timeHour = :timeHour AND timeMinute = :timeMinute
+    """)
+    suspend fun reassignIntakeLogs(medicationId: Int, timeHour: Int, timeMinute: Int, newScheduleId: Int)
+}
+
+data class DailyScheduleView(
+    val scheduleId: Int,
+    val medicationId: Int,
+    val name: String,
+    val dosage: String,
+    val color: Int,
+    val timeHour: Int,
+    val timeMinute: Int,
+    val formType: String = "capsule",
+    val scheduleType: String = "daily",
+    val intervalDays: Int = 1,
+    val stockCount: Int = 30,
+    val lowStockThreshold: Int = 5,
+    val trackStock: Boolean = true,
+    val startDate: Long = 0L
+)

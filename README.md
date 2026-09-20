@@ -20,6 +20,7 @@
   <a href="#english"><b>🇬🇧 English</b></a> &nbsp;|&nbsp;
   <a href="#ukrainian"><b>🇺🇦 Українська</b></a> &nbsp;|&nbsp;
   <a href="#russian"><b>[RU] Русский</b></a> &nbsp;|&nbsp;
+  <a href="#install-updates"><b>📲 Install & Updates</b></a> &nbsp;|&nbsp;
   <a href="#privacy-terms"><b>📜 Privacy & Terms</b></a>
 </p>
 
@@ -107,10 +108,30 @@
 
 ---
 
+<a id="install-updates"></a>
+## 📲 Installation & Updates / Встановлення та оновлення / Установка и обновление
+
+### 🇬🇧 English
+- **One channel**: always install and update from **GitHub Releases → latest release → `pill-tracker.apk`**. Every release is newer than the previous one (versionCode `3000 + build number`), so Android always accepts it as an in-place update.
+- **One permanent signature**: since release `v1.80` every APK is signed with the same certificate (the keystore lives in the repo), and CI verifies the signature before publishing — an APK with a wrong/missing signature is never released.
+- **Very old builds only**: if your installed copy is older than `v1.80`, Android will refuse to update it (those early builds were signed with throw-away keys). Uninstall the old app **once**, install the latest release — after that, every future update installs right on top, no uninstall ever needed.
+
+### 🇺🇦 Українська
+- **Один канал**: встановлюйте та оновлюйте додаток лише з **GitHub Releases → останній реліз → `pill-tracker.apk`**. Кожен новий реліз вищий за попередній (versionCode `3000 + номер збірки`), тож Android завжди приймає його як оновлення поверх встановленого.
+- **Одна постійна підпись**: починаючи з релізу `v1.80`, кожен APK підписаний тим самим сертифікатом (кейстор зберігається в репозиторії), а CI перевіряє підпис перед публікацією — APK з неправильною або відсутньою підписсю ніколи не потрапляє в релізи.
+- **Тільки для дуже старих збірок**: якщо встановлена версія старіша за `v1.80`, Android не дозволить оновити її (ті ранні збірки були підписані разовими ключами). Видаліть старий додаток **один раз** і встановіть останній реліз — після цього всі майбутні оновлення встановлюються поверх без видалення.
+
+### ru Русский
+- **Один канал**: устанавливайте и обновляйте приложение только из **GitHub Releases → последний релиз → `pill-tracker.apk`**. Каждый новый релиз выше предыдущего (versionCode `3000 + номер сборки`), поэтому Android всегда принимает его как обновление поверх установленного.
+- **Одна постоянная подпись**: начиная с релиза `v1.80`, каждый APK подписан одним и тем же сертификатом (кейстор хранится в репозитории), а CI проверяет подпись перед публикацией — APK с неверной или отсутствующей подписью никогда не попадает в релизы.
+- **Только для очень старых сборок**: если установленная версия старше `v1.80`, Android не даст её обновить (те ранние сборки были подписаны одноразовыми ключами). Удалите старое приложение **один раз** и поставьте последний релиз — после этого все будущие обновления ставятся поверх, без удаления.
+
+---
+
 <a id="build-instructions"></a>
 ## ⚙️ Building & CI/CD
 
-This repository includes a full **GitHub Actions CI/CD pipeline** (`.github/workflows/android.yml`) that automatically builds and signs the debug APK on every commit.
+This repository includes a full **GitHub Actions CI/CD pipeline** (`.github/workflows/android.yml`) that automatically builds and signs the APK on every commit. The pipeline pins a monotonically growing `versionCode` (`3000 + run number`), signs every build with the permanent repo keystore, and **verifies the APK signature before publishing** — so releases never break in-place updates.
 
 ### Local Build
 ```bash

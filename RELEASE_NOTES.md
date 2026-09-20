@@ -1,4 +1,26 @@
+# 🚀 PillTracker v2.1.2 — Release Notes
+
+### 🤚 Swiping — now strictly horizontal
+* **The #1 gesture complaint is fixed**: pages used to slide sideways whenever a slightly diagonal downward scroll of the list won the touch-slop race against the pager. Paging is now **axis-locked** — the pager only reacts to *confidently* horizontal drags (horizontal movement must outweigh the vertical by 40%+); vertical and diagonal scrolls always belong to the list underneath.
+* **Fling-aware page snapping**: on release the page settles by your finger's velocity first (a quick short swipe still flips the page), then by how far the drag carried it — with the same soft spring as before.
+* **A gentle haptic tick** when a swipe settles on a new page, so the pager feels physical instead of slippery.
+
+### 🕛 Midnight rollover fixes
+* The greeting ("Good morning") and the date subtitle on the Home screen were computed once and went **stale after midnight**; both are now keyed to a live "today" state that refreshes every minute, together with the date strip.
+
+### 📝 Notes field — natural wrapping
+* The Notes field on the Add/Edit medication screen is multi-line now: food-preset phrases (e.g. "After meals, Before bed") wrap by words instead of scrolling off sideways in a single line.
+
+---
+
 # 🚀 PillTracker v2.1.1 — Release Notes
+
+### 🔁 Update system — update conflicts eliminated for good
+* **One APK channel**: install and update only from **GitHub Releases** (latest release → `pill-tracker.apk`). The delivery site's download button points to the same latest release, so there is exactly one newest APK at any moment.
+* **versionCode is now pinned by CI** (`3000 + build number`) instead of being derived from uploaded files. It only ever grows, so Android can never hit a version-code downgrade when updating.
+* **Signature quality gate**: every build is verified against the repository keystore before publishing — an unsigned or wrongly-signed APK fails the pipeline instead of reaching users.
+* **Why it conflicted before**: releases up to `v1.79` were signed with throw-away keys (impossible to update in place), and the APK hosted on the delivery site carried a *lower* versionCode than the GitHub builds (a downgrade install). Both traps are now gone.
+* **If your installed copy is older than v1.80**: uninstall it once and install the latest release — from then on, every update installs right on top, no uninstall ever needed.
 
 ### 🧪 Liquid Glass — the missing piece
 * **The blur finally blurs only what it should.** In 2.1.0 the blur render pass was attached to the navigation bar itself, so the bar's own icons, labels and the active pill were blurred away together with the backdrop. The frosted copy of the content now lives in its **own isolated drawing layer**: the blur is applied there and only there, while the bar UI above stays pixel-crisp. This is the classic frosted-glass composition: blurred content → whisper scrim → specular rim → crisp controls.
@@ -17,7 +39,7 @@
 
 ### 📦 Build Information
 - **Package Name**: `com.aistudio.meditracker.zqxpr`
-- **Version**: 2.1.1 (versionCode 2110 — installs over any earlier build, no uninstall needed)
+- **Version**: 2.1.1 · GitHub CI releases use versionCode = 3000 + build number (always above every previously shipped build — in-place updates are always accepted)
 - **Target SDK**: Android 16 (API 36), min SDK 26
 - **Database**: Local Room Persistence (SQLite)
 

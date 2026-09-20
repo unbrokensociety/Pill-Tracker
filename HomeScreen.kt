@@ -63,6 +63,16 @@ fun HomeScreen(
     val alarmScheduler = remember { com.example.alarms.AlarmScheduler(context.applicationContext) }
     var snoozeScheduleToPrompt by remember { mutableStateOf<DailyScheduleView?>(null) }
 
+    // "today" is a live state (refreshed every minute) so every derived value —
+    // greeting, date line, date strip — rolls over correctly past midnight.
+    var today by remember { mutableStateOf(LocalDate.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000L)
+            today = LocalDate.now()
+        }
+    }
+
     if (snoozeScheduleToPrompt != null) {
         val sched = snoozeScheduleToPrompt!!
         AlertDialog(
@@ -135,8 +145,9 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // Time-of-day greeting + fully localized date subtitle
-                    val greetingRes = remember {
+                    // Time-of-day greeting + fully localized date subtitle.
+                    // Keyed on [today] so both recompute after midnight.
+                    val greetingRes = remember(today) {
                         val hour = java.time.LocalTime.now().hour
                         when {
                             hour < 12 -> R.string.home_greeting_morning
@@ -144,8 +155,7 @@ fun HomeScreen(
                             else -> R.string.home_greeting_evening
                         }
                     }
-                    val dateLine = remember {
-                        val today = java.time.LocalDate.now()
+                    val dateLine = remember(today) {
                         today.format(
                             java.time.format.DateTimeFormatter
                                 .ofPattern("EEEE, d MMMM")
@@ -195,16 +205,8 @@ fun HomeScreen(
                 )
             }
 
-            // Horizontal Date strip (recomputed live so it stays correct past midnight)
-            // BUG FIX: "today" is now a state that refreshes every minute — the old
-            // version captured LocalDate.now() once and went stale after midnight.
-            var today by remember { mutableStateOf(LocalDate.now()) }
-            LaunchedEffect(Unit) {
-                while (true) {
-                    delay(60_000L)
-                    today = LocalDate.now()
-                }
-            }
+            // Horizontal Date strip — "today" is the live state declared above,
+            // so the strip shifts automatically right after midnight.
             val dateStrip = (-2..2).map { today.plusDays(it.toLong()) }
             Row(
                 modifier = Modifier

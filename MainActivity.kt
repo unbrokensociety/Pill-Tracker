@@ -26,11 +26,16 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,9 +63,14 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.data.ThemeMode
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
+import kotlinx.coroutines.flow.drop
+import androidx.compose.runtime.snapshotFlow
 
 @Composable
 fun MyAppThemeWrapper(viewModel: MainViewModel, content: @Composable () -> Unit) {
@@ -240,6 +250,17 @@ fun MainPagerScreen(
     // --- REAL LIQUID GLASS: shared backdrop recording the app content ---
     val backdrop = rememberGlassBackdrop()
 
+    // Gentle tick when a swipe settles on a new page — makes the axis-locked
+    // pager feel physical instead of slippery.
+    val hapticView = LocalView.current
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }
+            .drop(1) // skip the initial page
+            .collect {
+                hapticView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Content that gets blurred behind the liquid glass navigation island
         Box(
@@ -268,18 +289,25 @@ fun MainPagerScreen(
                     }
                 }
             ) { innerPadding ->
+                // AXIS-LOCKED PAGING:
+                // the stock HorizontalPager wins the touch-slop race as soon as
+                // |dx| barely exceeds |dy| — so a slightly diagonal downward
+                // scroll of the list ripped the page sideways. Gestures are now
+                // filtered by detectAxisLockedPagerGestures: the pager only
+                // reacts to CONFIDENTLY horizontal drags (|dx| > 1.4 · |dy|);
+                // vertical movement is left to the LazyColumn underneath.
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectAxisLockedPagerGestures(
+                                pagerState = pagerState,
+                                scope = coroutineScope
+                            )
+                        },
                     beyondViewportPageCount = 1,
-                    userScrollEnabled = true,
-                    flingBehavior = PagerDefaults.flingBehavior(
-                        state = pagerState,
-                        snapAnimationSpec = spring(
-                            dampingRatio = 0.86f,
-                            stiffness = 320f
-                        )
-                    )
+                    userScrollEnabled = false
                 ) { page ->
                     val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                     val pageAlpha = 1f - (abs(pageOffset) * 0.12f).coerceIn(0f, 0.25f)
@@ -536,6 +564,90 @@ fun MainPagerScreen(
                             }
                         }
                     )
+                }
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Strict axis-locked pager gestures                                         */
+/*                                                                           */
+/*  The stock HorizontalPager grabs the gesture as soon as |dx| barely       */
+/*  exceeds |dy| at the touch-slop — so a slightly diagonal DOWNWARD scroll  */
+/*  of the list also dragged the page sideways. This replacement only        */
+/*  steals the pointer when the drag is CONFIDENTLY horizontal               */
+/*  (|dx| > 1.4 · |dy|); anything vertical is naturally consumed by the      */
+/*  LazyColumns underneath, and consumption cancels the detector.            */
+/*  Fling-aware snapping: on release the page settles by velocity first,     */
+/*  then by how far the drag already carried it.                             */
+/* ------------------------------------------------------------------------- */
+
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
+        .detectAxisLockedPagerGestures(
+            pagerState: PagerState,
+            scope: kotlinx.coroutines.CoroutineScope
+        ) {
+    val pageCount = pagerState.pageCount
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        val tracker = VelocityTracker()
+        var tracking = false
+        var dxTotal = 0f
+        var dyTotal = 0f
+        val slop = viewConfiguration.touchSlop
+
+        while (true) {
+            val event = awaitPointerEvent()
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+
+            if (!change.pressed) {
+                // Finger lifted — snap the pager with fling awareness.
+                if (tracking) {
+                    val velocity = tracker.calculateVelocity()
+                    val current =
+                        pagerState.currentPage + pagerState.currentPageOffsetFraction
+                    val vThresh = 620.dp.toPx() // ≈ 620 dp/s — a real fling
+                    val target = when {
+                        velocity.x < -vThresh -> ceil(current).toInt()
+                        velocity.x > vThresh -> floor(current).toInt()
+                        else -> current.roundToInt()
+                    }.coerceIn(0, pageCount - 1)
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            target,
+                            animationSpec = spring(
+                                dampingRatio = 0.86f,
+                                stiffness = 320f
+                            )
+                        )
+                    }
+                }
+                break
+            }
+
+            // A child (vertical list) consumed the gesture — it owns the finger.
+            if (change.isConsumed && !tracking) break
+
+            tracker.addPosition(change.uptimeMillis, change.position)
+            val delta = change.positionChange()
+
+            if (tracking) {
+                change.consume()
+                scope.launch { pagerState.scrollBy(-delta.x) }
+            } else {
+                dxTotal += delta.x
+                dyTotal += delta.y
+                if (abs(dxTotal) > slop) {
+                    if (abs(dxTotal) > abs(dyTotal) * 1.4f) {
+                        // Confidently horizontal → take the gesture.
+                        tracking = true
+                        change.consume()
+                        scope.launch { pagerState.scrollBy(-dxTotal) }
+                    } else if (abs(dyTotal) > slop) {
+                        // Vertical-dominant → hand the finger to the list.
+                        break
+                    }
                 }
             }
         }

@@ -15,15 +15,14 @@ android {
     applicationId = "com.aistudio.meditracker.zqxpr"
     minSdk = 26
     targetSdk = 36
-    // Monotonic versioning, never conflicts:
-    //   • every GitHub CI build:   versionCode = 2110 + run_number (2111, 2112, …)
-    //   • the ready-made APK from the delivery site: versionCode = 2110
-    //   • all older CI builds:     1000/2000/2100 + run_number (< 2110)
-    // So the site APK installs over any previous build, and every future CI
-    // release installs over the site APK — no uninstall ever needed.
-    val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
-    versionCode = 2110 + runNumber
-    versionName = "2.1.1"
+    // Versioning (update-safe by design):
+    //   • GitHub CI pins the REAL versionCode itself in the workflow
+    //     (.github/workflows/android.yml): versionCode = 3000 + run_number.
+    //     It only grows and never depends on which file version was
+    //     uploaded, so in-place updates never hit a versionCode downgrade.
+    //   • This file's value is only a fallback for local builds.
+    versionCode = 2110
+    versionName = "2.1.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

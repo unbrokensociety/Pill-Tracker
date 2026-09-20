@@ -1,0 +1,198 @@
+name: Android CI/CD
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  build:
+    name: Build & Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          validate-wrappers: false
+
+      - name: Accept Android SDK Licenses
+        run: |
+          mkdir -p "$ANDROID_HOME/licenses"
+          echo -e "\n8933902d075f4b3826b566165d513be473804393\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+
+      - name: Ensure Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 9.3.1 || true
+          chmod +x gradlew || true
+
+      # ------------------------------------------------------------------
+      # SIGNING — one permanent key for every build.
+      # debug.keystore lives in the repo, so every release is signed with
+      # the SAME certificate and Android always accepts it as an update
+      # (no INSTALL_FAILED_UPDATE_INCOMPATIBLE / "app not installed").
+      # If the file ever goes missing (repo recreated, file lost), we
+      # generate a new key and COMMIT it back, so all FUTURE builds stay
+      # consistent instead of silently re-signing with a random key.
+      # ------------------------------------------------------------------
+      - name: Prepare Signing Keystore
+        run: |
+          if [ ! -f "debug.keystore" ] || [ ! -s "debug.keystore" ]; then
+            if [ -f "debug.keystore.base64" ]; then
+              echo "Decoding debug.keystore from base64..."
+              python3 -c "import base64, re; text=open('debug.keystore.base64').read(); open('debug.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))" || true
+            fi
+          fi
+          if [ ! -f "debug.keystore" ] || [ ! -s "debug.keystore" ]; then
+            echo "::warning::debug.keystore is missing — generating a NEW permanent key and committing it to the repo."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Pill Tracker,O=Pill Tracker,C=US"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add debug.keystore
+            git commit -m "chore: persist debug signing key so APK updates never conflict [skip ci]" || true
+            git push origin "HEAD:${{ github.ref_name }}" || echo "::warning::Could not commit the keystore — future builds may get a different signature!"
+          fi
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "Decoding release.keystore from secret..."
+            python3 -c "import base64, re; text='''${{ secrets.KEYSTORE_BASE64 }}'''; open('release.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
+            echo "KEYSTORE_PATH=release.keystore" >> $GITHUB_ENV
+          fi
+
+      # ------------------------------------------------------------------
+      # VERSIONING — the versionCode is pinned HERE, not in the uploaded
+      # app_build.gradle.kts, so it can never regress because of a stale
+      # file upload: versionCode = 3000 + run_number, it only grows.
+      # (3000 safely clears every previously shipped build — the highest
+      # was 2193 in release v1.83.)
+      # ------------------------------------------------------------------
+      - name: Pin Monotonic Version Code
+        run: |
+          CI_CODE=$((3000 + ${{ github.run_number }}))
+          CI_NAME="2.1.2 (#${{ github.run_number }})"
+          echo "Pinned versionCode=$CI_CODE, versionName=$CI_NAME"
+          for f in app_build.gradle.kts app/build.gradle.kts; do
+            if [ -f "$f" ]; then
+              sed -i -E "s/versionCode *=.*/versionCode = $CI_CODE/" "$f"
+              sed -i -E "s/versionName *=.*/versionName = \"$CI_NAME\"/" "$f"
+            fi
+          done
+          if ! grep -Eq "^[[:space:]]*versionCode = $CI_CODE[[:space:]]*$" app/build.gradle.kts; then
+            echo "::error::Failed to pin versionCode in app/build.gradle.kts — aborting to protect update compatibility."
+            exit 1
+          fi
+          echo "CI_VERSION_CODE=$CI_CODE" >> $GITHUB_ENV
+
+      - name: Build Release APK
+        run: gradle assembleRelease --no-daemon --stacktrace
+        env:
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      # ------------------------------------------------------------------
+      # QUALITY GATE — the APK must be signed with the certificate from
+      # the keystore. A wrong or missing signature is the #1 cause of
+      # update conflicts, so a bad APK never reaches the releases.
+      # ------------------------------------------------------------------
+      - name: Locate APK & Verify Signature
+        run: |
+          set -e
+          APK=""
+          for cand in \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk; do
+            if [ -f "$cand" ] && [ -s "$cand" ]; then APK="$cand"; break; fi
+          done
+          if [ -z "$APK" ]; then
+            APK=$(find app/build/outputs/apk -name "*.apk" -size +1k 2>/dev/null | head -n 1 || true)
+          fi
+          if [ -z "$APK" ] || [ ! -s "$APK" ]; then
+            echo "::error::No APK was produced by the build."
+            exit 1
+          fi
+          echo "APK found: $APK"
+
+          KS="debug.keystore"
+          KS_PASS="android"
+          KS_ALIAS="androiddebugkey"
+          if [ -n "$KEYSTORE_PATH" ] && [ -f "$KEYSTORE_PATH" ]; then
+            KS="$KEYSTORE_PATH"
+            KS_PASS="${STORE_PASSWORD:-android}"
+            KS_ALIAS="${KEY_ALIAS:-androiddebugkey}"
+          fi
+
+          EXPECTED=$(keytool -exportcert -keystore "$KS" -storepass "$KS_PASS" -alias "$KS_ALIAS" 2>/dev/null | sha256sum | awk '{print toupper($1)}')
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1 || true)
+          if [ -z "$APKSIGNER" ]; then
+            echo "::error::apksigner not found in the runner SDK — cannot verify the APK signature."
+            exit 1
+          fi
+          ACTUAL=$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null | grep -m1 'SHA-256' | sed 's/.*digest: *//' | tr -d ' \r' | tr '[:lower:]' '[:upper:]')
+          echo "Expected cert SHA-256: $EXPECTED"
+          echo "Actual   cert SHA-256: $ACTUAL"
+          if [ -z "$ACTUAL" ] || [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "::error::APK signature does not match the keystore — refusing to publish (a mismatched signature would break in-place updates)."
+            exit 1
+          fi
+          echo "CERT_FP=$ACTUAL" >> $GITHUB_ENV
+          cp "$APK" pill-tracker.apk
+          ls -la pill-tracker.apk
+        env:
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pill-tracker-v1.${{ github.run_number }}
+          path: pill-tracker.apk
+
+      - name: Ensure Release Notes
+        run: |
+          if [ ! -s "RELEASE_NOTES.md" ]; then
+            echo "### 🚀 What's New in Version 1.${{ github.run_number }}:" > RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            echo "- 💊 **Smoother Visuals & Animations**: High-performance tactile springs and liquid glass aesthetics." >> RELEASE_NOTES.md
+            echo "- ⏱️ **Instant Day Transitions**: Seamless fluid medication schedule & calendar navigation." >> RELEASE_NOTES.md
+            echo "- 🔒 **Rock-Solid Build System**: Continuous automated releases & artifact packaging." >> RELEASE_NOTES.md
+          fi
+          cat >> RELEASE_NOTES.md <<EOF
+
+          ---
+          🔧 **Build info:** versionCode ${{ env.CI_VERSION_CODE }} · cert \`${{ env.CERT_FP }}\`
+          ☑️ Signature verified against the repo keystore — in-place updates are safe.
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v1.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: "Pill Tracker v1.${{ github.run_number }}"
+          body_path: RELEASE_NOTES.md
+          files: pill-tracker.apk
+          overwrite: true
+          fail_on_unmatched_files: false

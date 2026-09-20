@@ -32,7 +32,7 @@ import com.example.ui.components.GlassCard
 import com.example.ui.components.BobbingIcon
 import com.example.ui.components.StaggeredAppear
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun MedicationsListScreen(
     viewModel: MainViewModel,
@@ -171,6 +171,7 @@ fun MedicationsListScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MedicationInfoCard(
     medication: Medication,
@@ -225,9 +226,11 @@ fun MedicationInfoCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Row(
+                // Tag chips: FlowRow so the schedule + stock badges wrap as
+                // whole chips on narrow screens instead of letter-breaking.
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     val schedLabel = when (medication.scheduleType) {
                         "interval" -> stringResource(R.string.sched_interval, medication.intervalDays)
@@ -245,7 +248,9 @@ fun MedicationInfoCard(
                             text = schedLabel,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
 
@@ -261,7 +266,9 @@ fun MedicationInfoCard(
                                 text = if (isLow) stringResource(R.string.stock_low_tag, medication.stockCount) else stringResource(R.string.stock_pcs, medication.stockCount),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }

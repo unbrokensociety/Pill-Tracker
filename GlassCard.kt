@@ -49,6 +49,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -87,6 +88,14 @@ class GlassBackdrop internal constructor(
 
     /** Size of the recorded node (in px). */
     internal var size: IntSize = IntSize.Zero
+
+    /**
+     * Bumped after every re-record of [layer]. Panels read it inside their
+     * draw scope, so a redraw of the source content invalidates every glass
+     * panel watching this backdrop — the blur stays live while scrolling
+     * or animating, without any per-frame polling.
+     */
+    internal val version = mutableStateOf(0L)
 }
 
 @Composable
@@ -112,6 +121,8 @@ fun Modifier.glassSource(backdrop: GlassBackdrop): Modifier =
                 this@onDrawWithContent.drawContent()
             }
             drawLayer(layer)
+            // signal live refresh to every panel drawing this backdrop
+            backdrop.version.value += 1L
         }
     }
 
@@ -207,14 +218,14 @@ fun LiquidGlassPanel(
     // legible over its lower-fidelity blur.
     val glassTint = tint
         ?: if (hardwareBlur) {
-            MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.13f else 0.08f)
+            MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.16f else 0.11f)
         } else {
             MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.42f else 0.34f)
         }
 
     // Scrim: slightly heavier at the top edge (light comes from above).
-    val scrimTop = if (isDark) Color(0x2E000000) else Color(0x12000000)
-    val scrimBottom = if (isDark) Color(0x14000000) else Color(0x06000000)
+    val scrimTop = if (isDark) Color(0x38000000) else Color(0x18000000)
+    val scrimBottom = if (isDark) Color(0x16000000) else Color(0x08000000)
 
     // Specular rim: bright at the top, softly lit at the bottom.
     val rimTop = if (isDark) Color(1f, 1f, 1f, 0.30f) else Color(1f, 1f, 1f, 0.80f)
@@ -247,23 +258,37 @@ fun LiquidGlassPanel(
                 spotColor = spotShadowColor
             )
             .clip(shape)
-            .then(
-                if (hardwareBlur) {
-                    Modifier
-                        .graphicsLayer {
-                            renderEffect = BlurEffect(blurRadius.toPx(), blurRadius.toPx())
+    ) {
+        // ---- Layer 1: the blurred backdrop copy ----
+        // CRITICAL: this lives in its own child node whose graphicsLayer
+        // carries the BlurEffect. A graphicsLayer renders EVERYTHING drawn
+        // after it in the same node — so the blur must never be attached to
+        // the panel itself, otherwise the icons, labels and pill above it
+        // would be blurred away too. Here only the backdrop copy is blurred.
+        if (hardwareBlur) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        renderEffect = BlurEffect(blurRadius.toPx(), blurRadius.toPx())
+                    }
+                    .drawBehind {
+                        // observe live re-records of the backdrop
+                        backdrop.version.value
+                        val srcOrigin = backdrop.origin ?: return@drawBehind
+                        val pos = panelOrigin ?: return@drawBehind
+                        val dx = pos.x - srcOrigin.x
+                        val dy = pos.y - srcOrigin.y
+                        translate(-dx, -dy) {
+                            drawLayer(backdrop.layer)
                         }
-                        .drawBehind {
-                            val srcOrigin = backdrop.origin ?: return@drawBehind
-                            val pos = panelOrigin ?: return@drawBehind
-                            val dx = pos.x - srcOrigin.x
-                            val dy = pos.y - srcOrigin.y
-                            translate(-dx, -dy) {
-                                drawLayer(backdrop.layer)
-                            }
-                        }
-                } else {
-                    Modifier.drawBehind {
+                    }
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .drawBehind {
                         val bmp = softBlur ?: return@drawBehind
                         // software snapshot is already the blurred region behind
                         // the panel — draw it stretched over the whole panel
@@ -275,22 +300,34 @@ fun LiquidGlassPanel(
                             dstSize = IntSize(size.width.toInt(), size.height.toInt())
                         )
                     }
-                }
             )
-            // Scrim + tint, drawn in one cached pass above the blur.
-            .drawWithCache {
-                val scrim = Brush.verticalGradient(
-                    colors = listOf(scrimTop, scrimBottom),
-                    startY = 0f,
-                    endY = size.height
-                )
-                onDrawBehind {
-                    drawRect(brush = scrim)
-                    drawRect(color = glassTint)
+        }
+
+        // ---- Layer 2: scrim + tint, drawn in one cached pass above the blur ----
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .drawWithCache {
+                    val scrim = Brush.verticalGradient(
+                        colors = listOf(scrimTop, scrimBottom),
+                        startY = 0f,
+                        endY = size.height
+                    )
+                    onDrawBehind {
+                        drawRect(brush = scrim)
+                        drawRect(color = glassTint)
+                    }
                 }
-            }
-            .border(width = borderWidth, brush = rimBrush, shape = shape)
-    ) {
+        )
+
+        // ---- Layer 3: thin specular rim ----
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .border(width = borderWidth, brush = rimBrush, shape = shape)
+        )
+
+        // ---- Layer 4: crisp glass UI on top ----
         content()
     }
 }
@@ -861,7 +898,10 @@ fun GlassChip(
                 text = text,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = contentColor
+                color = contentColor,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

@@ -53,7 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.example.ui.components.FormType
 import com.example.ui.components.FormTypeIcon
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddMedicationScreen(
     editingMedicationId: Int? = null,
@@ -129,7 +129,7 @@ fun AddMedicationScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -279,7 +279,10 @@ fun AddMedicationScreen(
                             singleLine = true
                         )
 
-                        // Quick Food Presets
+                        // Quick Food Presets — FlowRow: chips keep their natural
+                        // width and wrap to a new line as a whole, so long
+                        // translations (e.g. "After meals") never get squeezed
+                        // into per-character line breaks.
                         val foodPresets = listOf(
                             stringResource(R.string.food_before_meal),
                             stringResource(R.string.food_with_meal),
@@ -287,9 +290,10 @@ fun AddMedicationScreen(
                             stringResource(R.string.food_before_bed)
                         )
 
-                        Row(
+                        FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             foodPresets.forEach { preset ->
                                 val isSelected = notes.contains(preset)
@@ -307,7 +311,9 @@ fun AddMedicationScreen(
                                     label = {
                                         Text(
                                             text = preset,
-                                            style = MaterialTheme.typography.labelSmall
+                                            style = MaterialTheme.typography.labelSmall,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
                                     },
                                     colors = FilterChipDefaults.filterChipColors(
@@ -404,9 +410,13 @@ fun AddMedicationScreen(
                             fontWeight = FontWeight.Bold
                         )
 
-                        Row(
+                        // Schedule frequency: FlowRow with natural-width chips —
+                        // long translations wrap as whole chips instead of
+                        // crushing the text inside a fixed-width slot.
+                        FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             val chipColors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -440,10 +450,10 @@ fun AddMedicationScreen(
                                     Text(
                                         text = stringResource(R.string.sched_daily),
                                         style = MaterialTheme.typography.labelSmall,
-                                        maxLines = 1
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 },
-                                modifier = Modifier.weight(1f),
                                 colors = chipColors,
                                 border = chipBorderDaily,
                                 shape = RoundedCornerShape(12.dp)
@@ -455,10 +465,10 @@ fun AddMedicationScreen(
                                     Text(
                                         text = stringResource(R.string.sched_interval, intervalDaysVal),
                                         style = MaterialTheme.typography.labelSmall,
-                                        maxLines = 1
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 },
-                                modifier = Modifier.weight(1f),
                                 colors = chipColors,
                                 border = chipBorderInterval,
                                 shape = RoundedCornerShape(12.dp)
@@ -470,10 +480,10 @@ fun AddMedicationScreen(
                                     Text(
                                         text = stringResource(R.string.sched_as_needed),
                                         style = MaterialTheme.typography.labelSmall,
-                                        maxLines = 1
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 },
-                                modifier = Modifier.weight(1f),
                                 colors = chipColors,
                                 border = chipBorderAsNeeded,
                                 shape = RoundedCornerShape(12.dp)
@@ -501,7 +511,7 @@ fun AddMedicationScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Filled.Remove,
-                                            contentDescription = "Decrease interval",
+                                            contentDescription = stringResource(R.string.cd_decrease_interval),
                                             tint = if (intervalDaysVal > 2) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                         )
                                     }
@@ -517,7 +527,7 @@ fun AddMedicationScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Filled.Add,
-                                            contentDescription = "Increase interval",
+                                            contentDescription = stringResource(R.string.cd_increase_interval),
                                             tint = if (intervalDaysVal < 30) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                         )
                                     }
@@ -707,7 +717,7 @@ fun AddMedicationScreen(
                                     if (isSelected) {
                                         Icon(
                                             imageVector = Icons.Filled.Check,
-                                            contentDescription = "Selected",
+                                            contentDescription = stringResource(R.string.cd_selected),
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -882,7 +892,7 @@ fun AddMedicationScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Close,
-                                        contentDescription = "Delete time slot",
+                                        contentDescription = stringResource(R.string.add_med_delete_time),
                                         tint = MaterialTheme.colorScheme.error
                                     )
                                 }

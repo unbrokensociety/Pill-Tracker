@@ -48,7 +48,7 @@ import com.example.ui.components.StaggeredAppear
 import com.example.ui.components.tactilePress
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel,
@@ -424,6 +424,7 @@ fun DateItem(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MedicationCard(
     schedule: DailyScheduleView,
@@ -501,9 +502,12 @@ fun MedicationCard(
             )
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Status chips flow: wrap whole chips to a second line instead of
+                // crushing them into per-character line breaks on narrow screens.
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     // Glass Time Pill
                     if (formattedTime != null) {
@@ -764,8 +768,13 @@ fun LowStockBanner(
                         text = "${med.name}: ${stringResource(R.string.stock_remaining, med.stockCount)}",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Button(
                         onClick = { onRefill(med.id) },

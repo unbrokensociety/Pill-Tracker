@@ -1,3 +1,28 @@
+# 🚀 PillTracker v2.1.1 — Release Notes
+
+### 🧪 Liquid Glass — the missing piece
+* **The blur finally blurs only what it should.** In 2.1.0 the blur render pass was attached to the navigation bar itself, so the bar's own icons, labels and the active pill were blurred away together with the backdrop. The frosted copy of the content now lives in its **own isolated drawing layer**: the blur is applied there and only there, while the bar UI above stays pixel-crisp. This is the classic frosted-glass composition: blurred content → whisper scrim → specular rim → crisp controls.
+* **Truly live frost.** Glass panels now observe every re-record of the backdrop — when the list scrolls or content animates behind the bar, the blur refreshes in the same rhythm. No frozen snapshots, no stale glass.
+* Slightly deepened scrim/tint so white text and icons keep comfortable contrast over busy colorful content.
+
+### 📐 Text layout — no more ugly line breaks
+* All preset chips ("Before meals / With food / After meals / Before bed" and their translations) now flow — long labels wrap to the next line **as whole chips** instead of being crushed into a per-character ladder.
+* Schedule chips (Daily / Every N days / As needed) get natural width and flow, so no translation can ever letter-wrap inside a fixed slot.
+* Home-screen cards, medication list badges and the low-stock banner use the same flow layout; every chip is single-line with graceful ellipsis.
+* Compact schedule badge ("3 × daily / 3 × в день / 3 × на день") reads cleaner and fits any card.
+
+### 🌍 Localization — deeper polish
+* 6 new accessibility strings in all three languages: screen-reader descriptions for the Back, Selected, interval +/- and calendar month buttons (previously hardcoded English).
+* Intake badge, stock tags and food presets re-checked for natural phrasing and safe lengths in EN / RU / UK.
+
+### 📦 Build Information
+- **Package Name**: `com.aistudio.meditracker.zqxpr`
+- **Version**: 2.1.1 (versionCode 2110 — installs over any earlier build, no uninstall needed)
+- **Target SDK**: Android 16 (API 36), min SDK 26
+- **Database**: Local Room Persistence (SQLite)
+
+---
+
 # 🚀 PillTracker v2.1.0 — Release Notes
 
 ### 🧪 Liquid Glass — now REAL glass
@@ -34,6 +59,6 @@
 
 ### 📦 Build Information
 - **Package Name**: `com.aistudio.meditracker.zqxpr`
-- **Version**: 2.1.0 (versionCode 2000+ — installs over any earlier build, no uninstall needed)
+- **Version**: 2.1.0 (versionCode 2100 — installs over any earlier build, no uninstall needed)
 - **Target SDK**: Android 16 (API 36), min SDK 26
 - **Database**: Local Room Persistence (SQLite)

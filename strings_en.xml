@@ -30,7 +30,7 @@
     
     <string name="meds_my_meds">My Medications</string>
     <string name="meds_no_meds">You haven\'t added any medications yet</string>
-    <string name="meds_intakes_per_day">Intakes per day: %1$d</string>
+    <string name="meds_intakes_per_day">%1$d × daily</string>
     
     <string name="alarm_default_med">Medication</string>
     <string name="alarm_title">Time to take %1$s</string>
@@ -57,7 +57,7 @@
     <string name="settings_stats_active_meds">Registered medications: %1$d</string>
     <string name="settings_about">About app</string>
     <string name="settings_about_desc">Pill Tracker is your personal healthcare assistant. Take your medications on time and stay healthy!</string>
-    <string name="settings_version">Version 2.1.0</string>
+    <string name="settings_version">Version 2.1.1</string>
     
     <string name="status_taken">Taken</string>
     
@@ -68,6 +68,12 @@
     <string name="add_med_empty_time_warning">Please add at least one intake time</string>
     <string name="add_med_intake_number">Intake №%1$d</string>
     <string name="add_med_delete_time">Delete time slot</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_selected">Selected</string>
+    <string name="cd_decrease_interval">Decrease interval</string>
+    <string name="cd_increase_interval">Increase interval</string>
+    <string name="cd_prev_month">Previous month</string>
+    <string name="cd_next_month">Next month</string>
     <string name="add_med_color_label">Color Label</string>
     <string name="add_med_start_date_label">Start Date</string>
     <string name="edit_med_title">Edit Medication</string>

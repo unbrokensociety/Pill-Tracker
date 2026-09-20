@@ -30,7 +30,7 @@
     
     <string name="meds_my_meds">Мои лекарства</string>
     <string name="meds_no_meds">Вы ещё не добавили ни одного лекарства</string>
-    <string name="meds_intakes_per_day">Приемов в день: %1$d</string>
+    <string name="meds_intakes_per_day">%1$d × в день</string>
 
     <string name="alarm_default_med">Лекарство</string>
     <string name="alarm_title">Время принять %1$s</string>
@@ -57,7 +57,7 @@
     <string name="settings_stats_active_meds">Зарегистрировано лекарств: %1$d</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональный медицинский помощник. Принимайте лекарства вовремя и будьте здоровы!</string>
-    <string name="settings_version">Версия 2.1.0</string>
+    <string name="settings_version">Версия 2.1.1</string>
     
     <string name="status_taken">Принято</string>
     
@@ -68,6 +68,12 @@
     <string name="add_med_empty_time_warning">Пожалуйста, добавьте хотя бы одно время приема</string>
     <string name="add_med_intake_number">Прием №%1$d</string>
     <string name="add_med_delete_time">Удалить время приема</string>
+    <string name="cd_back">Назад</string>
+    <string name="cd_selected">Выбрано</string>
+    <string name="cd_decrease_interval">Уменьшить интервал</string>
+    <string name="cd_increase_interval">Увеличить интервал</string>
+    <string name="cd_prev_month">Предыдущий месяц</string>
+    <string name="cd_next_month">Следующий месяц</string>
     <string name="add_med_color_label">Цветовая метка</string>
     <string name="add_med_start_date_label">Дата начала приёма</string>
     <string name="edit_med_title">Редактировать лекарство</string>

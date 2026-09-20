@@ -101,7 +101,7 @@ fun CalendarScreen(
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                    contentDescription = "Previous Month",
+                                    contentDescription = stringResource(R.string.cd_prev_month),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -126,7 +126,7 @@ fun CalendarScreen(
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = "Next Month",
+                                    contentDescription = stringResource(R.string.cd_next_month),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }

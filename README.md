@@ -30,13 +30,13 @@
 
 ### 🌟 Key Highlights
 * ⏰ **Exact Alarm Engine (`AlarmManager.setAlarmClock`)**: Guarantees alarm notifications trigger precisely on time without OS battery-saver or Doze mode delays.
-* 🧪 **True Liquid Glass Design**: The floating navigation island blurs the live content behind it — hardware gaussian blur (`RenderEffect`) on Android 12+, and a CPU-rendered frosted snapshot on Android 8–11, so real glass works on every device.
+* 🧪 **True Liquid Glass Design**: The floating navigation island blurs the live content behind it — hardware gaussian blur (`RenderEffect`) on Android 12+, and a CPU-rendered frosted snapshot on Android 8–11, so real glass works on every device. The blur lives in its own isolated layer, so the icons and labels in the bar always stay pixel-crisp above the frost.
 * 🎯 **Fluid Tab Navigation**: A soft tinted pill glides across the bottom bar with jelly stretch physics, drag-scrubbing and edge resistance.
 * 📅 **Interactive Calendar & Tracker**: Track daily doses, mark intakes as taken/skipped, and review historical compliance.
 * 💊 **Comprehensive Medication Management**: Customize dose amounts, medication form (capsule, tablet, syrup, drops, injection, spray, patch), color coding, start dates, and multiple daily reminders.
 * 🪄 **Redrawn Medication Icons**: All seven form icons are vector-painted with volumetric gradients and glossy highlights — crisp at any size.
 * 📊 **Adherence Analytics**: Animated compliance ring, completion percentages, and streak tracking.
-* 🌍 **Full Localization**: Polished English, Ukrainian, and Russian translations with dynamic in-app language switching.
+* 🌍 **Full Localization**: Polished English, Ukrainian, and Russian translations with dynamic in-app language switching. Text layout is translation-safe: chips flow to new lines as whole pieces, so long labels never break mid-word.
 * ⚡ **Performance-First Rendering**: Cached gradients, consolidated draw passes, staggered entrance animations and spring physics everywhere — smooth at 120 Hz.
 
 ### 🛠 Tech Stack & Architecture
@@ -56,13 +56,13 @@
 
 ### 🌟 Основні можливості
 * ⏰ **Точні нагадування (`setAlarmClock`)**: Апаратний системний будильник спрацьовує хвилина в хвилину навіть у режимі глибокого сну пристрою (Doze mode).
-* 🧪 **Справжнє «Рідке Скло»**: Плаваюча навігаційна панель розмиває контент під собою в реальному часі — апаратне гаусове розмиття на Android 12+ і програмний морозний ефект на Android 8–11. Стекло працює на будь-якому пристрої.
+* 🧪 **Справжнє «Рідке Скло»**: Плаваюча навігаційна панель розмиває контент під собою в реальному часі — апаратне гаусове розмиття на Android 12+ і програмний морозний ефект на Android 8–11. Скло працює на будь-якому пристрої, а іконки та підписи панелі залишаються ідеально чіткими над морозом.
 * 🎯 **Плавна анімована навігація**: М'який індикатор-пігулка ковзає між вкладками з фізикою пружини, підтримкою перетягування пальцем та опором на краях.
 * 📅 **Інтерактивний Календар**: Зручний перегляд розкладу на будь-який день із можливістю відмітити прийом ліків в один дотик.
 * 💊 **Гнучкий каталог ліків**: Налаштування дозування, форми випуску (капсула, таблетка, сироп, краплі, ін'єкція, спрей, пластир), дати початку курсів та індивідуального колірного оформлення.
 * 🪄 **Перемальовані іконки ліків**: Усі сім форм намальовані векторно з об'ємними градієнтами та відблисками — чіткі на будь-якому розмірі.
 * 📊 **Аналітика та Статистика**: Анімоване кільце дотримання розкладу, відсотки виконання та серії регулярності.
-* 🌍 **Багатомовний інтерфейс**: Вдосконалені переклади (Українська, Англійська, Російська) з миттєвим переключенням мови.
+* 🌍 **Багатомовний інтерфейс**: Вдосконалені переклади (Українська, Англійська, Російська) з миттєвим переключенням мови. Верстка безпечна для перекладів: чіпси переносяться на новий рядок цілими, без розривів по буквах.
 * ⚡ **Продуктивність**: Кешовані градієнти, об'єднані проходи малювання та пружинна фізика анімацій — плавно навіть на 120 Гц.
 
 ---
@@ -72,13 +72,13 @@
 
 ### 🌟 Основные возможности
 * ⏰ **Точные напоминания (`setAlarmClock`)**: Системный будильник срабатывает точно в указанную минуту без задержек режима энергосбережения.
-* 🧪 **Настоящее «Жидкое Стекло»**: Плавающая навигационная панель размывает контент под собой в реальном времени — аппаратное гауссово размытие на Android 12+ и программный морозный эффект на Android 8–11. Стекло работает на любом устройстве.
+* 🧪 **Настоящее «Жидкое Стекло»**: Плавающая навигационная панель размывает контент под собой в реальном времени — аппаратное гауссово размытие на Android 12+ и программный морозный эффект на Android 8–11. Стекло работает на любом устройстве, а иконки и подписи панели остаются идеально чёткими поверх мороза.
 * 🎯 **Плавная скользящая навигация**: Мягкий индикатор-пилюля скользит между вкладками с физикой пружины, перетаскиванием пальцем и сопротивлением на краях.
 * 📅 **Интерактивный Календарь**: Удобный график приема на выбранный день с подтверждением в один клик.
 * 💊 **Персональный каталог**: Настройка дозировки, формы выпуска (капсула, таблетка, сироп, капли, инъекция, спрей, пластырь), нескольких времён приёма и цветовых меток.
 * 🪄 **Перерисованные иконки лекарств**: Все семь форм нарисованы векторно с объёмными градиентами и бликами — чёткие на любом размере.
 * 📊 **Аналитика приёмов**: Анимированное кольцо дисциплины, проценты выполнения дневного плана и серии регулярности.
-* 🌍 **Мультиязычность**: Улучшенные переводы (Русский, Английский, Украинский) с динамическим переключением языка без перезапуска.
+* 🌍 **Мультиязычность**: Улучшенные переводы (Русский, Английский, Украинский) с динамическим переключением языка без перезапуска. Вёрстка безопасна для переводов: чипсы переносятся на новую строку целиком, без разрывов по буквам.
 * ⚡ **Производительность**: Кешированные градиенты, объединённые проходы отрисовки и пружинная физика анимаций — плавно даже на 120 Гц.
 
 ---

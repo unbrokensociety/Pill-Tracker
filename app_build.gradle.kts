@@ -24,7 +24,7 @@ android {
     //   in-app updater compares those to detect real updates.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
     versionCode = 2311 + runNumber
-    versionName = "2.4.4"
+    versionName = "2.4.5"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

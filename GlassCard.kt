@@ -78,10 +78,11 @@ import kotlinx.coroutines.delay
 /*    REDUCED → lighter blur, no bleed — for mid-range hardware,              */
 /*    FROST   → recording & blur off — solid OPAQUE matte panel (zero       */
 /*              see-through — the look never changes, ever).                  */
-/*  The tier is measured from real device power (CPU cores, RAM, low-RAM      */
+/*  The tier is picked automatically at start (CPU cores, RAM, low-RAM      */
 /*  flag, Android version), then guarded live: a frame-time monitor steps     */
 /*  down on sustained jank, and battery saver gates to FROST instantly.       */
-/*  Weak phones never lag, strong ones shine — and Settings shows the mode.   */
+/*  Weak phones never lag, strong ones shine — and the user can re-pick the   */
+/*  mode in Settings at any time; a manual pick overrides everything.        */
 /* ------------------------------------------------------------------------- */
 
 /** True when the device supports hardware backdrop blur (Android 12+). */
@@ -107,19 +108,48 @@ val BackdropBlurSupported: Boolean
 enum class LiquidGlassQuality { FULL, REDUCED, FROST }
 
 /**
- * Why the current tier was chosen. Surfaced in Settings so the adaptive
- * behaviour is transparent — and trustworthy — to the user.
- */
-enum class GlassQualityReason { DEVICE, JANK, SAVER }
-
-/**
- * Global live state of the glass engine: written by [GlassPerformanceGovernor],
- * read by [glassSource] (recording gate), [LiquidGlassPanel] (render path)
- * and the Settings readout.
+ * Global live state of the glass engine: written by [GlassPerformanceGovernor]
+ * (automatic mode) or by the Settings picker (manual mode), read by
+ * [glassSource] (recording gate), [LiquidGlassPanel] (render path) and the
+ * Settings row.
  */
 object LiquidGlassState {
     val quality = mutableStateOf(LiquidGlassQuality.FULL)
-    val reason = mutableStateOf(GlassQualityReason.DEVICE)
+
+    /**
+     * Mode the user picked manually in Settings (null = automatic — the
+     * app picks by itself at start and keeps guarding it live). A manual
+     * pick wins over EVERYTHING: the frame monitor and battery saver stop
+     * managing the tier, what the user chose is what renders.
+     */
+    val userMode = mutableStateOf<LiquidGlassQuality?>(null)
+}
+
+/**
+ * Persists the user's manual liquid-glass mode pick so it survives restarts.
+ * Kept in plain SharedPreferences on purpose: it lives inside the glass
+ * engine module, so the whole feature ships as one flat file.
+ */
+object GlassModeStore {
+    private const val PREFS = "liquid_glass"
+    private const val KEY = "mode"
+
+    fun load(context: Context): LiquidGlassQuality? = try {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString(KEY, null)
+            ?.let { value -> runCatching { LiquidGlassQuality.valueOf(value) }.getOrNull() }
+    } catch (t: Throwable) {
+        null
+    }
+
+    fun save(context: Context, mode: LiquidGlassQuality?) = try {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY, mode?.name)
+            .apply()
+    } catch (t: Throwable) {
+        // persisting a visual preference must never crash the app
+    }
 }
 
 /**
@@ -165,7 +195,10 @@ object DeviceGlassPolicy {
  * Runtime governor for the liquid-glass engine. Runs an invisible,
  * allocation-free frame monitor alongside the app:
  *
- *  1. starts from [DeviceGlassPolicy] (measured device power);
+ *  0. the user is the boss: a mode picked manually in Settings (persisted
+ *     via [GlassModeStore]) wins over everything — the governor bows out
+ *     entirely and never touches the tier again;
+ *  1. otherwise it starts from [DeviceGlassPolicy] (measured at start);
  *  2. watches real frame timestamps — when frames keep being missed
  *     (sustained: two full windows in a row, so one-off bursts like confetti
  *     or dialogs never trigger it), the tier steps down
@@ -182,6 +215,14 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
     val policyLevel = remember { DeviceGlassPolicy.assess(context) }
 
     LaunchedEffect(backdrop) {
+        // ---- 0. manual pick from Settings: the user's word is final ----
+        val savedMode = GlassModeStore.load(context)
+        if (savedMode != null) {
+            LiquidGlassState.userMode.value = savedMode
+            LiquidGlassState.quality.value = savedMode
+            return@LaunchedEffect
+        }
+
         // ---- 1. static assessment first ----
         var level = policyLevel
         var saverOn = false
@@ -195,15 +236,9 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
         fun applyQuality() {
             LiquidGlassState.quality.value =
                 if (saverOn) LiquidGlassQuality.FROST else level
-            LiquidGlassState.reason.value = when {
-                saverOn -> GlassQualityReason.SAVER
-                level.ordinal > policyLevel.ordinal -> GlassQualityReason.JANK
-                else -> GlassQualityReason.DEVICE
-            }
         }
 
         LiquidGlassState.quality.value = level
-        LiquidGlassState.reason.value = GlassQualityReason.DEVICE
 
         // ---- 2. live frame-time monitor ----
         val windowSize = 120                 // ~2 s of frames at 60 Hz
@@ -218,6 +253,11 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
 
         while (true) {
             val nanos = withFrameNanos { it }
+
+            // the user just picked a mode in Settings — their word is final,
+            // the automatic management stops right here and now
+            if (LiquidGlassState.userMode.value != null) return@LaunchedEffect
+
             val delta = if (prevNanos == 0L) 0L else nanos - prevNanos
             prevNanos = nanos
 

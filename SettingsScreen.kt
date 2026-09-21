@@ -19,7 +19,10 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Texture
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
@@ -45,9 +48,11 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.ThemeMode
 import com.example.ui.components.GlassCard
-import com.example.ui.components.GlassQualityReason
+import com.example.ui.components.GlassModeStore
 import com.example.ui.components.LiquidGlassQuality
 import com.example.ui.components.LiquidGlassState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.example.ui.components.OnboardingBus
 import com.example.ui.components.OnboardingPrefs
 import com.example.ui.components.PrivacyPolicyDialog
@@ -766,12 +771,15 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        // Adaptive Liquid Glass readout: shows which tier the
-                        // governor picked for THIS phone right now (live — it
-                        // reacts to battery saver and runtime jank), so the
-                        // adaptive behaviour is visible and honest.
+                        // Liquid Glass effect — picked by itself at start,
+                        // and re-pickable whenever the user wants: tap
+                        // «Обрати» and the three modes bloom out right here
+                        // (staggered spring slide-in), tap one to lock it in —
+                        // the picker folds back the exact same way.
                         val glassQuality by LiquidGlassState.quality
-                        val glassReason by LiquidGlassState.reason
+                        val glassUserMode by LiquidGlassState.userMode
+                        var glassPickerOpen by remember { mutableStateOf(false) }
+                        val glassScope = rememberCoroutineScope()
                         val glassLabel = stringResource(
                             when (glassQuality) {
                                 LiquidGlassQuality.FULL -> R.string.settings_glass_full
@@ -779,13 +787,108 @@ fun SettingsScreen(
                                 LiquidGlassQuality.FROST -> R.string.settings_glass_frost
                             }
                         )
-                        val glassReasonLabel = stringResource(
-                            when (glassReason) {
-                                GlassQualityReason.DEVICE -> R.string.settings_glass_reason_device
-                                GlassQualityReason.JANK -> R.string.settings_glass_reason_jank
-                                GlassQualityReason.SAVER -> R.string.settings_glass_reason_saver
+                        val pickGlassMode: (LiquidGlassQuality) -> Unit = { mode ->
+                            LiquidGlassState.userMode.value = mode
+                            LiquidGlassState.quality.value = mode
+                            GlassModeStore.save(context, mode)
+                            glassScope.launch {
+                                // let the picked style flash for a beat…
+                                delay(240)
+                                // …then fold the picker back the same way
+                                glassPickerOpen = false
                             }
-                        )
+                        }
+
+                        // One mode row: slides in with a staggered spring
+                        // when the picker blooms out; the picked mode gets
+                        // the check mark and the primary container.
+                        @Composable
+                        fun GlassModeOption(
+                            index: Int,
+                            mode: LiquidGlassQuality,
+                            label: String,
+                            icon: ImageVector,
+                            selected: Boolean,
+                            onClick: () -> Unit
+                        ) {
+                            val appear = remember { Animatable(0f) }
+                            LaunchedEffect(glassPickerOpen) {
+                                if (glassPickerOpen) {
+                                    delay(index * 70L)
+                                    appear.animateTo(
+                                        1f,
+                                        animationSpec = spring(
+                                            dampingRatio = 0.80f,
+                                            stiffness = 420f
+                                        )
+                                    )
+                                } else {
+                                    appear.animateTo(0f, tween(140))
+                                }
+                            }
+                            val selectScale by animateFloatAsState(
+                                targetValue = if (selected) 1.02f else 1f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessMedium
+                                ),
+                                label = "glassOptionScale"
+                            )
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .graphicsLayer {
+                                        alpha = appear.value
+                                        translationY = (1f - appear.value) * 14.dp.toPx()
+                                        scaleX = selectScale
+                                        scaleY = selectScale
+                                    }
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable(onClick = onClick),
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                },
+                                border = if (selected) {
+                                    androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                                } else {
+                                    androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    if (selected) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 2.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -800,18 +903,100 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(
-                                text = glassLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = glassLabel,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                // «Обрати» pill — tap it and the three modes
+                                // bloom out from right here
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(50))
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                                        .clickable { glassPickerOpen = !glassPickerOpen }
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.settings_glass_choose),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        val chevronRotation by animateFloatAsState(
+                                            targetValue = if (glassPickerOpen) 180f else 0f,
+                                            animationSpec = spring(
+                                                dampingRatio = 0.8f,
+                                                stiffness = Spring.StiffnessMedium
+                                            ),
+                                            label = "glassChevron"
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Filled.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .graphicsLayer { rotationZ = chevronRotation }
+                                        )
+                                    }
+                                }
+                            }
                         }
-                        Text(
-                            text = glassReasonLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        AnimatedVisibility(
+                            visible = glassPickerOpen,
+                            enter = expandVertically(
+                                animationSpec = spring(
+                                    dampingRatio = 0.85f,
+                                    stiffness = 380f
+                                )
+                            ) + fadeIn(animationSpec = tween(220, easing = EaseOutCubic)),
+                            exit = shrinkVertically(
+                                animationSpec = spring(
+                                    dampingRatio = 0.85f,
+                                    stiffness = 380f
+                                )
+                            ) + fadeOut(animationSpec = tween(150))
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(top = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                GlassModeOption(
+                                    index = 0,
+                                    mode = LiquidGlassQuality.FULL,
+                                    label = stringResource(R.string.settings_glass_full),
+                                    icon = Icons.Filled.BlurOn,
+                                    selected = glassUserMode == LiquidGlassQuality.FULL,
+                                    onClick = { pickGlassMode(LiquidGlassQuality.FULL) }
+                                )
+                                GlassModeOption(
+                                    index = 1,
+                                    mode = LiquidGlassQuality.REDUCED,
+                                    label = stringResource(R.string.settings_glass_reduced),
+                                    icon = Icons.Filled.Tune,
+                                    selected = glassUserMode == LiquidGlassQuality.REDUCED,
+                                    onClick = { pickGlassMode(LiquidGlassQuality.REDUCED) }
+                                )
+                                GlassModeOption(
+                                    index = 2,
+                                    mode = LiquidGlassQuality.FROST,
+                                    label = stringResource(R.string.settings_glass_frost),
+                                    icon = Icons.Filled.Texture,
+                                    selected = glassUserMode == LiquidGlassQuality.FROST,
+                                    onClick = { pickGlassMode(LiquidGlassQuality.FROST) }
+                                )
+                            }
+                        }
                     }
                 }
             }

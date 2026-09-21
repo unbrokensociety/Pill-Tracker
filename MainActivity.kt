@@ -380,11 +380,13 @@ fun MainPagerScreen(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
                     beyondViewportPageCount = 1,
-                    // Жесты обрабатывает ось-замок выше: свайп должен быть
-                    // уверенно горизонтальным (|dx| > 1.6·|dy|), иначе жест
-                    // уходит вертикальному списку. Поэтому встроенный скролл
-                    // выключен — так конфликта «листать вниз или перевернуть
-                    // страницу» не существует.
+                    // Жесты обрабатывает ось-замок выше: страницу переворачивает
+                    // только уверенно горизонтальный свайп (|dx| > 2.2·|dy|),
+                    // да ещё и только туда, где есть следующая страница. Любой
+                    // другой жест уходит вертикальным спискам — вверх-вниз
+                    // листается чисто даже на крайних страницах. Поэтому
+                    // встроенный скролл выключен — так конфликта «листать вниз
+                    // или перевернуть страницу» не существует.
                     userScrollEnabled = false
                 ) { page ->
                     val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
@@ -706,14 +708,25 @@ fun RowScope.FloatingNavItem(
 
         Spacer(modifier = Modifier.height(2.dp))
 
+        // Подпись вкладки не всегда влезает в её ширину («Налаштування»
+        // по-украински, системный масштаб шрифта и т.п.). Вместо
+        // уродливого «Налаштува…» текст плавно УЖИМАЕТСЯ, пока не
+        // встанет в ширину вкладки — и никогда не вылезает за пилюлю.
+        var labelScale by remember(label) { mutableFloatStateOf(1f) }
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 10.sp * labelScale,
             fontWeight = if (proximity > 0.5f) FontWeight.ExtraBold else FontWeight.Medium,
             color = contentColor,
             maxLines = 1,
             softWrap = false,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
+            onTextLayout = { layout ->
+                if (layout.hasVisualOverflow && labelScale > 0.72f) {
+                    labelScale *= 0.92f
+                }
+            },
             modifier = Modifier
                 .graphicsLayer {
                     translationY = (yOffset / 2.5f).toPx()
@@ -724,26 +737,33 @@ fun RowScope.FloatingNavItem(
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Осевой замок жестов пейджера.
+ * Осевой замок жестов пейджера — v3 (починка вертикального скролла).
  *
- * Проблема «пагинация мешает скроллу»: стандартный HorizontalPager
- * перехватывает ANY почти-горизонтальный свайп, из-за этого при
- * листании списков вниз-вверх иногда «переворачивается» страница.
+ * Проблемы версий ≤ 2.4.0:
+ *   1) «Мёртвый жест» на крайних страницах. Замок отбирал ЛЮБОЙ
+ *      уверенно-горизонтальный жест, даже когда переворачивать
+ *      страницу НЕКУДА (последняя страница, свайп «дальше»). События
+ *      при этом всё равно поглощались (change.consume()), а дочерний
+ *      LazyColumn, увидев consumed-событие, бросал свой touch-slop —
+ *      итог: страница не двигается И список не листается. На
+ *      «Налаштуваннях» (последняя страница) вертикальный скролл с
+ *      лёгким левым дрейфом пальца умирал на полпути — та самая
+ *      «перестало нормально листаться».
+ *   2) Слишком щедрый порог захвата (|dx| > 1.6·|dy|): слегка
+ *      диагональный старт скролла мог «продать» жест пейджеру.
+ *   3) settleJob отменялся на КАЖДОМ касании — вертикальный скролл
+ *      во время доводки страницы мог оставить её между страницами.
  *
- * Решение: встроенный скролл пейджера выключен (userScrollEnabled =
- * false), а этот фильтр решает, чей это жест:
- *   • страница идёт за пальцем, как только свайп УВЕРЕННО
- *     горизонтальный (|dx| > 1.6·|dy| и |dx| > touch-slop) — решение
- *     ПЕРЕСМАТРИВАЕТСЯ на каждом событии: свайп, начавшийся чуть
- *     диагонально, всё равно перевернёт страницу, как только станет
- *     горизонтальным (в v2.3.1 решение принималось один раз и
- *     «кривой» старт навсегда замораживал пейджер — вот та «фигня»
- *     при свайпе);
- *   • если жест забрал дочерний скролл (позиция isConsumed — список
- *     уже листается) — пейджер не вмешивается вовсе: вертикаль
- *     всегда принадлежит спискам;
- *   • флинг < 560dp/s не доверстывает страницу: медленный отпуск
- *     просто snap'ится к ближайшей, «случайных» перелистываний нет.
+ * Решение v3:
+ *   • захват только если страница реально может перевернуться в эту
+ *     сторону (край страницы + направление свайпа);
+ *   • порог строже: |dx| > 2.2·|dy| и |dx| > 1.6·touch-slop — жест
+ *     должен быть не просто «горизонтальнее», а ГОРИЗОНТАЛЬНЫМ;
+ *   • доводка страницы отменяется только в момент реального захвата —
+ *     вертикальные жесты её не трогают;
+ *   • решение по-прежнему пересматривается на каждом событии
+ *     («мёртвый свайп» из v2.3.1 не возвращается), а потреблённый
+ *     дочерним скроллом жест по-прежнему неприкосновенен.
  * ──────────────────────────────────────────────────────────────── */
 
 private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
@@ -753,12 +773,12 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
 ) {
     val slop = viewConfiguration.touchSlop
     val flingPx = 560.dp.toPx()
-    val axisRatio = 1.6f
+    val axisRatio = 2.2f          // строго горизонтально, не «диагонально»
+    val commitPx = slop * 1.6f    // жест должен набрать разгон до захвата
     var settleJob: Job? = null
 
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
-        settleJob?.cancel() // новый жест прерывает дозагон предыдущей страницы
 
         val tracker = VelocityTracker()
         tracker.resetTracking()
@@ -790,8 +810,26 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
             // Решение НЕ одноразовое: жест, начавшийся вертикально или
             // диагонально на не-скроллируемом месте (шапка, карточка),
             // «перехватывается», как только стал уверенно горизонтальным.
-            if (!horizontal && abs(dx) > slop && abs(dx) > axisRatio * abs(dy)) {
-                horizontal = true
+            // НО: сначала проверяем, что страницу ЕСТЬ куда вертеть —
+            // на краях пейджера горизонтальный жест просто не наш, он
+            // остаётся списку (иначе — «мёртвый жест» обеих сторон).
+            if (!horizontal) {
+                val pageWantsNext = dx < 0f // палец влево → следующая страница
+                val pagerCanMove = if (pageWantsNext) {
+                    state.currentPage < state.pageCount - 1
+                } else {
+                    state.currentPage > 0
+                }
+                if (pagerCanMove &&
+                    abs(dx) > commitPx &&
+                    abs(dx) > axisRatio * abs(dy)
+                ) {
+                    // Доводку прошлой страницы прерываем ТОЛЬКО сейчас:
+                    // вертикальные жесты её не трогают (фикс «страница
+                    // застревает между вкладками»).
+                    settleJob?.cancel()
+                    horizontal = true
+                }
             }
 
             if (horizontal) {
@@ -815,6 +853,15 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
             settleJob = scope.launch {
                 state.animateScrollToPage(
                     target,
+                    animationSpec = spring(dampingRatio = 0.84f, stiffness = 320f)
+                )
+            }
+        } else if (state.currentPageOffsetFraction != 0f) {
+            // Страховка: страница каким-то образом осталась между
+            // вкладками (например, жест оборвался) — мягко доводим.
+            settleJob = scope.launch {
+                state.animateScrollToPage(
+                    state.currentPage,
                     animationSpec = spring(dampingRatio = 0.84f, stiffness = 320f)
                 )
             }

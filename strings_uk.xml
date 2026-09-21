@@ -19,6 +19,8 @@
     <string name="name_dialog_clear">Прибрати ім’я</string>
     <string name="name_dialog_cancel">Скасувати</string>
     <string name="cd_edit_name">Змінити ім’я у привітанні</string>
+    <string name="settings_name_title">Персональне привітання</string>
+    <string name="settings_name_empty">Ім’я не задано — додайте, і привітання стане особистим</string>
     
     <string name="add_med_title">Додати ліки</string>
     <string name="add_med_name_label">Назва препарату</string>
@@ -67,7 +69,7 @@
     <string name="settings_stats_active_meds">Зареєстровано ліків: %1$d</string>
     <string name="settings_about">Про застосунок</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональний медичний помічник. Приймайте ліки вчасно та будьте здорові!</string>
-    <string name="settings_version">Версія 2.4.0</string>
+    <string name="settings_version">Версія 2.4.1</string>
     
     <string name="status_taken">Прийнято</string>
     
@@ -325,6 +327,15 @@
     <string name="tour_step_add_desc">Великий плюс — і нові ліки в додатку. Торкніться його, і заповнимо першу картку разом.</string>
     <string name="tour_step_form_title">Заповніть картку</string>
     <string name="tour_step_form_desc">Назва, доза, час — гнучко під будь-яку терапію. Спробуйте самі, це просто!</string>
+
+    <string name="tour_step_dose_title">Прийом — одним дотиком</string>
+    <string name="tour_step_dose_desc">Випили ліки — торкніться кола навпроти прийому. Кільце прогресу заповниться, а серія днів почне рости сама.</string>
+
+    <string name="tour_done_title">Все готово!</string>
+    <string name="tour_done_desc">Ви вже вмієте все головне. Далі — практика, а застосунок підкаже в дорозі.</string>
+    <string name="tour_done_b1">Прийом позначаєте дотиком — статистика й серія рахуються самі</string>
+    <string name="tour_done_b2">Згубите нитку — повторіть цей тур у Налаштуваннях</string>
+    <string name="tour_done_start">Почати користування</string>
 
     <!-- ═══ Оновлення прямо із застосунку (GitHub Releases) ═══ -->
     <string name="upd_title">Доступне оновлення</string>

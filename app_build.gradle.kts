@@ -16,15 +16,15 @@ android {
     minSdk = 26
     targetSdk = 36
     // Versioning — the proven scheme from the old builds:
-    //   versionCode = 2310 + GITHUB_RUN_NUMBER (CI sets the env var),
-    //   so every CI build grows and can NEVER regress. Base 2310 keeps
+    //   versionCode = 2311 + GITHUB_RUN_NUMBER (CI sets the env var),
+    //   so every CI build grows and can NEVER regress. Base 2311 keeps
     //   every build above everything ever shipped (v1.91 = 2401).
     //   versionName is the human version; it MUST match the
     //   «app-version:» marker at the top of RELEASE_NOTES.md — the
     //   in-app updater compares those to detect real updates.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
-    versionCode = 2310 + runNumber
-    versionName = "2.4.0"
+    versionCode = 2311 + runNumber
+    versionName = "2.4.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

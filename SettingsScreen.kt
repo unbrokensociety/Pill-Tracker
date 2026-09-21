@@ -14,12 +14,14 @@ import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,6 +46,7 @@ import com.example.R
 import com.example.data.ThemeMode
 import com.example.ui.components.GlassCard
 import com.example.ui.components.OnboardingBus
+import com.example.ui.components.OnboardingPrefs
 import com.example.ui.components.PrivacyPolicyDialog
 import com.example.ui.components.TermsOfServiceDialog
 import com.example.ui.components.UpdateBus
@@ -65,10 +68,27 @@ fun SettingsScreen(
     val logs by viewModel.todayIntakeLogs.collectAsState()
     val streakDays by viewModel.streakDays.collectAsState()
 
+    val context = LocalContext.current
+
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var showTermsOfService by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
+    // ── Персональное приветствие: имя редактируется ЗДЕСЬ ──
+    // (карандашик с главного экрана убран; карточка в Настройках —
+    // единственное место правки имени)
+    var userName by remember { mutableStateOf(OnboardingPrefs.getUserName(context)) }
+    var showNameDialog by remember { mutableStateOf(false) }
+
+    if (showNameDialog) {
+        NameEditDialog(
+            initial = userName,
+            onSave = { name ->
+                userName = name
+                OnboardingPrefs.setUserName(context, name)
+            },
+            onDismiss = { showNameDialog = false }
+        )
+    }
 
     if (showPrivacyPolicy) {
         PrivacyPolicyDialog(
@@ -230,6 +250,78 @@ fun SettingsScreen(
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+            }
+
+            // Personal Greeting Glass Card — имя (перенесено сюда с
+            // главного экрана: карандашик у приветствия убран, правка
+            // имени живёт только в Настройках)
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { showNameDialog = true }
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.primary,
+                                            MaterialTheme.colorScheme.tertiary
+                                        )
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = stringResource(R.string.cd_edit_name),
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(21.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.settings_name_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = userName
+                                    ?: stringResource(R.string.settings_name_empty),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        // Карандашик: намёк, что имя можно поменять
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = stringResource(R.string.cd_edit_name),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -790,3 +882,87 @@ fun SettingsScreen(
     }
 }
 
+/* ────────────────────────────────────────────────────────────────
+ * Диалог «Как к вам обращаться?»: необязательное имя для
+ * персонального приветствия. Хранится локально (SharedPreferences),
+ * удаляется одной кнопкой. Вызывается карточкой «Персональне
+ * привітання» в Настройках — единственное место правки имени
+ * (карандашик с главного экрана убран).
+ * ──────────────────────────────────────────────────────────────── */
+@Composable
+private fun NameEditDialog(
+    initial: String?,
+    onSave: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var value by remember { mutableStateOf(initial ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        title = {
+            Text(
+                text = stringResource(R.string.name_dialog_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { if (it.length <= 24) value = it },
+                    singleLine = true,
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.name_dialog_hint),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.name_dialog_support),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val trimmed = value.trim()
+                    onSave(trimmed.ifEmpty { null })
+                    onDismiss()
+                }
+            ) {
+                Text(stringResource(R.string.name_dialog_save))
+            }
+        },
+        dismissButton = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!initial.isNullOrEmpty()) {
+                    TextButton(
+                        onClick = {
+                            onSave(null)
+                            onDismiss()
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.name_dialog_clear),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.name_dialog_cancel))
+                }
+            }
+        },
+        shape = RoundedCornerShape(20.dp)
+    )
+}

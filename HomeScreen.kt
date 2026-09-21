@@ -5,7 +5,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -80,20 +78,10 @@ fun HomeScreen(
         }
     }
 
-    // ── Персональное приветствие: имя (необязательное, локально) ──
-    var userName by remember { mutableStateOf(OnboardingPrefs.getUserName(context)) }
-    var showNameDialog by remember { mutableStateOf(false) }
-
-    if (showNameDialog) {
-        NameEditDialog(
-            initial = userName,
-            onSave = { name ->
-                userName = name
-                OnboardingPrefs.setUserName(context, name)
-            },
-            onDismiss = { showNameDialog = false }
-        )
-    }
+    // ── Персональное приветствие: имя читается из настроек ──
+    // (редактируется ТОЛЬКО в Настройках — карточка «Персональне
+    // привітання»; карандашик с главного экрана убран по просьбе)
+    val userName = remember { OnboardingPrefs.getUserName(context) }
 
     if (snoozeScheduleToPrompt != null) {
         val sched = snoozeScheduleToPrompt!!
@@ -189,39 +177,11 @@ fun HomeScreen(
                         if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
                     }
                     Column(modifier = Modifier.coachTag("home_hero")) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = greetingText,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            // Карандашик: добавить/изменить имя в приветствии
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                            alpha = 0.14f
-                                        )
-                                    )
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { showNameDialog = true },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Edit,
-                                    contentDescription = stringResource(
-                                        R.string.cd_edit_name
-                                    ),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(13.dp)
-                                )
-                            }
-                        }
+                        Text(
+                            text = greetingText,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge
+                        )
                         Text(
                             text = dateLine,
                             style = MaterialTheme.typography.bodySmall,
@@ -298,7 +258,11 @@ fun HomeScreen(
                 },
                 contentAlignment = Alignment.TopCenter,
                 label = "dayContentTransition",
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    // Зона для шага тура «позначення прийому»: подсвечивается
+                    // список приёмов (или пустое состояние — тоже честная зона).
+                    .coachTag("home_list")
             ) { currDate ->
                 if (visibleSchedules.isEmpty() && prnSchedules.isEmpty()) {
                     Box(
@@ -852,89 +816,4 @@ fun LowStockBanner(
             }
         }
     }
-}
-
-
-/* ────────────────────────────────────────────────────────────────
- * Диалог «Как к вам обращаться?»: необязательное имя для
- * персонального приветствия. Хранится локально (SharedPreferences),
- * удаляется одной кнопкой. Вызывается карандашиком рядом с
- * приветствием на главном экране.
- * ──────────────────────────────────────────────────────────────── */
-@Composable
-private fun NameEditDialog(
-    initial: String?,
-    onSave: (String?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var value by remember { mutableStateOf(initial ?: "") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        titleContentColor = MaterialTheme.colorScheme.onSurface,
-        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        title = {
-            Text(
-                text = stringResource(R.string.name_dialog_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { if (it.length <= 24) value = it },
-                    singleLine = true,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.name_dialog_hint),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                    },
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.name_dialog_support),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val trimmed = value.trim()
-                    onSave(trimmed.ifEmpty { null })
-                    onDismiss()
-                }
-            ) {
-                Text(stringResource(R.string.name_dialog_save))
-            }
-        },
-        dismissButton = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!initial.isNullOrEmpty()) {
-                    TextButton(
-                        onClick = {
-                            onSave(null)
-                            onDismiss()
-                        }
-                    ) {
-                        Text(
-                            text = stringResource(R.string.name_dialog_clear),
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.name_dialog_cancel))
-                }
-            }
-        },
-        shape = RoundedCornerShape(20.dp)
-    )
 }

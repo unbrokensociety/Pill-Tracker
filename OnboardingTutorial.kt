@@ -24,6 +24,7 @@ import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -39,6 +40,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -65,6 +67,8 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.Settings
@@ -260,6 +264,7 @@ private data class TourStep(
 
 private val TOUR_ICONS = listOf(
     Icons.Filled.Today,
+    Icons.Filled.CheckCircle,
     Icons.Filled.SwipeLeft,
     Icons.Filled.CalendarMonth,
     Icons.AutoMirrored.Filled.List,
@@ -275,6 +280,14 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         icon = Icons.Filled.Today,
         titleRes = R.string.tour_step_today_title,
         descRes = R.string.tour_step_today_desc,
+        tap = TourTap.NEXT
+    ),
+    TourStep(
+        tag = "home_list",
+        wantPage = 0,
+        icon = Icons.Filled.CheckCircle,
+        titleRes = R.string.tour_step_dose_title,
+        descRes = R.string.tour_step_dose_desc,
         tap = TourTap.NEXT
     ),
     TourStep(
@@ -353,12 +366,18 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
             },
             onSkip = onFinished
         )
-    } else {
+    } else if (phase == 1) {
         CoachTour(
             steps = steps,
             stepIndex = stepIndex,
             onStepChange = { stepIndex = it },
-            onFinish = onFinished
+            onFinish = { phase = 2 } // последний шаг → финальная карточка
+        )
+    } else {
+        // Финал: мягкая «победная» карточка вместо резкого обрыва
+        BackHandler { onFinished() }
+        FinishCard(
+            onStart = onFinished
         )
     }
 }
@@ -691,6 +710,169 @@ private fun WelcomeCard(
     }
 }
 
+/* ── Финал: «готово» вместо резкого обрыва ── */
+
+@Composable
+private fun FinishCard(
+    onStart: () -> Unit
+) {
+    val entrance = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        entrance.animateTo(1f, tween(360, easing = EaseOutCubic))
+    }
+
+    // Чек-марка «влетает» пружиной
+    val checkScale = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(160)
+        checkScale.animateTo(
+            1f,
+            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                alpha = entrance.value
+                scaleX = 0.94f + 0.06f * entrance.value
+                scaleY = 0.94f + 0.06f * entrance.value
+            }
+            .background(Color.Black.copy(alpha = 0.92f))
+            // Поглощаем и тапы, и драги: пейджер под оверлеем не
+            // должен «листаться» сквозь финальную карточку.
+            .pointerInput(Unit) {
+                detectDragGestures { change, _ -> change.consume() }
+            }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { /* тап по затемнению — ничего */ },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp)
+                .clip(RoundedCornerShape(30.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF1D242F), Color(0xFF161B24))
+                    )
+                )
+                .padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Большой кружок с галочкой
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .graphicsLayer {
+                        scaleX = checkScale.value
+                        scaleY = checkScale.value
+                    }
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.tertiary
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(42.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = stringResource(R.string.tour_done_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.tour_done_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.82f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+            listOf(
+                R.string.tour_done_b1,
+                R.string.tour_done_b2
+            ).forEach { res ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = stringResource(res),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.78f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.tertiary
+                            )
+                        )
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onStart() },
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.EmojiEvents,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.tour_done_start),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
 /* ── Интерактивный тур ── */
 
 @Composable
@@ -751,8 +933,19 @@ private fun CoachTour(
         label = "tapPhase"
     )
 
-    val holeRect = CoachMarks.rects[step.tag]
+    val rawHole = CoachMarks.rects[step.tag]
     val density = LocalDensity.current
+    // Полноэкранные зоны (список приёмов, настройки) подсвечиваем как
+    // «зону»: высота дырки ограничена, иначе тултип не помещается под
+    // ней, а сама подсветка выглядит как «весь экран» и не читается.
+    val holeRect = rawHole?.let { hole ->
+        val maxHoleH = with(density) { 300.dp.toPx() }
+        if (hole.height > maxHoleH) {
+            Rect(hole.left, hole.top, hole.right, hole.top + maxHoleH)
+        } else {
+            hole
+        }
+    }
     val appear = remember(stepIndex) { Animatable(0f) }
     LaunchedEffect(stepIndex) {
         appear.animateTo(1f, tween(340, easing = EaseOutCubic))

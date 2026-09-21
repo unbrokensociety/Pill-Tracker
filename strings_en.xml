@@ -19,6 +19,8 @@
     <string name="name_dialog_clear">Remove name</string>
     <string name="name_dialog_cancel">Cancel</string>
     <string name="cd_edit_name">Change the name in the greeting</string>
+    <string name="settings_name_title">Personal greeting</string>
+    <string name="settings_name_empty">No name yet — add one and the greeting becomes yours</string>
     
     <string name="add_med_title">Add Medication</string>
     <string name="add_med_name_label">Medication Name</string>
@@ -67,7 +69,7 @@
     <string name="settings_stats_active_meds">Registered medications: %1$d</string>
     <string name="settings_about">About app</string>
     <string name="settings_about_desc">Pill Tracker is your personal healthcare assistant. Take your medications on time and stay healthy!</string>
-    <string name="settings_version">Version 2.1.1</string>
+    <string name="settings_version">Version 2.4.1</string>
     
     <string name="status_taken">Taken</string>
     
@@ -325,6 +327,15 @@
     <string name="tour_step_add_desc">The big + is all you need. Tap it — we\'ll fill in the first one together.</string>
     <string name="tour_step_form_title">Fill in the card</string>
     <string name="tour_step_form_desc">Name, dosage, times — flexible for any therapy. Try it yourself, it\'s simple!</string>
+
+    <string name="tour_step_dose_title">A dose — one tap away</string>
+    <string name="tour_step_dose_desc">Took your meds? Tap the circle next to the dose. The progress ring fills up and your day streak grows on its own.</string>
+
+    <string name="tour_done_title">You\'re all set!</string>
+    <string name="tour_done_desc">You already know the essentials. The rest comes with practice — the app will guide you along the way.</string>
+    <string name="tour_done_b1">Mark doses with a tap — stats and streaks track themselves</string>
+    <string name="tour_done_b2">Feeling lost? Replay this tour from Settings</string>
+    <string name="tour_done_start">Start using the app</string>
 
     <!-- ═══ In-app updater (GitHub Releases) ═══ -->
     <string name="upd_title">Update available</string>

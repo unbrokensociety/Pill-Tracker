@@ -69,12 +69,18 @@
     <string name="settings_stats_active_meds">Зареєстровано ліків: %1$d</string>
     <string name="settings_about">Про застосунок</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональний медичний помічник. Приймайте ліки вчасно та будьте здорові!</string>
-    <string name="settings_version">Версія 2.4.5</string>
+    <string name="settings_version">Версія 2.4.6</string>
     <string name="settings_glass_title">Ефект рідкого скла</string>
-    <string name="settings_glass_full">Повний — живе розмиття</string>
-    <string name="settings_glass_reduced">Адаптивний — полегшений</string>
+    <string name="settings_glass_full">Повний</string>
+    <string name="settings_glass_full_desc">Живе розмиття і заломлення світла</string>
+    <string name="settings_glass_reduced">Адаптивний</string>
+    <string name="settings_glass_reduced_desc">Полегшене скло — плавність на будь-якому телефоні</string>
     <string name="settings_glass_choose">Обрати</string>
-    <string name="settings_glass_frost">Матовий — енергозбереження</string>
+    <string name="settings_glass_frost">Матовий</string>
+    <string name="settings_glass_frost_desc">Цілком непрозора панель — економія заряду</string>
+    <string name="settings_glass_intensity">Наскільки рідке</string>
+    <string name="settings_glass_intensity_matte">Матовий</string>
+    <string name="settings_glass_intensity_liquid">Дуже рідке</string>
     
     <string name="status_taken">Прийнято</string>
     

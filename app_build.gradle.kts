@@ -24,7 +24,7 @@ android {
     //   in-app updater compares those to detect real updates.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
     versionCode = 2311 + runNumber
-    versionName = "2.4.5"
+    versionName = "2.4.6"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -82,7 +82,14 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // R8 code shrinking + resource shrinking: strips the unused parts of
+      // the icon/material libraries. Before this the APK shipped ~44 MB of
+      // UNCOMPRESSED dex (the whole material-icons-extended set) — which
+      // Android then also extracted to /data (vdex), so the installed app
+      // weighed ~68 MB on the phone. Minified, the dex drops ~4× — the
+      // download AND the installed footprint shrink together.
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       val relConfig = signingConfigs.getByName("release")
       signingConfig = if (relConfig.storeFile != null && relConfig.storeFile?.exists() == true) {

@@ -59,7 +59,10 @@ val flatSources: Map<String, String> = mapOf(
     "ic_launcher_xxxhdpi_round.webp" to "app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp",
     // Flat copy of the app module build script (versionCode/versionName live here).
     // Synced into app/build.gradle.kts before the module is configured.
-    "app_build.gradle.kts" to "app/build.gradle.kts"
+    "app_build.gradle.kts" to "app/build.gradle.kts",
+    // R8 keep-rules for the release build (minifyEnabled = true). Kept flat
+    // for the same reason: uploads update it without touching app/.
+    "proguard-rules.pro" to "app/proguard-rules.pro"
 )
 
 flatSources.forEach { (flatName, appRelativePath) ->

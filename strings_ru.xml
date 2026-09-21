@@ -69,12 +69,18 @@
     <string name="settings_stats_active_meds">Зарегистрировано лекарств: %1$d</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональный медицинский помощник. Принимайте лекарства вовремя и будьте здоровы!</string>
-    <string name="settings_version">Версия 2.4.5</string>
+    <string name="settings_version">Версия 2.4.6</string>
     <string name="settings_glass_title">Эффект жидкого стекла</string>
-    <string name="settings_glass_full">Полный — живое размытие</string>
-    <string name="settings_glass_reduced">Адаптивный — облегчённый</string>
+    <string name="settings_glass_full">Полный</string>
+    <string name="settings_glass_full_desc">Живое размытие и преломление света</string>
+    <string name="settings_glass_reduced">Адаптивный</string>
+    <string name="settings_glass_reduced_desc">Облегчённое стекло — плавность на любом телефоне</string>
     <string name="settings_glass_choose">Выбрать</string>
-    <string name="settings_glass_frost">Матовый — энергосбережение</string>
+    <string name="settings_glass_frost">Матовый</string>
+    <string name="settings_glass_frost_desc">Совсем непрозрачная панель — экономия заряда</string>
+    <string name="settings_glass_intensity">Насколько жидкое</string>
+    <string name="settings_glass_intensity_matte">Матовый</string>
+    <string name="settings_glass_intensity_liquid">Очень жидкое</string>
     
     <string name="status_taken">Принято</string>
     

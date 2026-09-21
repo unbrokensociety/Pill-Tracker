@@ -434,7 +434,9 @@ fun MainPagerScreen(
         // snapshot on older versions) + whisper-light scrim + specular rim
         // + fluid dragging. Content scrolls under it and reads through the
         // frost — EXCEPT in the economy tier, where the panel goes fully
-        // opaque matte: a constant, unchanging solid bar.
+        // opaque matte: a constant, unchanging solid bar. How liquid the
+        // glass is comes from the Settings slider (LiquidGlassState.
+        // intensity): from calm matte to «very very liquid», applied live.
         LiquidGlassPanel(
             backdrop = backdrop,
             modifier = Modifier

@@ -1,21 +1,28 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# Pill Tracker — R8 keep-rules for the release build (minifyEnabled = true).
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# The stack is plain Compose + Room + DataStore + coroutines: everything is
+# compile-time resolved and ships its own consumer rules inside the AARs,
+# so only the app's own reflection-adjacent spots need explicit keeps.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Readable stack traces in any future crash report — worth the few KB.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Enum values are persisted BY NAME (GlassModeStore stores
+# LiquidGlassQuality.name and reads it back via valueOf).
+-keepclassmembers enum com.example.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Room entities/DAOs are consumed by KSP-generated code; keep the data
+# layer's shape so schema + converters can never drift.
+-keep class com.example.data.** { *; }
+
+# Compose compiler metadata and the entry points are handled by AGP itself.
+# Nothing else in this app touches reflection at runtime.
+
+# Libs that are optional at runtime — silence benign warnings.
+-dontwarn org.jetbrains.annotations.**
+-dontwarn org.slf4j.**
+-dontwarn javax.annotation.**

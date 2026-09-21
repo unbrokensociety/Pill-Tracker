@@ -56,11 +56,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.compose.runtime.withFrameNanos
+import kotlin.math.pow
 import kotlinx.coroutines.delay
 
 /* ------------------------------------------------------------------------- */
-/*  LIQUID GLASS ENGINE v4 — more liquid, adaptive, never laggy               */
+/*  LIQUID GLASS ENGINE v5 — matte↔ultra-liquid slider, adaptive, never laggy  */
 /*                                                                           */
 /*  One shared technique: a live snapshot of the content behind the panel     */
 /*  is blurred and drawn back under the glass.                                */
@@ -123,6 +125,16 @@ object LiquidGlassState {
      * managing the tier, what the user chose is what renders.
      */
     val userMode = mutableStateOf<LiquidGlassQuality?>(null)
+
+    /**
+     * HOW liquid the glass is, 0f..1f — the Settings slider.
+     * 0f reads as an almost matte frosted panel, 1f is «very very liquid»:
+     * near-zero tint, the widest blur and the strongest refractive bleed.
+     * Applies to every non-FROST tier; FROST stays a fully opaque matte
+     * panel no matter what. Lives in global state so panels, cards and
+     * the slider all re-render LIVE while the thumb is dragged.
+     */
+    val intensity = mutableStateOf(GlassModeStore.DEFAULT_INTENSITY)
 }
 
 /**
@@ -133,8 +145,12 @@ object LiquidGlassState {
 object GlassModeStore {
     private const val PREFS = "liquid_glass"
     private const val KEY = "mode"
+    private const val KEY_INTENSITY = "intensity"
 
-    fun load(context: Context): LiquidGlassQuality? = try {
+    /** Slider default: noticeably liquid out of the box, room on both ends. */
+    const val DEFAULT_INTENSITY = 0.75f
+
+    fun loadMode(context: Context): LiquidGlassQuality? = try {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY, null)
             ?.let { value -> runCatching { LiquidGlassQuality.valueOf(value) }.getOrNull() }
@@ -142,10 +158,27 @@ object GlassModeStore {
         null
     }
 
-    fun save(context: Context, mode: LiquidGlassQuality?) = try {
+    fun loadIntensity(context: Context): Float = try {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getFloat(KEY_INTENSITY, DEFAULT_INTENSITY)
+            .coerceIn(0f, 1f)
+    } catch (t: Throwable) {
+        DEFAULT_INTENSITY
+    }
+
+    fun saveMode(context: Context, mode: LiquidGlassQuality?) = try {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY, mode?.name)
+            .apply()
+    } catch (t: Throwable) {
+        // persisting a visual preference must never crash the app
+    }
+
+    fun saveIntensity(context: Context, intensity: Float) = try {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit()
+            .putFloat(KEY_INTENSITY, intensity.coerceIn(0f, 1f))
             .apply()
     } catch (t: Throwable) {
         // persisting a visual preference must never crash the app
@@ -215,8 +248,12 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
     val policyLevel = remember { DeviceGlassPolicy.assess(context) }
 
     LaunchedEffect(backdrop) {
-        // ---- 0. manual pick from Settings: the user's word is final ----
-        val savedMode = GlassModeStore.load(context)
+        // ---- 0a. saved slider position applies to EVERYONE (manual or
+        //      automatic mode) — it's a look preference, not a policy ----
+        LiquidGlassState.intensity.value = GlassModeStore.loadIntensity(context)
+
+        // ---- 0b. manual pick from Settings: the user's word is final ----
+        val savedMode = GlassModeStore.loadMode(context)
         if (savedMode != null) {
             LiquidGlassState.userMode.value = savedMode
             LiquidGlassState.quality.value = savedMode
@@ -458,7 +495,8 @@ fun Modifier.auroraBackdrop(): Modifier {
  *  surface — zero recording, zero blur, zero see-through, zero lag.
  *
  * @param backdrop shared backdrop recorded via [glassSource] on the background content.
- * @param blurRadius gaussian blur radius in dp (28–34.dp reads best for bars/panels).
+ * @param blurRadius gaussian blur radius in dp — the CENTER of the slider
+ *        range (the intensity scales it 0.55×–1.45× in FULL).
  * @param tint optional color cast drawn over the blur. Defaults to a very
  *        light theme surface tint — pass [Color.Transparent] for pure glass.
  */
@@ -478,43 +516,62 @@ fun LiquidGlassPanel(
     val hardwareBlur = BackdropBlurSupported
     val quality by LiquidGlassState.quality
 
-    // Effective blur radius: the adaptive governor may run this panel in a
-    // lighter mode with a reduced radius, or with the blur off entirely.
+    // ---- manual intensity (the Settings slider): 0 = matte, 1 = ultra liquid.
+    // A perceptual curve (pow 1.15) spends more of the travel on the range
+    // where the eye actually notices the change. Read live from global
+    // state — dragging the thumb re-renders the panel in real time.
+    val rawIntensity by LiquidGlassState.intensity
+    val iEff = rawIntensity.coerceIn(0f, 1f)
+    val curve = iEff.pow(1.15f)
+
+    // Effective blur radius: the slider widens/narrows it within the tier
+    // (the adaptive governor may also run a lighter mode, or blur off).
     val effectiveBlur = when (quality) {
-        LiquidGlassQuality.FULL -> blurRadius
-        LiquidGlassQuality.REDUCED -> blurRadius * 0.62f
+        LiquidGlassQuality.FULL -> blurRadius * lerp(0.55f, 1.45f, curve)
+        LiquidGlassQuality.REDUCED -> blurRadius * 0.62f * lerp(0.70f, 1.15f, curve)
         LiquidGlassQuality.FROST -> 0.dp
     }
 
-    // Glass body tint per quality ladder. FULL is whisper-thin — the blur
-    // and the colours behind the panel do the talking (that IS the liquid
-    // look the user asked for). FROST is a REAL matte panel: a fully opaque
-    // surface (alpha 1) — nothing shows through, so the bar looks exactly
-    // the same no matter what scrolls behind it. No shifts, no changes.
+    // Glass body tint — driven by the slider inside each tier. Matte end:
+    // a milky frosted body; ultra-liquid end: a whisper (the blur and the
+    // colours behind the panel do the talking — that IS the liquid look).
+    // FROST is a REAL matte panel: a fully opaque surface (alpha 1) — nothing
+    // shows through, so the bar looks exactly the same no matter what
+    // scrolls behind it. No shifts, no changes — and no slider either.
     val glassTint = tint
         ?: when {
             quality == LiquidGlassQuality.FROST ->
                 MaterialTheme.colorScheme.surface.copy(alpha = 1f)
             !hardwareBlur ->
                 // milkier over the low-fidelity CPU blur so text stays legible
-                MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.42f else 0.34f)
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) lerp(0.48f, 0.30f, curve) else lerp(0.40f, 0.24f, curve)
+                )
             quality == LiquidGlassQuality.REDUCED ->
-                MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.14f else 0.10f)
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) lerp(0.40f, 0.12f, curve) else lerp(0.28f, 0.09f, curve)
+                )
             else ->
-                MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.09f else 0.065f)
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) lerp(0.26f, 0.035f, curve) else lerp(0.20f, 0.028f, curve)
+                )
         }
 
-    // Scrim: slightly heavier at the top edge (light comes from above).
-    // FROST needs none — an opaque matte body has nothing to deepen.
+    // Scrim: slightly heavier at the top edge (light comes from above),
+    // gently dissolved as the glass gets more liquid. FROST needs none —
+    // an opaque matte body has nothing to deepen.
+    val scrimScale = lerp(1.30f, 0.70f, curve)
     val scrimTop = when {
         quality == LiquidGlassQuality.FROST -> Color.Transparent
-        quality == LiquidGlassQuality.REDUCED -> if (isDark) Color(0x2C000000) else Color(0x16000000)
-        else -> if (isDark) Color(0x20000000) else Color(0x0E000000)
+        quality == LiquidGlassQuality.REDUCED ->
+            Color.Black.copy(alpha = (if (isDark) 0.17f else 0.085f) * scrimScale)
+        else -> Color.Black.copy(alpha = (if (isDark) 0.125f else 0.055f) * scrimScale)
     }
     val scrimBottom = when {
         quality == LiquidGlassQuality.FROST -> Color.Transparent
-        quality == LiquidGlassQuality.REDUCED -> if (isDark) Color(0x12000000) else Color(0x08000000)
-        else -> if (isDark) Color(0x0C000000) else Color(0x05000000)
+        quality == LiquidGlassQuality.REDUCED ->
+            Color.Black.copy(alpha = (if (isDark) 0.07f else 0.03f) * scrimScale)
+        else -> Color.Black.copy(alpha = (if (isDark) 0.047f else 0.02f) * scrimScale)
     }
 
     // Specular rim: bright at the top, softly lit at the bottom — slightly
@@ -591,18 +648,21 @@ fun LiquidGlassPanel(
             )
             if (quality == LiquidGlassQuality.FULL) {
                 // Refractive edge bleed: the same backdrop copy, slightly
-                // zoomed and blurred much wider, blended at half opacity.
+                // zoomed and blurred much wider, blended over the blur.
                 // Near the rim the zoomed copy samples content from further
                 // out — light bends outward like real thick glass, and the
-                // interior gains a second soft wash of depth.
+                // interior gains a second soft wash of depth. The slider
+                // scales the effect: nearly still at the matte end, a real
+                // refractive halo at the ultra-liquid end.
                 Box(
                     modifier = Modifier
                         .matchParentSize()
                         .graphicsLayer {
-                            val bleedRadius = effectiveBlur * 1.55f
-                            scaleX = 1.05f
-                            scaleY = 1.05f
-                            alpha = 0.5f
+                            val bleedRadius = effectiveBlur * lerp(1.30f, 1.75f, curve)
+                            val bleedScale = lerp(1.03f, 1.09f, curve)
+                            scaleX = bleedScale
+                            scaleY = bleedScale
+                            alpha = lerp(0.28f, 0.65f, curve)
                             renderEffect = BlurEffect(bleedRadius.toPx(), bleedRadius.toPx())
                         }
                         .drawBehind {
@@ -696,7 +756,7 @@ private fun rememberSoftBackdropBitmap(
     val currentOrigin by rememberUpdatedState(panelOriginProvider)
     val currentSize by rememberUpdatedState(panelSizeProvider)
 
-    LaunchedEffect(backdrop, quality) {
+    LaunchedEffect(backdrop, quality, blurRadius) {
         if (quality == LiquidGlassQuality.FROST) {
             // economy tier: no panel needs a snapshot — stop the loop and
             // clear whatever the last tier left behind
@@ -1153,11 +1213,23 @@ fun GlassCard(
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
+    // The slider also breathes through the CARDS: at the matte end they sit
+    // calm and solid, at the ultra-liquid end they turn translucent enough
+    // for the aurora behind to glow through. FROST ignores the slider —
+    // the economy look stays fixed and fully opaque-ish by design.
+    val glassQuality by LiquidGlassState.quality
+    val rawIntensity by LiquidGlassState.intensity
+    val iEff = rawIntensity.coerceIn(0f, 1f)
+
     val defaultSurface = MaterialTheme.colorScheme.surface
-    val glassColor = if (isDark) {
-        defaultSurface.copy(alpha = 0.85f * glassAlpha)
-    } else {
-        defaultSurface.copy(alpha = 0.96f * glassAlpha)
+    val glassColor = when {
+        glassQuality == LiquidGlassQuality.FROST -> if (isDark) {
+            defaultSurface.copy(alpha = 0.85f * glassAlpha)
+        } else {
+            defaultSurface.copy(alpha = 0.96f * glassAlpha)
+        }
+        isDark -> defaultSurface.copy(alpha = lerp(0.88f, 0.60f, iEff) * glassAlpha)
+        else -> defaultSurface.copy(alpha = lerp(0.97f, 0.78f, iEff) * glassAlpha)
     }
 
     val baseModifier = modifier

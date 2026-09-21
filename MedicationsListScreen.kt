@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.Medication
 
+import com.example.ui.components.coachTag
 import com.example.ui.components.GlassCard
 import com.example.ui.components.BobbingIcon
 import com.example.ui.components.StaggeredAppear
@@ -115,7 +116,9 @@ fun MedicationsListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .coachTag("meds_content"),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         contentPadding = 28.dp
                     ) {
@@ -145,7 +148,9 @@ fun MedicationsListScreen(
                         bottom = bottomPadding + 24.dp
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .coachTag("meds_content")
                 ) {
                     itemsIndexed(medications, key = { _, med -> med.id }) { index, med ->
                         Box(

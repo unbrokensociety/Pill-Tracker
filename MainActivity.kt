@@ -57,6 +57,8 @@ import com.example.ui.components.tactilePress
 import com.example.ui.components.OnboardingBus
 import com.example.ui.components.OnboardingOverlay
 import com.example.ui.components.OnboardingPrefs
+import com.example.ui.components.UpdateGate
+import com.example.ui.components.coachTag
 import com.example.ui.theme.MyApplicationTheme
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.flow.filter
@@ -130,7 +132,7 @@ fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    // ── Onboarding: детальный тур при первом входе + повтор из Настроек ──
+    // ── Onboarding: интерактивный тур при первом входе + повтор из Настроек ──
     var onboardingDone by remember { mutableStateOf(OnboardingPrefs.isCompleted(context)) }
     LaunchedEffect(Unit) {
         snapshotFlow { OnboardingBus.replayRequested }
@@ -138,6 +140,26 @@ fun MainScreen(viewModel: MainViewModel) {
             .collect {
                 OnboardingBus.consume()
                 onboardingDone = false
+            }
+    }
+
+    // ── Тур просит открыть экран добавления (тап по подсвеченному «+») ──
+    LaunchedEffect(Unit) {
+        snapshotFlow { OnboardingBus.addRequested }
+            .filter { it }
+            .collect {
+                OnboardingBus.consumeAdd()
+                navController.navigate("add")
+            }
+    }
+
+    // ── Тур просит вернуться назад (шаг «заполни карточку» ← назад) ──
+    LaunchedEffect(Unit) {
+        snapshotFlow { OnboardingBus.backRequested }
+            .filter { it }
+            .collect {
+                OnboardingBus.consumeBack()
+                navController.popBackStack()
             }
     }
 
@@ -212,10 +234,15 @@ fun MainScreen(viewModel: MainViewModel) {
             OnboardingOverlay(
                 onFinished = {
                     OnboardingPrefs.setCompleted(context)
+                    OnboardingBus.tourFinished()
                     onboardingDone = true
                 }
             )
         }
+
+        // ── In-app обновления: проверка GitHub Releases, диалог,
+        //    разрешение установки, скачивание и запуск установщика ──
+        UpdateGate()
     }
 }
 
@@ -226,6 +253,19 @@ fun MainPagerScreen(
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
+
+    // ── Тур просит переключить страницу пейджера (тап по подсвеченному) ──
+    LaunchedEffect(Unit) {
+        snapshotFlow { OnboardingBus.pageRequested }
+            .filter { it >= 0 }
+            .collect { page ->
+                OnboardingBus.consumePage()
+                pagerState.animateScrollToPage(
+                    page,
+                    animationSpec = spring(dampingRatio = 0.84f, stiffness = 320f)
+                )
+            }
+    }
 
     val pagerFraction by remember {
         derivedStateOf {
@@ -289,7 +329,8 @@ fun MainPagerScreen(
                         onClick = { onNavigateToAdd(null) },
                         modifier = Modifier
                             .navigationBarsPadding()
-                            .padding(bottom = 84.dp),
+                            .padding(bottom = 84.dp)
+                            .coachTag("fab_add"),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
@@ -305,7 +346,9 @@ fun MainPagerScreen(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
                     beyondViewportPageCount = 1,
-                    userScrollEnabled = true,
+                    // Пока туториал активен — свайпы пейджера заблокированы,
+                    // чтобы человек не «уезжал» с подсвеченного шага.
+                    userScrollEnabled = !OnboardingBus.tourActive,
                     flingBehavior = PagerDefaults.flingBehavior(
                         state = pagerState,
                         snapAnimationSpec = spring(
@@ -361,7 +404,8 @@ fun MainPagerScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 10.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .coachTag("nav_island"),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
             blurRadius = 28.dp

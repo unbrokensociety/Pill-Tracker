@@ -36,6 +36,14 @@ val flatSources: Map<String, String> = mapOf(
     "LocaleHelper.kt" to "app/src/main/java/com/example/ui/locale/LocaleHelper.kt",
     // Detailed first-launch tutorial (+ replay button in Settings).
     "OnboardingTutorial.kt" to "app/src/main/java/com/example/ui/components/OnboardingTutorial.kt",
+    // In-app updater: checks GitHub Releases, downloads the APK via
+    // DownloadManager and opens the package installer (needs INTERNET +
+    // REQUEST_INSTALL_PACKAGES in the manifest + FileProvider path).
+    "UpdateChecker.kt" to "app/src/main/java/com/example/ui/components/UpdateChecker.kt",
+    // Manifest with the updater permissions — kept flat so uploads update it too.
+    "AndroidManifest.xml" to "app/src/main/AndroidManifest.xml",
+    // FileProvider paths (incl. the downloads dir for update APKs).
+    "file_paths.xml" to "app/src/main/res/xml/file_paths.xml",
     // Localized string resources. Kept flat in the repo root and synced into
     // the standard res folders before every build (same mechanism as the
     // sources above), so translations update via simple file uploads.

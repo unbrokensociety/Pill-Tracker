@@ -33,6 +33,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 
+import com.example.ui.components.coachTag
 import com.example.ui.components.GlassCard
 import com.example.ui.components.tactilePress
 
@@ -80,7 +81,9 @@ fun CalendarScreen(
             item {
                 // Calendar Card - Material You glassmorphic round style
                 GlassCard(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .coachTag("calendar_content")
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),

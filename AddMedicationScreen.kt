@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
 import com.example.R
+import com.example.ui.components.coachTag
 import com.example.ui.components.GlassCard
 import com.example.ui.locale.findActivity
 import java.time.LocalDate
@@ -213,7 +214,9 @@ fun AddMedicationScreen(
             // General Info Glass Card
             item {
                 GlassCard(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .coachTag("add_form")
                 ) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(16.dp)

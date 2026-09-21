@@ -39,6 +39,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
+import com.example.ui.components.coachTag
 import com.example.ui.components.GlassCard
 import com.example.ui.components.liquidGlass
 import com.example.ui.components.GlassCircleIcon
@@ -154,7 +155,7 @@ fun HomeScreen(
                             if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
                         }
                     }
-                    Column {
+                    Column(modifier = Modifier.coachTag("home_hero")) {
                         Text(
                             text = stringResource(greetingRes),
                             fontWeight = FontWeight.Bold,

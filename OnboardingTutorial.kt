@@ -1,30 +1,29 @@
 package com.example.ui.components
 
 /*
- * OnboardingTutorial — детальный тур по функциям приложения.
+ * OnboardingTutorial v2 — ИНТЕРАКТИВНЫЙ тур по приложению.
  *
- *  • Показывается один раз при ПЕРВОМ входе (флаг хранится в
- *    SharedPreferences — та же схема, что и язык в LocaleHelper,
- *    без зависимостей от DataStore/репозиториев).
- *  • Сверху всегда доступна кнопка «Пропустить».
- *  • 6 страниц: приветствие, «Сегодня», календарь, список лекарств,
- *    добавление лекарства, напоминания и настройки.
- *  • Кнопка в Настройках (внизу) запускает тур повторно через
- *    OnboardingBus — MainActivity слушает запрос и показывает оверлей.
+ *  • Первая страница — приветствие (что это за приложение).
+ *  • Дальше — живые coach-marks ПОВЕРХ РЕАЛЬНОГО интерфейса:
+ *    подсвечивается настоящая кнопка/зона, тап по подсветке
+ *    программно выполняет то же действие (переключает страницу,
+ *    открывает экран добавления) — человека реально «перекидывает».
+ *  • Кнопка «Пропустить» — всегда сверху; шаги можно листать кнопкой
+ *    «Дальше»; системный «назад» идёт по шагам.
+ *  • Кнопка в Настройках перезапускает тур через OnboardingBus.
  *
- * Визуал — в стилистике приложения: стеклянная карточка, мягкие
- * пружины, тактильные нажатия, живой градиентный фон.
+ * Механика подсветки: экраны вешают теги через Modifier.coachTag("key")
+ * — их рамки складываются в CoachMarks.rects; оверлей читает рамку
+ * текущего шага и рисует затемнение с «дыркой» (Path + EvenOdd).
  */
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOutCubic
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -33,25 +32,28 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -60,37 +62,52 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.SwipeLeft
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlinx.coroutines.flow.filter
 
 /* ────────────────────────────────────────────────────────────────
- * Персистентность + сигнал повторного запуска
+ * Персистентность + сигналы навигации
  * ──────────────────────────────────────────────────────────────── */
 
 object OnboardingPrefs {
@@ -114,12 +131,25 @@ object OnboardingPrefs {
 }
 
 /**
- * Шина «показать обучение снова»: SettingsScreen вызывает requestReplay(),
- * MainActivity слушает replayRequested через snapshotFlow и открывает тур.
+ * Шина туториала: повтор из Настройок + запросы навигации, которые
+ * тур отдаёт главному экрану (переключить страницу / открыть добавление /
+ * вернуться назад). MainScreen/MainPagerScreen слушают и выполняют.
  */
 object OnboardingBus {
     var replayRequested by mutableStateOf(false)
         private set
+
+    /** Тур активен — на это время блокируем свайпы пейджера. */
+    var tourActive by mutableStateOf(false)
+
+    /** Запрос «переключиться на страницу пейджера 0..3». */
+    var pageRequested by mutableStateOf(-1)
+
+    /** Запрос «открыть экран добавления лекарства». */
+    var addRequested by mutableStateOf(false)
+
+    /** Запрос «вернуться назад (закрыть экран добавления)». */
+    var backRequested by mutableStateOf(false)
 
     fun requestReplay(context: android.content.Context) {
         OnboardingPrefs.reset(context)
@@ -129,106 +159,180 @@ object OnboardingBus {
     fun consume() {
         replayRequested = false
     }
+
+    fun requestPage(page: Int) {
+        pageRequested = page
+    }
+
+    fun consumePage() {
+        pageRequested = -1
+    }
+
+    fun requestAdd() {
+        addRequested = true
+    }
+
+    fun consumeAdd() {
+        addRequested = false
+    }
+
+    fun requestBack() {
+        backRequested = true
+    }
+
+    fun consumeBack() {
+        backRequested = false
+    }
+
+    fun tourFinished() {
+        tourActive = false
+    }
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Данные страниц
+ * Coach-marks: реестр рамок реальных элементов UI
  * ──────────────────────────────────────────────────────────────── */
 
-private data class OnboardingPage(
+object CoachMarks {
+    /** key → рамка элемента в координатах окна (обновляется onGloballyPositioned). */
+    val rects = mutableStateMapOf<String, Rect>()
+}
+
+/**
+ * Повесить на реальный элемент интерфейса, чтобы тур мог его подсветить:
+ *   Modifier.coachTag("home_hero")
+ */
+fun Modifier.coachTag(key: String): Modifier {
+    return this.onGloballyPositioned { coordinates ->
+        val rect = coordinates.boundsInWindow()
+        if (rect.width > 1f && rect.height > 1f && rect.left >= 0f) {
+            CoachMarks.rects[key] = rect
+        } else {
+            CoachMarks.rects.remove(key)
+        }
+    }
+}
+
+/* ────────────────────────────────────────────────────────────────
+ * Описание шагов тура
+ * ──────────────────────────────────────────────────────────────── */
+
+/** Что делает тап по подсвеченной зоне. */
+private enum class TourTap { NEXT, OPEN_CALENDAR, OPEN_ADD }
+
+private data class TourStep(
+    val tag: String,          // ключ в CoachMarks
+    val wantPage: Int? = null, // страницу пейджера выставить при входе в шаг
+    val wantAddScreen: Boolean = false,
     val icon: ImageVector,
     val titleRes: Int,
     val descRes: Int,
-    val bulletsRes: List<Int>,
-    // Пара цветов градиента по ролям: 0=primary, 1=tertiary, 2=secondary
-    val gradientRoles: Pair<Int, Int>
+    val tap: TourTap = TourTap.NEXT,
+    val isLast: Boolean = false,
+    val animatedIcon: Boolean = false // иконка-«палец/свайп» живёт на месте
 )
 
-private fun buildOnboardingPages(): List<OnboardingPage> = listOf(
-    OnboardingPage(
-        icon = Icons.Filled.Medication,
-        titleRes = R.string.ob_welcome_title,
-        descRes = R.string.ob_welcome_desc,
-        bulletsRes = listOf(
-            R.string.ob_welcome_b1,
-            R.string.ob_welcome_b2,
-            R.string.ob_welcome_b3
-        ),
-        gradientRoles = 0 to 1
-    ),
-    OnboardingPage(
+private val TOUR_ICONS = listOf(
+    Icons.Filled.Today,
+    Icons.Filled.SwipeLeft,
+    Icons.Filled.CalendarMonth,
+    Icons.AutoMirrored.Filled.List,
+    Icons.Filled.AddCircle,
+    Icons.Filled.TouchApp
+)
+
+private fun buildTourSteps(): List<TourStep> = listOf(
+    TourStep(
+        tag = "home_hero",
+        wantPage = 0,
         icon = Icons.Filled.Today,
-        titleRes = R.string.ob_home_title,
-        descRes = R.string.ob_home_desc,
-        bulletsRes = listOf(
-            R.string.ob_home_b1,
-            R.string.ob_home_b2,
-            R.string.ob_home_b3
-        ),
-        gradientRoles = 1 to 2
+        titleRes = R.string.tour_step_today_title,
+        descRes = R.string.tour_step_today_desc,
+        tap = TourTap.NEXT
     ),
-    OnboardingPage(
+    TourStep(
+        tag = "nav_island",
+        wantPage = 0,
+        icon = Icons.Filled.SwipeLeft,
+        titleRes = R.string.tour_step_nav_title,
+        descRes = R.string.tour_step_nav_desc,
+        tap = TourTap.OPEN_CALENDAR,
+        animatedIcon = true
+    ),
+    TourStep(
+        tag = "calendar_content",
+        wantPage = 1,
         icon = Icons.Filled.CalendarMonth,
-        titleRes = R.string.ob_calendar_title,
-        descRes = R.string.ob_calendar_desc,
-        bulletsRes = listOf(
-            R.string.ob_calendar_b1,
-            R.string.ob_calendar_b2,
-            R.string.ob_calendar_b3
-        ),
-        gradientRoles = 2 to 0
+        titleRes = R.string.tour_step_calendar_title,
+        descRes = R.string.tour_step_calendar_desc,
+        tap = TourTap.NEXT
     ),
-    OnboardingPage(
+    TourStep(
+        tag = "meds_content",
+        wantPage = 2,
         icon = Icons.AutoMirrored.Filled.List,
-        titleRes = R.string.ob_meds_title,
-        descRes = R.string.ob_meds_desc,
-        bulletsRes = listOf(
-            R.string.ob_meds_b1,
-            R.string.ob_meds_b2,
-            R.string.ob_meds_b3
-        ),
-        gradientRoles = 0 to 2
+        titleRes = R.string.tour_step_meds_title,
+        descRes = R.string.tour_step_meds_desc,
+        tap = TourTap.NEXT
     ),
-    OnboardingPage(
+    TourStep(
+        tag = "fab_add",
+        wantPage = 2,
         icon = Icons.Filled.AddCircle,
-        titleRes = R.string.ob_add_title,
-        descRes = R.string.ob_add_desc,
-        bulletsRes = listOf(
-            R.string.ob_add_b1,
-            R.string.ob_add_b2,
-            R.string.ob_add_b3
-        ),
-        gradientRoles = 1 to 0
+        titleRes = R.string.tour_step_add_title,
+        descRes = R.string.tour_step_add_desc,
+        tap = TourTap.OPEN_ADD,
+        animatedIcon = true
     ),
-    OnboardingPage(
-        icon = Icons.Filled.NotificationsActive,
-        titleRes = R.string.ob_reminders_title,
-        descRes = R.string.ob_reminders_desc,
-        bulletsRes = listOf(
-            R.string.ob_reminders_b1,
-            R.string.ob_reminders_b2,
-            R.string.ob_reminders_b3
-        ),
-        gradientRoles = 2 to 1
+    TourStep(
+        tag = "add_form",
+        wantAddScreen = true,
+        icon = Icons.Filled.TouchApp,
+        titleRes = R.string.tour_step_form_title,
+        descRes = R.string.tour_step_form_desc,
+        tap = TourTap.NEXT,
+        isLast = true
     )
 )
 
 /* ────────────────────────────────────────────────────────────────
- * Оверлей обучения
+ * Оверлей: приветствие → интерактивные шаги
  * ──────────────────────────────────────────────────────────────── */
 
 @Composable
 fun OnboardingOverlay(onFinished: () -> Unit) {
-    val pages = remember { buildOnboardingPages() }
-    val pageCount = pages.size
-    var current by remember { mutableStateOf(0) }
+    val steps = remember { buildTourSteps() }
+    var phase by remember { mutableStateOf(0) } // 0 = приветствие, 1 = тур
+    var stepIndex by remember { mutableStateOf(0) }
 
-    // Системная кнопка «назад»: по страницам, с последней — выход
-    BackHandler(enabled = true) {
-        if (current > 0) current-- else onFinished()
+    SideEffect {
+        OnboardingBus.tourActive = phase == 1
     }
+    if (phase == 0) {
+        WelcomeCard(
+            onStart = {
+                phase = 1
+                stepIndex = 0
+            },
+            onSkip = onFinished
+        )
+    } else {
+        CoachTour(
+            steps = steps,
+            stepIndex = stepIndex,
+            onStepChange = { stepIndex = it },
+            onFinish = onFinished
+        )
+    }
+}
 
-    // Появление оверлея: мягкий fade + scale
+/* ── Приветствие ── */
+
+@Composable
+private fun WelcomeCard(
+    onStart: () -> Unit,
+    onSkip: () -> Unit
+) {
     val entrance = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         entrance.animateTo(1f, tween(360, easing = EaseOutCubic))
@@ -242,15 +346,11 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
         animationSpec = infiniteRepeatable(tween(24000, easing = LinearEasing)),
         label = "onboardingPhase"
     )
-
     val roleColors = listOf(
         MaterialTheme.colorScheme.primary,
         MaterialTheme.colorScheme.tertiary,
         MaterialTheme.colorScheme.secondary
     )
-
-    // Перехват касаний, чтобы клики не проваливались под оверлей
-    val scrimInteraction = remember { MutableInteractionSource() }
 
     Box(
         modifier = Modifier
@@ -263,12 +363,7 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
             .background(Color.Black.copy(alpha = 0.58f))
             .drawBehind {
                 val t = phase * 2f * Math.PI.toFloat()
-                fun blob(
-                    color: Color,
-                    cx: Float,
-                    cy: Float,
-                    radius: Float
-                ) {
+                fun blob(color: Color, cx: Float, cy: Float, radius: Float) {
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = listOf(color, Color.Transparent),
@@ -281,25 +376,25 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
                 }
                 blob(
                     color = roleColors[0].copy(alpha = 0.30f),
-                    cx = size.width * (0.22f + 0.10f * cos(t)),
-                    cy = size.height * (0.16f + 0.08f * sin(t)),
+                    cx = size.width * (0.22f + 0.10f * kotlin.math.cos(t)),
+                    cy = size.height * (0.16f + 0.08f * kotlin.math.sin(t)),
                     radius = size.width * 0.75f
                 )
                 blob(
                     color = roleColors[1].copy(alpha = 0.24f),
-                    cx = size.width * (0.82f + 0.08f * sin(t)),
-                    cy = size.height * (0.30f + 0.10f * cos(t)),
+                    cx = size.width * (0.82f + 0.08f * kotlin.math.sin(t)),
+                    cy = size.height * (0.30f + 0.10f * kotlin.math.cos(t)),
                     radius = size.width * 0.65f
                 )
                 blob(
                     color = roleColors[2].copy(alpha = 0.20f),
-                    cx = size.width * (0.50f + 0.12f * cos(t * 0.7f)),
-                    cy = size.height * (0.92f + 0.06f * sin(t * 0.7f)),
+                    cx = size.width * (0.50f + 0.12f * kotlin.math.cos(t * 0.7f)),
+                    cy = size.height * (0.92f + 0.06f * kotlin.math.sin(t * 0.7f)),
                     radius = size.width * 0.70f
                 )
             }
             .clickable(
-                interactionSource = scrimInteraction,
+                interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { /* поглощаем тапы по затемнению */ }
     ) {
@@ -307,391 +402,556 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            // ── Верхняя строка: логотип + «Пропустить» ──
-            OnboardingTopRow(onSkip = onFinished)
+            // Верхняя строка: логотип + «Пропустить»
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Medication,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.13f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onSkip() }
+                        .padding(horizontal = 16.dp, vertical = 9.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.ob_skip),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.weight(0.55f))
 
-            // ── Карточка текущей страницы ──
-            AnimatedContent(
-                targetState = current,
-                modifier = Modifier.fillMaxWidth(),
-                transitionSpec = {
-                    val direction = if (targetState > initialState) 1 else -1
-                    (
-                        slideInHorizontally(animationSpec = tween(320, easing = EaseOutCubic)) { full ->
-                            direction * full / 3
-                        } + fadeIn(animationSpec = tween(260, easing = EaseOutCubic)) +
-                            scaleIn(initialScale = 0.94f, animationSpec = tween(260, easing = EaseOutCubic))
-                        ) togetherWith (
-                        slideOutHorizontally(animationSpec = tween(240, easing = FastOutSlowInEasing)) { full ->
-                            -direction * full / 3
-                        } + fadeOut(animationSpec = tween(180)) +
-                            scaleOut(targetScale = 0.96f, animationSpec = tween(200))
-                        )
-                },
-                label = "onboardingPage"
-            ) { pageIndex ->
-                OnboardingPageCard(
-                    page = pages[pageIndex],
-                    roleColors = roleColors
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(0.45f))
-
-            // ── Индикатор шага ──
-            Text(
-                text = stringResource(R.string.ob_step_of, current + 1, pageCount),
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.72f),
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // ── Точки прогресса ──
-            OnboardingDots(
-                pageCount = pageCount,
-                current = current,
-                onPageSelected = { current = it }
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ── Кнопки навигации ──
-            OnboardingButtonsRow(
-                isFirst = current == 0,
-                isLast = current == pageCount - 1,
-                onBack = { if (current > 0) current-- },
-                onNext = {
-                    if (current < pageCount - 1) current++ else onFinished()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-    }
-}
-
-/* ── Верхняя строка: логотип слева, «Пропустить» справа ── */
-
-@Composable
-private fun OnboardingTopRow(onSkip: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Мини-логотип
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
+            // Карточка приветствия
+            Column(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(30.dp))
                     .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
+                        Brush.verticalGradient(
+                            listOf(Color(0xFF1D242F), Color(0xFF161B24))
                         )
+                    )
+                    .padding(26.dp)
+            ) {
+                // Дышащая иконка
+                val breathe = rememberInfiniteTransition(label = "breathe")
+                val scale by breathe.animateFloat(
+                    initialValue = 0.96f,
+                    targetValue = 1.04f,
+                    animationSpec = infiniteRepeatable(
+                        tween(1600, easing = FastOutLinearInEasing),
+                        RepeatMode.Reverse
                     ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Medication,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(19.dp)
+                    label = "breatheScale"
                 )
-            }
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Кнопка «Пропустить» — всегда сверху
-        val skipInteraction = remember { MutableInteractionSource() }
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color.White.copy(alpha = 0.13f))
-                .clickable(
-                    interactionSource = skipInteraction,
-                    indication = null
-                ) { onSkip() }
-                .padding(horizontal = 16.dp, vertical = 9.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.ob_skip),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White.copy(alpha = 0.92f)
-            )
-        }
-    }
-}
-
-/* ── Карточка страницы: иконка в градиенте, заголовок, описание, буллеты ── */
-
-@Composable
-private fun OnboardingPageCard(
-    page: OnboardingPage,
-    roleColors: List<Color>
-) {
-    val startColor = roleColors[page.gradientRoles.first]
-    val endColor = roleColors[page.gradientRoles.second]
-
-    // Лёгкое «дыхание» иконки
-    val bobTransition = rememberInfiniteTransition(label = "onboardingBob")
-    val bob by bobTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "onboardingBobValue"
-    )
-
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = 26.dp,
-        shape = RoundedCornerShape(32.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Композиция иконки: свечение + градиентный скруглённый квадрат
-            // + две декоративные «пилюли» по углам
-            Box(
-                modifier = Modifier.size(132.dp),
-                contentAlignment = Alignment.Center
-            ) {
                 Box(
                     modifier = Modifier
-                        .size(112.dp)
-                        .drawBehind {
-                            val glowRadius = size.width * 0.72f
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        startColor.copy(alpha = 0.38f),
-                                        Color.Transparent
-                                    ),
-                                    center = Offset(x = size.width / 2f, y = size.height / 2f),
-                                    radius = glowRadius
-                                ),
-                                radius = glowRadius,
-                                center = Offset(x = size.width / 2f, y = size.height / 2f)
-                            )
-                        }
+                        .size(74.dp)
                         .graphicsLayer {
-                            translationY = bob * 5.dp.toPx()
+                            scaleX = scale
+                            scaleY = scale
                         }
-                        .clip(RoundedCornerShape(32.dp))
+                        .clip(CircleShape)
                         .background(
-                            Brush.linearGradient(listOf(startColor, endColor))
+                            Brush.linearGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary
+                                )
+                            )
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = page.icon,
-                        contentDescription = stringResource(page.titleRes),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(52.dp)
+                        imageVector = Icons.Filled.Medication,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp)
                     )
                 }
 
-                // Декоративные «пилюли»
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .graphicsLayer { translationY = bob * 3.dp.toPx() }
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(endColor.copy(alpha = 0.55f))
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = stringResource(R.string.ob_welcome_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
                 )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .graphicsLayer { translationY = bob * -4.dp.toPx() }
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(startColor.copy(alpha = 0.45f))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.ob_welcome_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.82f)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = stringResource(page.titleRes),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = stringResource(page.descRes),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                lineHeight = 21.sp
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Буллеты: галочка в кружке + текст
-            Column(
-                verticalArrangement = Arrangement.spacedBy(9.dp)
-            ) {
-                page.bulletsRes.forEach { bulletRes ->
+                Spacer(modifier = Modifier.height(16.dp))
+                listOf(
+                    R.string.ob_welcome_b1,
+                    R.string.ob_welcome_b2,
+                    R.string.ob_welcome_b3
+                ).forEach { res ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .background(startColor.copy(alpha = 0.16f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Check,
-                                contentDescription = null,
-                                tint = startColor,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
                         Text(
-                            text = stringResource(bulletRes),
+                            text = stringResource(res),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium
+                            color = Color.White.copy(alpha = 0.78f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                // Кнопка «Начать тур»
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary
+                                )
+                            )
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onStart() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.tour_start),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Filled.PanTool,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-/* ── Точки прогресса ── */
-
-@Composable
-private fun OnboardingDots(
-    pageCount: Int,
-    current: Int,
-    onPageSelected: (Int) -> Unit
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        repeat(pageCount) { index ->
-            val active = index == current
-            val width by animateDpAsState(
-                targetValue = if (active) 24.dp else 8.dp,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                ),
-                label = "dotWidth$index"
-            )
-            val alpha by animateFloatAsState(
-                targetValue = if (active) 1f else 0.32f,
-                animationSpec = tween(220),
-                label = "dotAlpha$index"
-            )
-            val interaction = remember { MutableInteractionSource() }
-            Box(
-                modifier = Modifier
-                    .size(width = width, height = 8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.White.copy(alpha = alpha))
-                    .clickable(
-                        interactionSource = interaction,
-                        indication = null
-                    ) { onPageSelected(index) }
-            )
-        }
-    }
-}
-
-/* ── Ряд кнопок: Назад / Далее · Начать ── */
-
-@Composable
-private fun OnboardingButtonsRow(
-    isFirst: Boolean,
-    isLast: Boolean,
-    onBack: () -> Unit,
-    onNext: () -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        if (!isFirst) {
-            val backInteraction = remember { MutableInteractionSource() }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color.White.copy(alpha = 0.10f))
-                    .clickable(
-                        interactionSource = backInteraction,
-                        indication = null
-                    ) { onBack() }
-                    .padding(horizontal = 20.dp, vertical = 15.dp)
-            ) {
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = stringResource(R.string.ob_back),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.85f)
+                    text = stringResource(R.string.tour_interactive_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.55f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
-        }
 
-        // Главная кнопка: градиент + тактильная пружина
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(52.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.tertiary
+            Spacer(modifier = Modifier.weight(0.45f))
+        }
+    }
+}
+
+/* ── Интерактивный тур ── */
+
+@Composable
+private fun CoachTour(
+    steps: List<TourStep>,
+    stepIndex: Int,
+    onStepChange: (Int) -> Unit,
+    onFinish: () -> Unit
+) {
+    val step = steps[stepIndex]
+    var nudge by remember { mutableStateOf(0) } // «пни» рамку, если тап мимо
+
+    // Системный «назад»: по шагам, с последнего — выход
+    BackHandler(enabled = true) {
+        if (stepIndex > 0) {
+            val prev = steps[stepIndex - 1]
+            if (prev.wantAddScreen) OnboardingBus.requestBack()
+            onStepChange(stepIndex - 1)
+        } else {
+            onFinish()
+        }
+    }
+
+    /* При входе в шаг — попросить главный экран поставить нужную страницу
+       или открыть экран добавления. MainScreen слушает шину. */
+    LaunchedEffect(stepIndex) {
+        kotlinx.coroutines.delay(60) // кадр на композицию предыдущего шага
+        if (step.wantAddScreen) {
+            OnboardingBus.requestAdd()
+        } else {
+            step.wantPage?.let { OnboardingBus.requestPage(it) }
+        }
+    }
+
+    /* Пульсирующая рамка подсветки */
+    val pulse = rememberInfiniteTransition(label = "coachPulse")
+    val pulseAlpha by pulse.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween(900, easing = FastOutLinearInEasing),
+            RepeatMode.Reverse
+        ),
+        label = "coachPulseAlpha"
+    )
+
+    val holeRect = CoachMarks.rects[step.tag]
+    val density = LocalDensity.current
+    val appear = remember(stepIndex) { Animatable(0f) }
+    LaunchedEffect(stepIndex) {
+        appear.animateTo(1f, tween(340, easing = EaseOutCubic))
+    }
+
+    val scrimAlpha = (0.60f * appear.value)
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(holeRect, stepIndex) {
+                detectTapGestures { offset ->
+                    if (holeRect != null && holeRect.inflate(12f).contains(offset)) {
+                        when (step.tap) {
+                            TourTap.NEXT -> {
+                                if (step.isLast) onFinish() else onStepChange(stepIndex + 1)
+                            }
+                            TourTap.OPEN_CALENDAR -> {
+                                OnboardingBus.requestPage(1)
+                                onStepChange(stepIndex + 1)
+                            }
+                            TourTap.OPEN_ADD -> {
+                                OnboardingBus.requestAdd()
+                                onStepChange(stepIndex + 1)
+                            }
+                        }
+                    } else {
+                        nudge++
+                    }
+                }
+            }
+            .drawBehind {
+                // Затемнение с «дыркой» над подсвеченным элементом
+                val path = Path()
+                path.fillType = PathFillType.EvenOdd
+                path.addRect(Rect(0f, 0f, size.width, size.height))
+                holeRect?.let { hole ->
+                    val cornerRadius = 22.dp.toPx()
+                    path.addRoundRect(
+                        RoundRect(
+                            left = hole.left - 8f,
+                            top = hole.top - 8f,
+                            right = hole.right + 8f,
+                            bottom = hole.bottom + 8f,
+                            cornerRadius = CornerRadius(cornerRadius, cornerRadius)
                         )
                     )
-                )
-                .tactilePress(pressScale = 0.95f, haptic = true, onClick = onNext),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = stringResource(
-                    if (isLast) R.string.ob_start else R.string.ob_next
-                ),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onPrimary
+                }
+                drawPath(path, Color.Black.copy(alpha = scrimAlpha))
+            }
+    ) {
+        // Рамка вокруг дырки (двойная: тонкая яркая + широкая мягкая)
+        holeRect?.let { hole ->
+            val cornerRadius = 22.dp
+            val nudgeShake by animateFloatAsState(
+                targetValue = if (nudge > 0) 1f else 0f,
+                animationSpec = spring(dampingRatio = 0.35f, stiffness = 400f),
+                label = "nudgeShake"
             )
+            LaunchedEffect(nudge) {
+                if (nudge > 0) {
+                    kotlinx.coroutines.delay(450)
+                    nudge = 0
+                }
+            }
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = appear.value
+                        translationX = nudgeShake * 6f *
+                            kotlin.math.sin(nudge * 12.9898f * 100f)
+                    }
+            ) {
+                val insetHole = Rect(
+                    left = hole.left - 8f,
+                    top = hole.top - 8f,
+                    right = hole.right + 8f,
+                    bottom = hole.bottom + 8f
+                )
+                val rr = RoundRect(
+                    insetHole,
+                    cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx())
+                )
+                // мягкое свечение
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.10f * pulseAlpha),
+                    topLeft = Offset(insetHole.left, insetHole.top),
+                    size = Size(insetHole.width, insetHole.height),
+                    cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx()),
+                    style = Stroke(width = 10.dp.toPx())
+                )
+                // яркая рамка
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.95f * pulseAlpha),
+                    topLeft = Offset(insetHole.left, insetHole.top),
+                    size = Size(insetHole.width, insetHole.height),
+                    cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx()),
+                    style = Stroke(width = 2.5.dp.toPx())
+                )
+            }
+        }
+
+        // «Пропустить» — всегда сверху
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .systemBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onFinish() }
+                    .padding(horizontal = 16.dp, vertical = 9.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.ob_skip),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+        }
+
+        // Тултип шага: под дыркой (или над, если дырка внизу)
+        val tooltipHeight = 230.dp
+        val below: Boolean
+        val topOffset: Dp
+        with(density) {
+            val holeBottomDp = holeRect?.bottom?.toDp() ?: 0.dp
+            val holeTopDp = holeRect?.top?.toDp() ?: 0.dp
+            below = holeBottomDp + tooltipHeight + 90.dp < maxHeight
+            topOffset = if (holeRect == null) {
+                (maxHeight - tooltipHeight) / 2
+            } else if (below) {
+                (holeBottomDp + 16.dp).coerceAtMost(maxHeight - tooltipHeight - 16.dp)
+            } else {
+                (holeTopDp - tooltipHeight - 16.dp).coerceAtLeast(90.dp)
+            }
+        }
+
+        AnimatedContent(
+            targetState = stepIndex,
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(x = 0.dp, y = topOffset)
+                .padding(horizontal = 20.dp),
+            transitionSpec = {
+                (
+                    fadeIn(tween(280, easing = EaseOutCubic)) +
+                        slideInVertically(tween(300, easing = EaseOutCubic)) { it / 4 }
+                    ) togetherWith (
+                    fadeOut(tween(150, easing = FastOutLinearInEasing)) +
+                        slideOutVertically(tween(180)) { -it / 6 }
+                    )
+            },
+            label = "coachTooltip"
+        ) { index ->
+            val s = steps[index]
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { alpha = appear.value }
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFF1D242F), Color(0xFF161B24))
+                        )
+                    )
+                    .padding(20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Иконка шага: «палец»/«свайп» слегка живые
+                    val wiggle = rememberInfiniteTransition(label = "wiggle")
+                    val wiggleX by wiggle.animateFloat(
+                        initialValue = -7f,
+                        targetValue = 7f,
+                        animationSpec = infiniteRepeatable(
+                            tween(700, easing = FastOutLinearInEasing),
+                            RepeatMode.Reverse
+                        ),
+                        label = "wiggleX"
+                    )
+                    val wiggleScale by wiggle.animateFloat(
+                        initialValue = 0.97f,
+                        targetValue = 1.05f,
+                        animationSpec = infiniteRepeatable(
+                            tween(900, easing = FastOutLinearInEasing),
+                            RepeatMode.Reverse
+                        ),
+                        label = "wiggleScale"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .graphicsLayer {
+                                if (s.animatedIcon) {
+                                    translationX = wiggleX
+                                    scaleX = wiggleScale
+                                    scaleY = wiggleScale
+                                }
+                            }
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = s.icon,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(s.titleRes),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                    }
+                    // Счётчик шага
+                    Text(
+                        text = stringResource(
+                            R.string.ob_step_of, index + 1, steps.size
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.55f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(s.descRes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Кнопка шага
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary
+                                )
+                            )
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (s.isLast) onFinish() else onStepChange(index + 1)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(
+                            if (s.isLast) R.string.tour_finish else R.string.tour_next
+                        ),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Подсказка «тапни по подсвеченному»
+                Text(
+                    text = stringResource(R.string.tour_tap_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
         }
     }
 }

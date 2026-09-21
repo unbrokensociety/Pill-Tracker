@@ -87,7 +87,7 @@ jobs:
       - name: Pin Monotonic Version Code
         run: |
           CI_CODE=$((3000 + ${{ github.run_number }}))
-          CI_NAME="2.1.2 (#${{ github.run_number }})"
+          CI_NAME="2.3.0 (#${{ github.run_number }})"
           echo "Pinned versionCode=$CI_CODE, versionName=$CI_NAME"
           for f in app_build.gradle.kts app/build.gradle.kts; do
             if [ -f "$f" ]; then

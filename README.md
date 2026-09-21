@@ -149,10 +149,11 @@
 
 This repository includes a full **GitHub Actions CI/CD pipeline** (`.github/workflows/android.yml`) that automatically builds and signs the APK on every commit. The `versionCode` is computed at build time from a strictly growing formula (`2311 + run number`) defined in `app_build.gradle.kts`.
 
-**Release signing is an explicit policy (v2.4.7)** — never a silent fallback:
+**Release signing is an explicit policy (v2.4.7, fixed in v2.4.8)** — never a silent fallback:
 - With the `KEYSTORE_BASE64` / `STORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD` secrets set, CI signs with the real release key.
-- Without them, CI deliberately opts in (`-PallowDebugSigning=true`) and the build **loudly warns** that the APK is debug-signed. That is an honest open-source distribution decision (GitHub Releases + the in-app updater live on the stable repo key), visible in every log.
-- Locally, `gradle assembleRelease` **fails** unless you either provide the keystore env vars or explicitly pass `-PallowDebugSigning=true`. A production APK can never be silently debug-signed.
+- Without them, the build opts in **from `gradle.properties`** (`allowDebugSigning=true` — a visible, commented line shipped with the repo) and **loudly warns** that the APK is debug-signed. That is an honest open-source distribution decision (GitHub Releases + the in-app updater live on the stable repo key), visible in every log.
+- v2.4.8 note: the opt-in used to be a `-PallowDebugSigning=true` **flag inside the CI workflow**, which broke builds for anyone whose `.github/workflows/android.yml` was not re-uploaded (the workflow is the one file nobody syncs). The opt-in now rides in `gradle.properties` — a plain repo file that goes up with every release — so **any** workflow command, old or new, keeps building. Strict mode still exists: delete the line and every release packaging task fails with instructions instead of quietly shipping a debug-signed "release".
+- Locally, `gradle assembleRelease` uses the same `gradle.properties` opt-in (or `-PallowDebugSigning=true` / `ALLOW_DEBUG_SIGNING=true`); without any opt-in it **fails** with instructions. A production APK can never be silently debug-signed.
 
 Since v2.4.7 the code namespace is the real `com.aistudio.meditracker` (was the leftover template `com.example`). The `applicationId` did not change, so in-place updates keep working exactly as before.
 
@@ -168,7 +169,8 @@ cd Pill-Tracker
 # Build release APK — pick ONE:
 KEYSTORE_PATH=release.keystore STORE_PASSWORD=... KEY_ALIAS=... KEY_PASSWORD=... \
   ./gradlew assembleRelease           # real release key
-./gradlew assembleRelease -PallowDebugSigning=true   # explicit debug-signed build
+./gradlew assembleRelease             # debug-signed: opt-in already in gradle.properties
+./gradlew assembleRelease -PallowDebugSigning=true   # same, explicit flag
 ```
 The compiled `.apk` will be generated at:
 `app/build/outputs/apk/debug/pill-tracker.apk`

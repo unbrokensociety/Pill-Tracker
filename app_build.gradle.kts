@@ -49,7 +49,7 @@ android {
     //   in-app updater compares those to detect real updates.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
     versionCode = 2311 + runNumber
-    versionName = "2.4.7"
+    versionName = "2.4.8"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -65,20 +65,31 @@ android {
       }
     }
     create("release") {
-      // ── Release signing is EXPLICIT, never a silent fallback (v2.4.7). ──
+      // ── Release signing is EXPLICIT, never a silent fallback (v2.4.7+). ──
       // Policy:
       //   1. KEYSTORE_PATH + STORE_PASSWORD/KEY_ALIAS/KEY_PASSWORD env vars
       //      point at a real keystore → the real release key is used.
-      //   2. No real key, but the build explicitly opted in with
-      //      -PallowDebugSigning=true (or ALLOW_DEBUG_SIGNING=true) →
-      //      the well-known debug.keystore is used and the build says so
-      //      LOUDLY. This is the CI path: the repo is open-source and its
-      //      distribution channel (GitHub Releases, in-app updater) lives
-      //      on the stable debug key — a deliberate, visible decision.
+      //   2. No real key, but the build explicitly opted in via ANY of:
+      //        • allowDebugSigning=true in gradle.properties (the shipped
+      //          default — a visible, commented line in the repo itself),
+      //        • -PallowDebugSigning=true on the command line,
+      //        • ALLOW_DEBUG_SIGNING=true env var
+      //      → the well-known debug.keystore is used and the build says so
+      //      LOUDLY (banner below). This is the CI path: the repo is
+      //      open-source and its distribution channel (GitHub Releases,
+      //      in-app updater) lives on the stable debug key — a deliberate,
+      //      visible decision.
+      //      v2.4.8 fix: the opt-in moved from the CI workflow FLAG to
+      //      gradle.properties. The workflow flag depended on the user
+      //      keeping .github/workflows/android.yml in sync — and the one
+      //      file nobody ever re-uploads is exactly that workflow. A plain
+      //      repo file rides along with every delivery upload, so even a
+      //      YEARS-old workflow command keeps building. Same honesty,
+      //      zero coupling to CI YAML.
       //   3. No key and no opt-in → any RELEASE PACKAGING task fails with
       //      instructions (a "production" APK must never be silently
       //      debug-signed). Plain compile/debug/lint/test tasks are never
-      //      blocked — the check runs on the resolved task graph, not at
+      //      blocked — the check runs on the requested task names, not at
       //      configuration time, so day-to-day development keeps working.
       val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
       val hasCustomReleaseKey = !releaseKeystorePath.isNullOrBlank() && file(releaseKeystorePath).let { it.exists() && it.isFile }
@@ -145,8 +156,10 @@ android {
          STORE_PASSWORD=... KEY_ALIAS=... KEY_PASSWORD=... gradle assembleRelease
        (in CI these come from the KEYSTORE_BASE64 / STORE_PASSWORD /
         KEY_ALIAS / KEY_PASSWORD secrets — see android.yml)
-    b) Explicitly accept a debug-signed build:
-         gradle assembleRelease -PallowDebugSigning=true
+    b) Explicitly accept a debug-signed build — ONE line, no flags, no
+       workflow edits (this is what the shipped gradle.properties does):
+         echo 'allowDebugSigning=true' >> gradle.properties
+       (or: gradle assembleRelease -PallowDebugSigning=true)
        The artifact will be loudly marked as debug-signed in the logs.""".trimIndent()
             )
           }

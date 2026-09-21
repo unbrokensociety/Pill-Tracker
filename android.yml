@@ -8,8 +8,8 @@
 #   • versionCode = 2311 + GITHUB_RUN_NUMBER — задаётся самим
 #     app_build.gradle.kts (env-переменную подставывает CI), поэтому
 #     каждый билд строго больше предыдущего и всегда ставится поверх.
-#   • versionName = «2.4.7» — там же; ОБЯЗАН совпадать с маркером
-#     «> app-version: 2.4.7» в начале RELEASE_NOTES.md: APK-шный
+#   • versionName = «2.4.8» — там же; ОБЯЗАН совпадать с маркером
+#     «> app-version: 2.4.8» в начале RELEASE_NOTES.md: APK-шный
 #     апдейтер сравнивает именно эти два имени версий.
 #   • Тело GitHub-релиза = RELEASE_NOTES.md как есть, поэтому маркер
 #     app-version автоматически попадает в релиз — так приложение
@@ -81,9 +81,12 @@ jobs:
           fi
 
       - name: Build Release APK
-        # -PallowDebugSigning=true: the deliberate, LOUD opt-in for the
-        # debug-key signature (see app_build.gradle.kts — without it the
-        # build fails). With a real KEYSTORE_PATH the flag is ignored.
+        # The -PallowDebugSigning flag is BELT-AND-SUSPENDERS only: since
+        # v2.4.8 the same opt-in ships as a commented line inside
+        # gradle.properties, so even an OLD workflow that runs a bare
+        # `gradle assembleRelease` (no flags, no secrets) builds green.
+        # Strict mode = remove BOTH (the gradle.properties line and this
+        # flag) or provide a real KEYSTORE_BASE64 secret.
         run: gradle assembleRelease --no-daemon --stacktrace -PallowDebugSigning=true
         env:
           KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}

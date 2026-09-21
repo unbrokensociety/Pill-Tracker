@@ -23,7 +23,7 @@ android {
     //   right on top of it — no uninstall, no "app not installed".
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
     versionCode = 2200 + runNumber
-    versionName = "2.1.2"
+    versionName = "2.2.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

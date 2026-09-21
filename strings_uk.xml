@@ -277,4 +277,49 @@
 
     <string name="dialog_cancel">Скасувати</string>
     <string name="adherence_discipline">Дисципліна</string>
+    <!-- ═══ Onboarding tutorial (перший вхід + повтор із Налаштувань) ═══ -->
+    <string name="ob_skip">Пропустити</string>
+    <string name="ob_next">Далі</string>
+    <string name="ob_back">Назад</string>
+    <string name="ob_start">Почати</string>
+    <string name="ob_step_of">Крок %1$d із %2$d</string>
+
+    <string name="ob_welcome_title">Ласкаво просимо до Pill Tracker!</string>
+    <string name="ob_welcome_desc">Ваш особистий помічник для ліків — приватно, офлайн і завжди вчасно.</string>
+    <string name="ob_welcome_b1">Усі ліки в одному місці</string>
+    <string name="ob_welcome_b2">Працює повністю офлайн</string>
+    <string name="ob_welcome_b3">Дані залишаються на пристрої</string>
+
+    <string name="ob_home_title">Розклад на сьогодні</string>
+    <string name="ob_home_desc">Кожен прийом ліків як на долоні. Торкніться кола, щоб відзначити прийом — кільце прогресу заповниться, а серія днів зросте.</string>
+    <string name="ob_home_b1">Один дотик — прийом відзначено</string>
+    <string name="ob_home_b2">Лічильник серії мотивує не пропускати</string>
+    <string name="ob_home_b3">Розумні попередження про запаси</string>
+
+    <string name="ob_calendar_title">Календар та історія</string>
+    <string name="ob_calendar_desc">Відкрийте будь-яку дату та подивіться, що і коли ви приймали. Дні підсвічені кольором — жоден прийом не загубиться.</string>
+    <string name="ob_calendar_b1">Повна історія прийомів</string>
+    <string name="ob_calendar_b2">Швидка стрічка дат</string>
+    <string name="ob_calendar_b3">Дні з кольоровим кодуванням</string>
+
+    <string name="ob_meds_title">Ваші ліки</string>
+    <string name="ob_meds_desc">Дозування, форма, запаси та розклад для кожних ліків. Редагування і видалення — в один дотик.</string>
+    <string name="ob_meds_b1">Відстеження запасів</string>
+    <string name="ob_meds_b2">Будь-які форми: таблетки, краплі, сиропи…</string>
+    <string name="ob_meds_b3">Просте редагування</string>
+
+    <string name="ob_add_title">Додавання за секунди</string>
+    <string name="ob_add_desc">Назва, доза, час прийому — гнучкі розклади для будь-якої терапії, із нотатками та підказками про їжу.</string>
+    <string name="ob_add_b1">Кілька прийомів на день</string>
+    <string name="ob_add_b2">Свої інтервали та прийом за потребою</string>
+    <string name="ob_add_b3">Нотатки: до їжі, після їжі…</string>
+
+    <string name="ob_reminders_title">Нагадування та налаштування</string>
+    <string name="ob_reminders_desc">Точні нагадування, три мови, темна тема та експорт даних. Цей тур завжди доступний у Налаштуваннях.</string>
+    <string name="ob_reminders_b1">Точні нагадування про прийом</string>
+    <string name="ob_reminders_b2">English, українська, русский</string>
+    <string name="ob_reminders_b3">Повторити тур можна у Налаштуваннях</string>
+
+    <string name="ob_settings_replay_title">Показати навчання знову</string>
+    <string name="ob_settings_replay_desc">Короткий тур усіма важливими функціями</string>
 </resources>

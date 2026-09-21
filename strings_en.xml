@@ -277,4 +277,49 @@
 
     <string name="dialog_cancel">Cancel</string>
     <string name="adherence_discipline">Discipline</string>
+    <!-- ═══ Onboarding tutorial (первый вход + повтор из Настроек) ═══ -->
+    <string name="ob_skip">Skip</string>
+    <string name="ob_next">Next</string>
+    <string name="ob_back">Back</string>
+    <string name="ob_start">Get started</string>
+    <string name="ob_step_of">Step %1$d of %2$d</string>
+
+    <string name="ob_welcome_title">Welcome to Pill Tracker!</string>
+    <string name="ob_welcome_desc">Your personal medication assistant — private, offline and always on time.</string>
+    <string name="ob_welcome_b1">All your medications in one place</string>
+    <string name="ob_welcome_b2">Works fully offline</string>
+    <string name="ob_welcome_b3">Your data stays on your device</string>
+
+    <string name="ob_home_title">Today\'s schedule</string>
+    <string name="ob_home_desc">Every intake of the day at a glance. Tap the circle to log a dose — the progress ring fills up and your streak grows.</string>
+    <string name="ob_home_b1">One tap to mark a dose as taken</string>
+    <string name="ob_home_b2">Streak counter keeps you motivated</string>
+    <string name="ob_home_b3">Smart low-stock warnings</string>
+
+    <string name="ob_calendar_title">Calendar and history</string>
+    <string name="ob_calendar_desc">Open any date and see what you took and when. Days are color-coded, so no dose ever gets lost.</string>
+    <string name="ob_calendar_b1">Full intake history</string>
+    <string name="ob_calendar_b2">Quick date strip navigation</string>
+    <string name="ob_calendar_b3">Color-coded days</string>
+
+    <string name="ob_meds_title">Your medications</string>
+    <string name="ob_meds_desc">Dosage, form, stock and schedule for every medication. Editing and deleting — in one tap.</string>
+    <string name="ob_meds_b1">Stock tracking</string>
+    <string name="ob_meds_b2">Any form: pills, drops, syrups…</string>
+    <string name="ob_meds_b3">Easy editing</string>
+
+    <string name="ob_add_title">Add in seconds</string>
+    <string name="ob_add_desc">Name, dosage, intake times — flexible schedules for any therapy, with notes and food hints.</string>
+    <string name="ob_add_b1">Multiple intakes per day</string>
+    <string name="ob_add_b2">Custom intervals and as-needed meds</string>
+    <string name="ob_add_b3">Notes: before meals, with food…</string>
+
+    <string name="ob_reminders_title">Reminders and settings</string>
+    <string name="ob_reminders_desc">Exact-time notifications, three languages, dark theme and data export. This guide is always available in Settings.</string>
+    <string name="ob_reminders_b1">Precise medication reminders</string>
+    <string name="ob_reminders_b2">English, Ukrainian, Russian</string>
+    <string name="ob_reminders_b3">Replay this guide from Settings</string>
+
+    <string name="ob_settings_replay_title">Show the guide again</string>
+    <string name="ob_settings_replay_desc">A quick tour of all the important features</string>
 </resources>

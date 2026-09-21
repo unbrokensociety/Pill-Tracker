@@ -34,6 +34,8 @@ val flatSources: Map<String, String> = mapOf(
     "PrivacyPolicyDialog.kt" to "app/src/main/java/com/example/ui/components/PrivacyPolicyDialog.kt",
     "TermsOfServiceDialog.kt" to "app/src/main/java/com/example/ui/components/TermsOfServiceDialog.kt",
     "LocaleHelper.kt" to "app/src/main/java/com/example/ui/locale/LocaleHelper.kt",
+    // Detailed first-launch tutorial (+ replay button in Settings).
+    "OnboardingTutorial.kt" to "app/src/main/java/com/example/ui/components/OnboardingTutorial.kt",
     // Localized string resources. Kept flat in the repo root and synced into
     // the standard res folders before every build (same mechanism as the
     // sources above), so translations update via simple file uploads.

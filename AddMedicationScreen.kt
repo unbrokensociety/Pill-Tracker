@@ -276,11 +276,7 @@ fun AddMedicationScreen(
                                 focusedLabelColor = MaterialTheme.colorScheme.primary,
                                 unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            // Multi-line notes: food-preset chips append comma-separated
-                            // phrases — words wrap to the next line instead of the old
-                            // single-line horizontal scroll.
-                            singleLine = false,
-                            maxLines = 4
+                            singleLine = true
                         )
 
                         // Quick Food Presets — FlowRow: chips keep their natural

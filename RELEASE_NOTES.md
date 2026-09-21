@@ -1,3 +1,20 @@
+# 🚀 PillTracker v2.2.0 — Release Notes
+
+### 🧭 New: detailed first-launch guide (onboarding)
+* **A beautiful step-by-step tour** now greets you on the very first launch: six animated pages walk through every important function — the Today screen (logging doses, streaks, low-stock warnings), the Calendar and history, the medication list, adding medications (multiple intakes, custom intervals, as-needed meds, notes), and reminders & settings.
+* **«Skip» button is always at the top** — one tap and you are straight in the app.
+* Progress dots and a step counter, page transitions with soft springs, a gently breathing icon, haptic button presses — all in the app's Liquid Glass style, localized in English, Ukrainian and Russian.
+* **Replay anytime**: at the bottom of Settings there is now a «Show the guide again» card — tap it and the full tour replays, so every user can (re)discover all the features.
+
+### ⏪ Base rolled back to 2.1.1 — the last "updates always worked" release
+* The app code returns to the **2.1.1 state** (the release auto-updates kept working on), and the only thing added on top is the onboarding feature itself. If you preferred any later experimental tweaks, they are gone — this build is 2.1.1's known-good base + the guide.
+
+### 🔁 Updates — guaranteed to keep working
+* The versioning scheme is the proven growing formula: `versionCode = 2200 + build number`. It only ever rises and stays above every previously shipped build, so **every future release installs right on top** of whatever you have now — no uninstall, no "app not installed", your data is kept.
+* Same permanent signing key as all releases since v1.80 (the keystore lives in the repo, signature verified locally for this build).
+
+---
+
 # 🚀 PillTracker v2.1.2 — Release Notes
 
 ### 🔁 Update fix — versionCode restored to the growing formula

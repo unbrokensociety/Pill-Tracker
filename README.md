@@ -33,6 +33,7 @@
 * ⏰ **Exact Alarm Engine (`AlarmManager.setAlarmClock`)**: Guarantees alarm notifications trigger precisely on time without OS battery-saver or Doze mode delays.
 * 🧪 **True Liquid Glass Design**: The floating navigation island blurs the live content behind it — hardware gaussian blur (`RenderEffect`) on Android 12+, and a CPU-rendered frosted snapshot on Android 8–11, so real glass works on every device. The blur lives in its own isolated layer, so the icons and labels in the bar always stay pixel-crisp above the frost.
 * 🎯 **Fluid Tab Navigation**: A soft tinted pill glides across the bottom bar with jelly stretch physics, drag-scrubbing and edge resistance.
+* 🧭 **First-Launch Onboarding Guide**: A beautiful six-page animated tour walks every new user through all the important features — with a «Skip» button always at the top, progress dots and localized step texts (EN/UK/RU). Replays anytime via the «Show the guide again» card at the bottom of Settings.
 * 📅 **Interactive Calendar & Tracker**: Track daily doses, mark intakes as taken/skipped, and review historical compliance.
 * 💊 **Comprehensive Medication Management**: Customize dose amounts, medication form (capsule, tablet, syrup, drops, injection, spray, patch), color coding, start dates, and multiple daily reminders.
 * 🪄 **Redrawn Medication Icons**: All seven form icons are vector-painted with volumetric gradients and glossy highlights — crisp at any size.
@@ -59,6 +60,7 @@
 * ⏰ **Точні нагадування (`setAlarmClock`)**: Апаратний системний будильник спрацьовує хвилина в хвилину навіть у режимі глибокого сну пристрою (Doze mode).
 * 🧪 **Справжнє «Рідке Скло»**: Плаваюча навігаційна панель розмиває контент під собою в реальному часі — апаратне гаусове розмиття на Android 12+ і програмний морозний ефект на Android 8–11. Скло працює на будь-якому пристрої, а іконки та підписи панелі залишаються ідеально чіткими над морозом.
 * 🎯 **Плавна анімована навігація**: М'який індикатор-пігулка ковзає між вкладками з фізикою пружини, підтримкою перетягування пальцем та опором на краях.
+* 🧭 **Навчання при першому вході**: Гарний шестисторінковий анімований тур знайомить кожного нового користувача з усіма важливими функціями — з кнопкою «Пропустити» зверху, крапками прогресу та перекладами (EN/UK/RU). Повторити можна будь-коли через картку «Показати навчання знову» внизу Налаштувань.
 * 📅 **Інтерактивний Календар**: Зручний перегляд розкладу на будь-який день із можливістю відмітити прийом ліків в один дотик.
 * 💊 **Гнучкий каталог ліків**: Налаштування дозування, форми випуску (капсула, таблетка, сироп, краплі, ін'єкція, спрей, пластир), дати початку курсів та індивідуального колірного оформлення.
 * 🪄 **Перемальовані іконки ліків**: Усі сім форм намальовані векторно з об'ємними градієнтами та відблисками — чіткі на будь-якому розмірі.
@@ -75,6 +77,7 @@
 * ⏰ **Точные напоминания (`setAlarmClock`)**: Системный будильник срабатывает точно в указанную минуту без задержек режима энергосбережения.
 * 🧪 **Настоящее «Жидкое Стекло»**: Плавающая навигационная панель размывает контент под собой в реальном времени — аппаратное гауссово размытие на Android 12+ и программный морозный эффект на Android 8–11. Стекло работает на любом устройстве, а иконки и подписи панели остаются идеально чёткими поверх мороза.
 * 🎯 **Плавная скользящая навигация**: Мягкий индикатор-пилюля скользит между вкладками с физикой пружины, перетаскиванием пальцем и сопротивлением на краях.
+* 🧭 **Обучение при первом входе**: Красивый шестистраничный анимированный тур знакомит каждого нового пользователя со всеми важными функциями — с кнопкой «Пропустить» сверху, точками прогресса и переводами (EN/UK/RU). Повторить можно в любой момент через карточку «Показать обучение снова» внизу Настроек.
 * 📅 **Интерактивный Календарь**: Удобный график приема на выбранный день с подтверждением в один клик.
 * 💊 **Персональный каталог**: Настройка дозировки, формы выпуска (капсула, таблетка, сироп, капли, инъекция, спрей, пластырь), нескольких времён приёма и цветовых меток.
 * 🪄 **Перерисованные иконки лекарств**: Все семь форм нарисованы векторно с объёмными градиентами и бликами — чёткие на любом размере.

@@ -1,24 +1,26 @@
 package com.example.ui.components
 
 /*
- * UpdateChecker v2 — самообновление целиком внутри приложения.
+ * UpdateChecker v3 — самообновление целиком внутри приложения.
  *
- * Что изменилось против v2.3.0:
- *  • APK качает НЕ DownloadManager, а HttpURLConnection прямо в
- *    cacheDir/updates/ — файл невидим: его нет в проводнике, нет
- *    в системных «Загрузках», нет уведомления. «Скачивает в себя».
- *  • Баг Android 14+: broadcast ACTION_DOWNLOAD_COMPLETE больше не нужен
- *    (NOT_EXPORTED-приёмник его не получал от системного DownloadManager —
- *    из-за этого установщик никогда не открывался). Теперь по завершении
- *    скачивания установщик запускается прямо из корутины; если приложение
- *    было в фоне — откроется по ON_RESUME.
- *  • Сравнение версий — по ИМЕНИ версии (semver, «2.3.1 (#89)» в названии
- *    релиза). CI-пересборка ТОЙ ЖЕ версии с выросшим versionCode больше
- *    не считается обновлением: у последней версии всегда показывает
- *    «у вас последняя версия». versionCode — запасной критерий, если имя
- *    не спарсилось.
- *  • После установки новой версии первый же её запуск удаляет оставшийся
- *    APK (cleanupDownloads при старте) — «мусор» не накапливается.
+ * Что изменилось против v2.3.1 (краш и ложные «доступно обновление»):
+ *  • КРАШ ПРИ ПРОВЕРКЕ ОБНОВЛЕНИЙ устранён: parseSemver читал
+ *    groupValues[1..3] у регулярки БЕЗ групп — IndexOutOfBoundsException
+ *    не ловился catch(NumberFormatException) и ронял всё приложение на
+ *    каждой проверке (авто при старте и по кнопке). Теперь совпадение
+ *    режется по точкам, а любые исключения глотаются.
+ *  • Версия релиза определяется по МАРКЕРУ «app-version: X.Y.Z» в начале
+ *    RELEASE_NOTES.md (CI кладёт файл в тело релиза как есть). Это
+ *    надёжнее названия релиза («Pill Tracker v1.92» — семвера нет) и
+ *    безопаснее старого парсинга «versionCode …» из тела (в старых
+ *    заметках оставался текст «versionCode 2100» → вечное «доступно
+ *    обновление»). Пересборка ТОЙ ЖЕ версии — НЕ обновление.
+ *  • Заметки в диалоге — КОМПАКТНЫ: максимум 3 строки по ~112 символов,
+ *    без markdown-заголовков («# …»), тех. подписи CI отрезаны по «---».
+ *  • APK качает HttpURLConnection прямо в cacheDir/updates/ — файл
+ *    невидим: его нет в проводнике, нет уведомления. Установщик
+ *    открывается сам по завершении (или по ON_RESUME из фона);
+ *    после установки новая версия подчищает файл за собой.
  *
  * Поток:
  *  1. Автопроверка при старте (не чаще 3 ч) / кнопка в Настройках →
@@ -101,7 +103,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.R
@@ -147,7 +148,7 @@ object UpdateCenter {
         "https://github.com/unbrokensociety/Pill-Tracker/releases"
 
     private const val PREFS = "update_center_prefs"
-    private const val KEY_SKIPPED_CODE = "skipped_version_code"
+    private const val KEY_SKIPPED_VERSION = "skipped_version_name"
     private const val KEY_LAST_CHECK = "last_check_ms"
 
     /** Проверяем автоматически не чаще, чем раз в 3 часа. */
@@ -159,21 +160,14 @@ object UpdateCenter {
     private const val TMP_FILE_NAME = "pill-tracker-update.tmp"
 
     data class Release(
-        val tag: String,             // «v1.89»
-        val versionCode: Long,       // из тела релиза (пишет CI); 0 = маркера нет
-        val versionName: String?,    // «2.3.1» — из названия релиза «2.3.1 (#89)»
+        val tag: String,             // «v1.92»
+        val versionName: String?,    // «2.3.2» — из маркера «app-version:» в теле релиза
         val apkUrl: String,          // прямой URL .apk из assets
         val pageUrl: String,         // страница релиза
         val noteLines: List<String>  // короткий список «что нового»
     )
 
     /* ── версия установленного приложения ── */
-
-    fun installedVersionCode(context: Context): Long {
-        val pm = context.packageManager
-        val info = pm.getPackageInfo(context.packageName, 0)
-        return PackageInfoCompat.getLongVersionCode(info)
-    }
 
     @Suppress("DEPRECATION")
     fun installedVersionName(context: Context): String? = try {
@@ -196,15 +190,15 @@ object UpdateCenter {
         prefs(context).edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis()).apply()
     }
 
-    /** Эту версию уже откладывали «Позже»? */
+    /** Эту версию уже откладывали «Позже»? (запоминаем по ИМЕНИ версии) */
     fun isSkipped(context: Context, release: Release): Boolean {
-        if (release.versionCode <= 0) return false
-        return prefs(context).getLong(KEY_SKIPPED_CODE, -1L) >= release.versionCode
+        val v = release.versionName ?: return false
+        return prefs(context).getString(KEY_SKIPPED_VERSION, "") == v
     }
 
     fun skip(context: Context, release: Release) {
-        if (release.versionCode > 0) {
-            prefs(context).edit().putLong(KEY_SKIPPED_CODE, release.versionCode).apply()
+        release.versionName?.let {
+            prefs(context).edit().putString(KEY_SKIPPED_VERSION, it).apply()
         }
     }
 
@@ -213,14 +207,15 @@ object UpdateCenter {
     /** «2.3.1», «2.3.1 (#89)», «Pill Tracker 2.3.1» → [2, 3, 1]. */
     private fun parseSemver(source: String?): IntArray? {
         if (source.isNullOrBlank()) return null
-        val m = Regex("\\d+\\.\\d+\\.\\d+").find(source) ?: return null
         return try {
-            intArrayOf(
-                m.groupValues[1].toInt(),
-                m.groupValues[2].toInt(),
-                m.groupValues[3].toInt()
-            )
-        } catch (e: NumberFormatException) {
+            // ВАЖНО: у регулярки нет групп — берём ВСЁ совпадение и режем
+            // по точкам. (groupValues[1..3] на regex без групп кидают
+            // IndexOutOfBoundsException — это и был краш при проверке
+            // обновлений в v2.3.1.)
+            val m = Regex("\\d+\\.\\d+\\.\\d+").find(source) ?: return null
+            val parts = m.value.split('.')
+            intArrayOf(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
+        } catch (e: Exception) {
             null
         }
     }
@@ -228,26 +223,33 @@ object UpdateCenter {
     /**
      * Релиз свежее установленного?
      *
-     * ГЛАВНЫЙ критерий — имя версии (semver). Пересборка той же версии
-     * CI-ем с бо́льшим versionCode (например, после правки README) —
-     * НЕ обновление: показываем «у вас последняя версия», а не дёргаем
-     * человека карточкой «доступно обновление» до той же версии.
-     * Если имя не спарсилось ни у нас, ни у них — запасной критерий:
-     * строго versionCode.
+     * Источник правды — ИМЯ версии из маркера «app-version: X.Y.Z»,
+     * который мы сами пишем в самое начало RELEASE_NOTES.md (он же
+     * попадает в тело GitHub-релиза). Пересборка ТОЙ ЖЕ версии CI-ем
+     * (вырос номер ранка, имя не поменялось) — НЕ обновление: авто-чек
+     * молчит, ручная проверка говорит «у вас последняя версия».
+     * Если маркера нет (старый релиз) или имя не спарсилось — молчим:
+     * лучше один раз поставить руками, чем дёргать ложной карточкой.
      */
-    fun isNewerThanInstalled(context: Context, release: Release): Boolean {
+    fun isNewerThanInstalled(context: Context, release: Release): Boolean = try {
         val remote = parseSemver(release.versionName ?: release.tag)
         val local = parseSemver(installedVersionName(context))
         if (remote != null && local != null) {
+            var newer = false
             for (i in 0 until 3) {
-                if (remote[i] != local[i]) return remote[i] > local[i]
+                if (remote[i] != local[i]) {
+                    newer = remote[i] > local[i]
+                    break
+                }
             }
-            return false // та же версия → обновления нет
+            newer
+        } else {
+            false // ничего достоверно не спарсили → не пугаем карточкой
         }
-        if (release.versionCode > 0) {
-            return release.versionCode > installedVersionCode(context)
-        }
-        return false // ничего не спарсили → не пугаем ложной карточкой
+    } catch (e: Exception) {
+        // Ни одно исключение здесь не должно ронять приложение —
+        // проверка обновлений вторична по отношению к работе трекера.
+        false
     }
 
     /* ── GitHub API ── */
@@ -279,13 +281,15 @@ object UpdateCenter {
         val rawNotes = json.optString("body", "")
         val pageUrl = json.optString("html_url", "").ifBlank { RELEASES_PAGE }
 
-        // Название релиза CI даёт как «2.3.1 (#89)» — отсюда имя версии.
-        val releaseName = json.optString("name", "").trim()
-        val versionName = Regex("\\d+\\.\\d+\\.\\d+").find(releaseName)?.value
-
-        // CI пишет в тело: «🔧 Build info: versionCode 3089 · cert …»
-        val code = Regex("versionCode\\D{0,12}(\\d{1,9})")
-            .find(rawNotes)?.groupValues?.getOrNull(1)?.toLongOrNull() ?: 0L
+        // Имя версии: ПЕРВЫМ ДЕЛОМ маркер «app-version: X.Y.Z», который мы
+        // пишем в начало RELEASE_NOTES.md (CI кладёт файл в тело релиза
+        // как есть). Название релиза CI даёт как «Pill Tracker v1.92» —
+        // семвера там нет, поэтому маркер — единственный надёжный источник.
+        val versionName = Regex("app-version:\\s*[vV]?(\\d+\\.\\d+\\.\\d+)", RegexOption.IGNORE_CASE)
+            .find(rawNotes)?.groupValues?.getOrNull(1)
+            ?: Regex("\\d+\\.\\d+\\.\\d+").find(
+                json.optString("name", "").trim()
+            )?.value
 
         var apkUrl = ""
         val assets = json.optJSONArray("assets") ?: return null
@@ -299,19 +303,31 @@ object UpdateCenter {
         }
         if (tag.isBlank() || apkUrl.isBlank()) return null
 
-        // Заметки: строки до разделителя «---» (тех. подпись CI не показываем),
-        // максимум 4 строки, без markdown-мусора.
+        // Заметки: КОМПАКТНО. Берём строки до разделителя «---» (тех.
+        // подпись CI не показываем), выкидываем заголовки «#…»/«###…» и
+        // служебный маркер «> app-version:…», снимаем markdown, длинные
+        // строки режем до ~112 символов — в диалоге максимум 3 короткие
+        // строки, а не стена текста.
         val notes = rawNotes
             .substringBefore("\n---")
             .lineSequence()
             .map { it.trim() }
-            .map { it.removePrefix("- ").removePrefix("* ").removePrefix("• ") }
-            .map { it.replace("**", "").replace("###", "").trim() }
-            .filter { it.isNotBlank() && it.length > 2 }
-            .take(4)
+            .filter {
+                it.isNotBlank() && !it.startsWith("#") && !it.startsWith(">")
+            }
+            .map {
+                it.removePrefix("- ").removePrefix("* ").removePrefix("• ")
+                    .replace("**", "").replace("`", "")
+                    .trim()
+            }
+            .filter { it.length > 2 }
+            .map { line ->
+                if (line.length > 112) line.take(109).trimEnd() + "…" else line
+            }
+            .take(3)
             .toList()
 
-        return Release(tag, code, versionName, apkUrl, pageUrl, notes)
+        return Release(tag, versionName, apkUrl, pageUrl, notes)
     }
 
     /* ── разрешение на установку (один раз, Android 8+) ── */
@@ -517,19 +533,24 @@ fun UpdateGate() {
     fun runCheck(manual: Boolean) {
         if (manual) uiState = UpdateUi.CHECKING
         scope.launch {
-            val r = UpdateCenter.fetchLatest()
-            UpdateCenter.markChecked(context)
-            if (r == null) {
-                uiState = UpdateUi.FAILED
-            } else if (UpdateCenter.isNewerThanInstalled(context, r) &&
-                !UpdateCenter.isSkipped(context, r)
-            ) {
-                release = r
-                uiState = UpdateUi.ASKING
-            } else if (manual) {
-                uiState = UpdateUi.UP_TO_DATE
-            } else {
-                uiState = null // авто-проверка молчит, когда всё актуально
+            try {
+                val r = UpdateCenter.fetchLatest()
+                UpdateCenter.markChecked(context)
+                if (r == null) {
+                    uiState = UpdateUi.FAILED
+                } else if (UpdateCenter.isNewerThanInstalled(context, r) &&
+                    !UpdateCenter.isSkipped(context, r)
+                ) {
+                    release = r
+                    uiState = UpdateUi.ASKING
+                } else if (manual) {
+                    uiState = UpdateUi.UP_TO_DATE
+                } else {
+                    uiState = null // авто-проверка молчит, когда всё актуально
+                }
+            } catch (e: Exception) {
+                // Страховка: проверка обновлений никогда не роняет приложение.
+                uiState = if (manual) UpdateUi.FAILED else null
             }
         }
     }

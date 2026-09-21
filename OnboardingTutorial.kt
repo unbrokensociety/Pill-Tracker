@@ -654,6 +654,18 @@ private fun CoachTour(
         label = "coachPulseAlpha"
     )
 
+    /* «Тапни сюда»: фаза расходящихся колец в центре дырки */
+    val tapPulse = rememberInfiniteTransition(label = "tapPulse")
+    val tapPhase by tapPulse.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween(1500, easing = LinearEasing),
+            RepeatMode.Restart
+        ),
+        label = "tapPhase"
+    )
+
     val holeRect = CoachMarks.rects[step.tag]
     val density = LocalDensity.current
     val appear = remember(stepIndex) { Animatable(0f) }
@@ -661,7 +673,9 @@ private fun CoachTour(
         appear.animateTo(1f, tween(340, easing = EaseOutCubic))
     }
 
-    val scrimAlpha = (0.60f * appear.value)
+    // ГУСТОЙ scrim: приложение за оверлеем не просвечивает — «дырка»
+    // подсветки остаётся единственным ярким пятном на экране.
+    val scrimAlpha = (0.88f * appear.value)
 
     BoxWithConstraints(
         modifier = Modifier
@@ -756,6 +770,22 @@ private fun CoachTour(
                     cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx()),
                     style = Stroke(width = 2.5.dp.toPx())
                 )
+
+                // «Тапни сюда»: расходящееся кольцо + точка в центре дырки
+                val c = hole.center
+                val rMin = kotlin.math.min(hole.width, hole.height) / 2f
+                val ringR = rMin * (0.34f + 0.62f * tapPhase)
+                drawCircle(
+                    color = Color.White.copy(alpha = (1f - tapPhase) * 0.50f),
+                    radius = ringR,
+                    center = c,
+                    style = Stroke(width = 3.dp.toPx())
+                )
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.92f),
+                    radius = 5.dp.toPx(),
+                    center = c
+                )
             }
         }
 
@@ -787,22 +817,48 @@ private fun CoachTour(
             }
         }
 
-        // Тултип шага: под дыркой (или над, если дырка внизу)
-        val tooltipHeight = 230.dp
-        val below: Boolean
-        val topOffset: Dp
-        with(density) {
-            val holeBottomDp = holeRect?.bottom?.toDp() ?: 0.dp
-            val holeTopDp = holeRect?.top?.toDp() ?: 0.dp
-            below = holeBottomDp + tooltipHeight + 90.dp < maxHeight
-            topOffset = if (holeRect == null) {
-                (maxHeight - tooltipHeight) / 2
-            } else if (below) {
-                (holeBottomDp + 16.dp).coerceAtMost(maxHeight - tooltipHeight - 16.dp)
-            } else {
-                (holeTopDp - tooltipHeight - 16.dp).coerceAtLeast(90.dp)
+        // ── Тултип шага: меряем РЕАЛЬНУЮ высоту карточки ──
+        var tooltipH by remember { mutableStateOf(232.dp) }
+        val arrowSize = 14.dp
+        val gap = 10.dp
+
+        // Куда ставить карточку: под дыркой (стрелка сверху смотрит на
+        // кнопку), а если снизу не влезает — над дыркой (стрелка снизу).
+        // Меряется реальная высота карточки — она зависит от текста шага,
+        // поэтому константа вроде 230dp «на глаз» здесь не годится:
+        // карточка может наехать на дырку или вылезти за экран.
+        val tipTopTarget: Dp
+        val belowHole: Boolean
+        val arrowCx: Dp
+        if (holeRect == null) {
+            tipTopTarget = (maxHeight - tooltipH) / 2
+            belowHole = true
+            arrowCx = maxWidth / 2
+        } else {
+            with(density) {
+                val holeBottom = holeRect.bottom.toDp()
+                val holeTop = holeRect.top.toDp()
+                val cx = holeRect.center.x.toDp()
+                val fitsBelow =
+                    holeBottom + tooltipH + gap + 28.dp < maxHeight - 24.dp
+                if (fitsBelow) {
+                    tipTopTarget = (holeBottom + gap)
+                        .coerceAtMost(maxHeight - tooltipH - 24.dp)
+                    belowHole = true
+                } else {
+                    tipTopTarget = (holeTop - tooltipH - gap)
+                        .coerceAtLeast(100.dp)
+                    belowHole = false
+                }
+                arrowCx = cx
             }
         }
+        val topOffset by animateDpAsState(
+            targetValue = tipTopTarget,
+            animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
+            label = "tipTop"
+        )
+        val arrowCxSafe = arrowCx.coerceIn(36.dp, maxWidth - 36.dp)
 
         AnimatedContent(
             targetState = stepIndex,
@@ -826,6 +882,35 @@ private fun CoachTour(
                 modifier = Modifier
                     .fillMaxWidth()
                     .graphicsLayer { alpha = appear.value }
+                    // Реальная высота карточки → позиция пересчитывается
+                    .onGloballyPositioned { coords ->
+                        with(density) { tooltipH = coords.size.height.toDp() }
+                    }
+                    // Стрелка-ромб к подсвеченной кнопке (рисуется ДО clip,
+                    // поэтому не срезается скруглением карточки)
+                    .drawBehind {
+                        val a = arrowSize.toPx()
+                        // координаты AnimatedContent сдвинуты на 20dp паддинг
+                        val cx = (arrowCxSafe - 20.dp).toPx()
+                            .coerceIn(a, size.width - a)
+                        val tipColor = Color(0xFF1D242F)
+                        val path = Path()
+                        if (belowHole) {
+                            // карточка ПОД дыркой: остриё вверх, из верхнего ребра
+                            path.moveTo(cx, -a / 2f)
+                            path.lineTo(cx + a / 2f, a / 2f)
+                            path.lineTo(cx, a * 1.5f)
+                            path.lineTo(cx - a / 2f, a / 2f)
+                        } else {
+                            // карточка НАД дыркой: остриё вниз, из нижнего ребра
+                            path.moveTo(cx, size.height + a / 2f)
+                            path.lineTo(cx + a / 2f, size.height - a / 2f)
+                            path.lineTo(cx, size.height - a * 1.5f)
+                            path.lineTo(cx - a / 2f, size.height - a / 2f)
+                        }
+                        path.close()
+                        drawPath(path, tipColor)
+                    }
                     .clip(RoundedCornerShape(24.dp))
                     .background(
                         Brush.verticalGradient(
@@ -911,6 +996,32 @@ private fun CoachTour(
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.85f)
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Точки прогресса тура
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    repeat(steps.size) { i ->
+                        val active = i == index
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 3.dp)
+                                .size(
+                                    width = if (active) 18.dp else 6.dp,
+                                    height = 6.dp
+                                )
+                                .clip(CircleShape)
+                                .background(
+                                    if (active) MaterialTheme.colorScheme.primary
+                                    else Color.White.copy(alpha = 0.22f)
+                                )
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(14.dp))
 

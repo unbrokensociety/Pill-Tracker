@@ -15,14 +15,16 @@ android {
     applicationId = "com.aistudio.meditracker.zqxpr"
     minSdk = 26
     targetSdk = 36
-    // Versioning — the proven scheme from the old builds, restored:
-    //   versionCode = 2310 + GITHUB_RUN_NUMBER, so every CI build grows
-    //   and can NEVER regress. Base 2310 stays above every shipped build
-    //   (v1.86 had 2286). NOTE: CI additionally re-pins versionCode to
-    //   3000 + run_number (see android.yml) — both formulas only grow.
+    // Versioning — the proven scheme from the old builds:
+    //   versionCode = 2310 + GITHUB_RUN_NUMBER (CI sets the env var),
+    //   so every CI build grows and can NEVER regress. Base 2310 keeps
+    //   every build above everything ever shipped (v1.91 = 2401).
+    //   versionName is the human version; it MUST match the
+    //   «app-version:» marker at the top of RELEASE_NOTES.md — the
+    //   in-app updater compares those to detect real updates.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
     versionCode = 2310 + runNumber
-    versionName = "2.3.1"
+    versionName = "2.3.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

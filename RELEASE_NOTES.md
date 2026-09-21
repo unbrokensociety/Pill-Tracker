@@ -1,3 +1,35 @@
+> app-version: 2.3.2
+
+### Pill Tracker v2.3.2 — hotfix: updater crash, tour overlay, dead swipes
+
+* Fixed the crash when checking for updates — both the auto-check on launch and the «Check for updates» button
+* Update dialog now shows short notes: 3 compact lines instead of a wall of text
+* No more false «update available» cards when you already run the latest version
+* Tour: dark non-transparent overlay, tooltips that never cover the highlighted button, progress dots
+* Swiping: a swipe that starts slightly diagonal still turns the page — no more «dead» swipes
+
+---
+
+### 🔧 Crash on «check for updates» — root cause found and killed
+* **The updater's version parser crashed the whole app.** The semver regex had no capture groups, yet the code read `groupValues[1..3]` — an `IndexOutOfBoundsException` that the `catch(NumberFormatException)` couldn't catch. It fired inside the check coroutine on **every** update check: the quiet auto-check 1.5 s after launch and the manual «Check for updates» button alike. The parser now splits the matched text, and the entire update center is exception-proof: a failed check can never take the medication tracker down.
+* **False «update available» is gone for good.** The old code scraped a `versionCode` number out of the release body — and the historical notes at the bottom of that body still said «versionCode 2100» from the v2.1.0 era, so the math was nonsense (3000 vs 2100 vs 2401). The release now carries a machine-readable `app-version: X.Y.Z` marker at the very top of the notes (this line above), the app compares it with its own version name: same version — silent; rebuild of the same version — silent; genuinely newer — the update card appears.
+
+### 📝 Release notes in the dialog — finally small
+* The «What's new» block in the update card is capped at **3 short lines** (~112 characters each): markdown headers are stripped, bold/backtick noise removed, long lines end with «…», and the CI signature after the `---` separator never shows. No more scrolling through a text wall to reach the «Update» button.
+
+### 🧭 Tour overlay — opaque and tidy
+* The scrim behind the coach-marks is now **88% dark** — the app no longer bleeds through the overlay (it was 60% before, which read as a muddy semi-transparent mess).
+* Tooltips measure their **real height** and reposition with a spring; a small arrow points straight at the highlighted button; the card never covers the highlight and never runs off-screen.
+* A pulsing «tap here» ring breathes in the center of every highlight, and progress dots (6 steps) sit inside the tooltip.
+
+### 👆 Swiping — the «dead swipe» fixed
+* The axis-lock used to decide **once**, at the very start of a gesture, whether it was horizontal. A swipe that began slightly diagonal was locked out as «vertical» forever — no matter how horizontal it became, the page refused to turn. That was the «фигня при свайпе». The decision is now re-evaluated on every pointer event: the page follows the finger as soon as the gesture is confidently horizontal, while vertical and diagonal scrolls on the lists are still untouchable.
+
+### 🔁 Updates — still guaranteed
+* CI version code keeps the proven `2310 + build number` formula (v1.91 = 2401, every next build is higher — installs on top, data kept, same permanent signing key).
+
+---
+
 # 🚀 PillTracker v2.3.1 — Release Notes
 
 ### 🔧 Updater fixed: downloads to itself, installs by itself, cleans up after itself

@@ -732,12 +732,16 @@ fun RowScope.FloatingNavItem(
  *
  * Решение: встроенный скролл пейджера выключен (userScrollEnabled =
  * false), а этот фильтр решает, чей это жест:
- *   • страница переворачивается только если |dx| > 1.6·|dy| после
- *     touch slop — то есть свайп УВЕРЕННО горизонтальный;
- *   • вертикальные и диагональные жесты не потребляются вовсе и
- *     целиком уходят спискам;
- *   • если жест уже забрал дочерний скролл (позиция isConsumed) —
- *     пейджер не вмешивается;
+ *   • страница идёт за пальцем, как только свайп УВЕРЕННО
+ *     горизонтальный (|dx| > 1.6·|dy| и |dx| > touch-slop) — решение
+ *     ПЕРЕСМАТРИВАЕТСЯ на каждом событии: свайп, начавшийся чуть
+ *     диагонально, всё равно перевернёт страницу, как только станет
+ *     горизонтальным (в v2.3.1 решение принималось один раз и
+ *     «кривой» старт навсегда замораживал пейджер — вот та «фигня»
+ *     при свайпе);
+ *   • если жест забрал дочерний скролл (позиция isConsumed — список
+ *     уже листается) — пейджер не вмешивается вовсе: вертикаль
+ *     всегда принадлежит спискам;
  *   • флинг < 560dp/s не доверстывает страницу: медленный отпуск
  *     просто snap'ится к ближайшей, «случайных» перелистываний нет.
  * ──────────────────────────────────────────────────────────────── */
@@ -747,7 +751,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
     state: PagerState,
     scope: CoroutineScope
 ) {
-    val slop = viewConfiguration.touchSlop * 1.35f
+    val slop = viewConfiguration.touchSlop
     val flingPx = 560.dp.toPx()
     val axisRatio = 1.6f
     var settleJob: Job? = null
@@ -760,7 +764,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
         tracker.resetTracking()
         tracker.addPosition(down.uptimeMillis, down.position)
 
-        var locked = 0        // 0 — не решено, 1 — горизонталь (наш), 2 — вертикаль/чужой
+        var horizontal = false // сейчас ведём страницу пальцем
         var dx = 0f
         var dy = 0f
 
@@ -770,8 +774,9 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
             if (!change.pressed) break
 
             if (change.isConsumed) {
-                // Жест уже забрал дочерний элемент (список и т.п.) — не мешаем.
-                if (locked == 0) locked = 2
+                // Жест забрал дочерний элемент (вертикальный список и
+                // т.п.) — не мешаем; если даже мы уже вели страницу —
+                // тихо отпускаем и в конце snap'имся к ближайшей.
                 continue
             }
 
@@ -782,11 +787,14 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
             dx += delta.x
             dy += delta.y
 
-            if (locked == 0 && (abs(dx) > slop || abs(dy) > slop)) {
-                locked = if (abs(dx) > axisRatio * abs(dy)) 1 else 2
+            // Решение НЕ одноразовое: жест, начавшийся вертикально или
+            // диагонально на не-скроллируемом месте (шапка, карточка),
+            // «перехватывается», как только стал уверенно горизонтальным.
+            if (!horizontal && abs(dx) > slop && abs(dx) > axisRatio * abs(dy)) {
+                horizontal = true
             }
 
-            if (locked == 1) {
+            if (horizontal) {
                 change.consume()
                 // dispatchRawDelta — синхронный путь (как у родного scrollable):
                 // внутри restricted-скопа awaitEachGesture нельзя звать
@@ -795,7 +803,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
             }
         }
 
-        if (locked == 1) {
+        if (horizontal) {
             val velocity = tracker.calculateVelocity().x
             val base = state.currentPage + state.currentPageOffsetFraction
             val target = when {

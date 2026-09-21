@@ -28,7 +28,6 @@ val LightOnErrorContainer = Color(0xFF991B1B)
 val LightOutline = Color(0xFFCBD5E1)
 val LightOutlineVariant = Color(0xFFE2E8F0)
 
-// 2. Telegram AMOLED Pure Dark Theme Palette (Pure Pitch Black & Vivid Azure Cyan)
 val TelegramDarkBackground = Color(0xFF090D14)
 val TelegramDarkOnBackground = Color(0xFFF8FAFC)
 val TelegramDarkSurface = Color(0xFF151C28)
@@ -79,6 +78,4 @@ val BrandError = Color(0xFFF87171)
 val BrandOnError = Color(0xFF450A0A)
 val BrandErrorContainer = Color(0xFF7F1D1D)
 val BrandOnErrorContainer = Color(0xFFFECACA)
-
-
 

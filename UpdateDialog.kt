@@ -1,12 +1,5 @@
 package com.aistudio.meditracker.ui.components
 
-/*
- * UpdateDialog — каркас карточки обновления (v2.4.7: вынесено из
- * UpdateChecker.kt, код без изменений): затемнение, тёмная карточка,
- * шапка с иконкой и крестиком, AnimatedContent-переключатель тел
- * состояний (сами тела — в UpdateDialogBodies.kt).
- */
-
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -50,15 +43,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.aistudio.meditracker.R
 
-/**
- * Состояния карточки обновления. v2.4.7: internal (был private-в-файле),
- * потому что тела состояний теперь живут в UpdateDialogBodies.kt.
- */
 internal enum class UpdateUi {
-    CHECKING,             // «Проверяем…»
-    ASKING,               // «Доступно обновление» + кнопки
-    NEED_PERMISSION,      // инструкция «разреши один раз»
-    AWAITING_PERMISSION,  // ушли в настройки, ждём возвращения
+    CHECKING,
+    ASKING,
+    NEED_PERMISSION,
+    AWAITING_PERMISSION,
     DOWNLOADING,
     UP_TO_DATE,
     FAILED
@@ -84,7 +73,7 @@ internal fun UpdateDialog(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.62f))
-            // Тап по затемнению закрывает карточку (как системный «назад»)
+
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -97,15 +86,13 @@ internal fun UpdateDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
         ) {
-            // Тёмная карточка в стилистике приложения.
-            // Поглощает тапы по себе, чтобы не проваливаться в затемнение.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
-                    ) { /* карточка ест тапы мимо своих кнопок */ }
+                    ) {   }
                     .clip(RoundedCornerShape(28.dp))
                     .background(
                         Brush.verticalGradient(
@@ -117,7 +104,6 @@ internal fun UpdateDialog(
                     )
                     .padding(24.dp)
             ) {
-                /* ── Шапка ── */
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -165,9 +151,6 @@ internal fun UpdateDialog(
                         }
                     }
 
-                    // Крестик — всегда в правом верхнем углу: из карточки
-                    // можно выйти из ЛЮБОГО состояния (включая «проверяем…»
-                    // при зависшей сети).
                     Spacer(modifier = Modifier.weight(1f))
                     IconButton(
                         onClick = onDismiss,

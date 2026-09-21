@@ -44,14 +44,6 @@ enum class FormType(val key: String, val stringRes: Int) {
     }
 }
 
-/**
- * High-fidelity medication form icons — v3.
- *
- * Redrawn for crispness: every glyph now fills ~90% of the canvas, keeps one
- * consistent outline weight, and drops micro-details that turned to mush at
- * 20–24dp. Volumetric shading (light top-left → saturated bottom-right) and
- * one confident gloss stroke per icon make them read as tiny 3D objects.
- */
 @Composable
 fun FormTypeIcon(
     formKey: String,
@@ -99,13 +91,8 @@ fun FormTypeIcon(
     }
 }
 
-/* Reading "luminance" for the radial badge background */
 private fun Color.luminance(): Float =
     0.2126f * red + 0.7152f * green + 0.0722f * blue
-
-/* ------------------------------------------------------------------------- */
-/*  Tablet — bold round pill with score line                                  */
-/* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawTablet(tint: Color) {
     val w = size.width
@@ -136,7 +123,6 @@ private fun DrawScope.drawTablet(tint: Color) {
         style = Stroke(width = outline)
     )
 
-    // Bold horizontal score line (embossed: dark under-stroke + light top-stroke)
     val half = radius * 0.66f
     drawLine(
         color = dark.copy(alpha = 0.55f),
@@ -169,10 +155,6 @@ private fun DrawScope.drawTablet(tint: Color) {
     )
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Capsule — two-tone diagonal capsule                                       */
-/* ------------------------------------------------------------------------- */
-
 private fun DrawScope.drawCapsule(tint: Color) {
     val w = size.width
     val h = size.height
@@ -187,7 +169,6 @@ private fun DrawScope.drawCapsule(tint: Color) {
         val half = top + capHeight / 2f
         val corner = CornerRadius(capWidth / 2f, capWidth / 2f)
 
-        // Lower half — tinted translucent body
         drawRoundRect(
             brush = Brush.verticalGradient(
                 colors = listOf(light.copy(alpha = 0.80f), tint.copy(alpha = 0.55f)),
@@ -199,7 +180,6 @@ private fun DrawScope.drawCapsule(tint: Color) {
             cornerRadius = corner
         )
 
-        // Upper half — solid gradient cap (saturated)
         drawRoundRect(
             brush = Brush.verticalGradient(
                 colors = listOf(lerp(tint, Color.White, 0.30f), tint),
@@ -252,10 +232,6 @@ private fun DrawScope.drawCapsule(tint: Color) {
         )
     }
 }
-
-/* ------------------------------------------------------------------------- */
-/*  Liquid — syrup bottle with shoulders, cap and liquid                      */
-/* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawLiquidBottle(tint: Color) {
     val w = size.width
@@ -369,16 +345,11 @@ private fun DrawScope.drawLiquidBottle(tint: Color) {
     )
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Drops — bold teardrop with companion drop                                 */
-/* ------------------------------------------------------------------------- */
-
 private fun DrawScope.drawDroplet(tint: Color) {
     val w = size.width
     val h = size.height
     val outline = 2.2.dp.toPx()
 
-    // Main teardrop — slightly offset left so the small drop fits
     scale(scale = 0.88f, pivot = Offset(w * 0.44f, h * 0.5f)) {
         val dropPath = Path().apply {
             moveTo(w / 2f, h * 0.04f)
@@ -457,10 +428,6 @@ private fun DrawScope.drawDroplet(tint: Color) {
         center = Offset(w * 0.60f, h * 0.22f)
     )
 }
-
-/* ------------------------------------------------------------------------- */
-/*  Injection — clean syringe, diagonal                                        */
-/* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawSyringe(tint: Color) {
     val w = size.width
@@ -625,10 +592,6 @@ private fun DrawScope.drawSyringe(tint: Color) {
     }
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Spray — pump bottle with bold mist                                        */
-/* ------------------------------------------------------------------------- */
-
 private fun DrawScope.drawSprayBottle(tint: Color) {
     val w = size.width
     val h = size.height
@@ -730,10 +693,6 @@ private fun DrawScope.drawSprayBottle(tint: Color) {
         cap = StrokeCap.Round
     )
 }
-
-/* ------------------------------------------------------------------------- */
-/*  Patch — plaster with gauze pad and ventilation dots                        */
-/* ------------------------------------------------------------------------- */
 
 private fun DrawScope.drawPatch(tint: Color) {
     val w = size.width

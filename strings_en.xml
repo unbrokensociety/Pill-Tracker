@@ -4,14 +4,11 @@
     <string name="nav_calendar">Calendar</string>
     <string name="nav_meds">Meds</string>
     <string name="nav_settings">Settings</string>
-    
-    <string name="home_no_schedules">No intakes scheduled for this day</string>
+    <string name="home_no_schedules">Nothing scheduled for this day</string>
     <string name="home_greeting_morning">Good morning</string>
     <string name="home_greeting_afternoon">Good afternoon</string>
     <string name="home_greeting_evening">Good evening</string>
     <string name="home_greeting_night">Good night</string>
-
-    <!-- Personal greeting (user name) -->
     <string name="name_dialog_title">What should we call you?</string>
     <string name="name_dialog_hint">For example: Bohdan</string>
     <string name="name_dialog_support">The name is stored only on your device and appears in the greeting.</string>
@@ -21,35 +18,26 @@
     <string name="cd_edit_name">Change the name in the greeting</string>
     <string name="settings_name_title">Personal greeting</string>
     <string name="settings_name_empty">No name yet — add one and the greeting becomes yours</string>
-    
     <string name="add_med_title">Add Medication</string>
     <string name="add_med_name_label">Medication Name</string>
     <string name="add_med_dosage_label">Dosage (e.g. 1 pill)</string>
     <string name="add_med_time_label">Intake Time</string>
     <string name="add_med_add_time">Add Time</string>
-    
     <string name="action_save">Save</string>
     <string name="action_add">Add</string>
     <string name="action_delete">Delete</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_edit">Edit</string>
-    
     <string name="dialog_delete_title">Delete Medication</string>
     <string name="dialog_delete_msg">Are you sure you want to delete %1$s? All schedule history for this medication will be removed.</string>
-    
-    <string name="calendar_history">Intake History</string>
-    <string name="calendar_placeholder">Pick a day on the Home screen to view your intake history.</string>
-    
     <string name="meds_my_meds">My Medications</string>
     <string name="meds_no_meds">You haven\'t added any medications yet</string>
     <string name="meds_intakes_per_day">%1$d × daily</string>
-    
     <string name="alarm_default_med">Medication</string>
     <string name="alarm_title">Time to take %1$s</string>
     <string name="alarm_text">Don\'t forget to take your medication!</string>
     <string name="alarm_channel_name">Medication Notifications</string>
     <string name="alarm_channel_desc">Reminders to take medications</string>
-    
     <string name="settings_title">Settings</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_system">System Default</string>
@@ -57,19 +45,16 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_brand">Brand</string>
     <string name="settings_notifications">Notifications</string>
-    
     <string name="settings_language">Language</string>
     <string name="settings_lang_system">System Default</string>
     <string name="settings_lang_en">English</string>
     <string name="settings_lang_uk">Ukrainian (Українська)</string>
     <string name="settings_lang_ru">Russian (Русский)</string>
-    
     <string name="settings_stats">Medication Progress</string>
     <string name="settings_stats_today_ratio">Today\'s compliance</string>
     <string name="settings_stats_active_meds">Registered medications: %1$d</string>
     <string name="settings_about">About app</string>
     <string name="settings_about_desc">Pill Tracker is your personal healthcare assistant. Take your medications on time and stay healthy!</string>
-    <string name="settings_version">Version 2.4.6</string>
     <string name="settings_glass_title">Liquid Glass effect</string>
     <string name="settings_glass_full">Full</string>
     <string name="settings_glass_full_desc">Live blur and light refraction</string>
@@ -81,14 +66,11 @@
     <string name="settings_glass_intensity">Intensity</string>
     <string name="settings_glass_intensity_matte">Matte</string>
     <string name="settings_glass_intensity_liquid">Ultra liquid</string>
-    
     <string name="status_taken">Taken</string>
-    
-    <!-- Add Medication localization elements -->
     <string name="add_med_info_title">Medication Information</string>
     <string name="add_med_name_placeholder">e.g. Aspirin</string>
     <string name="add_med_dosage_placeholder">e.g. 1 pill / 5 ml</string>
-    <string name="add_med_empty_time_warning">Please add at least one intake time</string>
+    <string name="add_med_empty_time_warning">Add at least one intake time</string>
     <string name="add_med_intake_number">Intake №%1$d</string>
     <string name="add_med_delete_time">Delete time slot</string>
     <string name="cd_back">Back</string>
@@ -106,15 +88,8 @@
     <string name="food_with_meal">With food</string>
     <string name="food_after_meal">After meals</string>
     <string name="food_before_bed">Before bed</string>
-    
-    <!-- Settings section localization elements -->
-    <string name="settings_group_general">General Parameters</string>
     <string name="settings_notif_active">Yes</string>
     <string name="settings_notif_disabled">No</string>
-    <string name="settings_my_profile">My Profile</string>
-    <string name="settings_active_user">Active Member</string>
-
-    <!-- Streak and Flame Mini-Game strings -->
     <string name="streak_title">Intake Streak: %1$d %2$s 🔥</string>
     <string name="streak_zero_title">Intake Streak: 0 days</string>
     <string name="streak_sub_active">Great job! Don\'t miss your medication</string>
@@ -122,153 +97,17 @@
     <string name="streak_day_1">day</string>
     <string name="streak_day_2_4">days</string>
     <string name="streak_day_5">days</string>
-    <string name="streak_menu_title">Flame Streak &amp; Milestones 🔥</string>
-    <string name="streak_menu_level">Flame Level %1$d</string>
-    <string name="streak_menu_keep_flame">Flame Mini-Game: Keep the Spark Alive!</string>
-    <string name="streak_menu_tap_flame">Tap the Flame!</string>
-    <string name="streak_menu_sparks">Sparks Collected: %1$d</string>
-    <string name="streak_menu_achievements">Flame Milestones</string>
-    <string name="streak_achievement_1">First Spark (1 Day)</string>
-    <string name="streak_achievement_3">Flame Starter (3 Days)</string>
-    <string name="streak_achievement_7">Week of Power (7 Days)</string>
-    <string name="streak_achievement_30">Unstoppable Fire (30 Days)</string>
-
-    <!-- Auth & Database Onboarding strings -->
-    <string name="auth_welcome_title">Welcome to PillTracker</string>
-    <string name="auth_welcome_subtitle">Keep track of your health and medications safely</string>
-    <string name="auth_tab_signin">Sign In</string>
-    <string name="auth_tab_signup">Register</string>
-    <string name="auth_field_name">Full Name</string>
-    <string name="auth_field_email">Email Address</string>
-    <string name="auth_field_password">Password</string>
-    <string name="auth_btn_signin">Sign In &amp; Sync</string>
-    <string name="auth_btn_signup">Create Account</string>
-    <string name="auth_btn_skip">Skip / Continue as Guest</string>
-    <string name="auth_skip_desc">You can use all features locally without an account. Registration is optional.</string>
-    <string name="auth_guest_title">Guest Account</string>
-    <string name="auth_guest_subtitle">Local Database Mode (Offline)</string>
-    <string name="auth_cloud_title">Cloud Account</string>
-    <string name="auth_cloud_subtitle">Database Synced &amp; Backed Up</string>
-    <string name="auth_action_link_account">Link Cloud / Google Account</string>
-    <string name="auth_action_sign_out">Sign Out (Guest Mode)</string>
-    <string name="db_export_title">Database Backup</string>
-    <string name="db_export_desc">Local database is active and secure</string>
-    <string name="db_export_success">Local database snapshot saved successfully!</string>
-
-    <string name="auth_btn_google">Continue with Google</string>
-    <string name="auth_google_select_account">Choose a Google Account</string>
-    <string name="auth_google_simulated_subtitle">Select your account to sign in and sync with PillTracker</string>
-    <string name="auth_registered_users">Saved profiles (local)</string>
-    <string name="auth_error_invalid_email">Please enter a valid email address</string>
-    <string name="auth_error_short_password">Password must be at least 6 characters</string>
-    <string name="auth_provider_google">Google Account</string>
-    <string name="auth_provider_email">Email Account</string>
-
-    <string name="stock_title">Pill Stock</string>
     <string name="stock_remaining">Remaining: %1$d pills</string>
     <string name="stock_low_warning">Low Stock Warning!</string>
-    <string name="stock_refill_btn">+ Refill Stock</string>
     <string name="stock_refill_30">+30 Pills</string>
-    <string name="stock_refill_success">Refilled stock successfully!</string>
-
-    <string name="report_export_title">Export Health Report</string>
-    <string name="report_export_desc">Share intake logs and compliance summary with doctor</string>
-    <string name="report_share_btn">Share Medical Report</string>
-
-    <string name="qr_doctor_title">Doctor QR Card</string>
-    <string name="qr_doctor_desc">Show QR code with active medications &amp; schedule</string>
-    <string name="qr_dialog_title">Medical Schedule QR</string>
-
-    <string name="ai_advisor_title">Gemini AI Health Advisor</string>
-    <string name="ai_advisor_desc">Ask AI about medication rules, food precautions &amp; advice</string>
-    <string name="ai_advisor_prompt_hint">Type your health or medication question...</string>
-
     <string name="privacy_policy_title">Privacy Policy &amp; HIPAA</string>
     <string name="privacy_policy_desc">Data protection, Firestore rules &amp; access revocation</string>
-
-    <string name="welcome_message">Welcome to PillTracker, %1$s! 🎉</string>
-    <string name="welcome_back_message">Welcome back, %1$s! 👋</string>
-    <string name="account_created_message">Welcome to PillTracker, %1$s! 🎉 Account created.</string>
-    <string name="verification_email_sent">Verification link sent to %1$s! (Please check SPAM folder)</string>
-
-    <string name="auth_verification_title">Check Your Email Inbox</string>
-    <string name="auth_verification_desc">An activation link has been sent to %1$s.\n\n1. Open your Email app\n2. Tap the verification link in the message\n3. Check your SPAM folder if delayed\n\nWe will automatically log you in the moment your email is verified!</string>
-    <string name="auth_verification_auto_checking">Auto-checking verification status…</string>
-    <string name="auth_verification_confirm">Verify &amp; Continue</string>
-    <string name="auth_verification_wrong_code">Email not verified yet. Please check your SPAM folder and click the link in your email.</string>
-    <string name="auth_verification_check_link">I\'ve Clicked the Link</string>
-    <string name="auth_verification_resend">Resend Verification Email</string>
-    <string name="auth_verification_skip">Continue to App (Offline Mode)</string>
-    <string name="auth_privacy_checkbox">I accept the Privacy Policy and Legal Terms</string>
-    <string name="auth_privacy_required_error">You must accept the Privacy Policy to register.</string>
-    <string name="auth_forgot_password">Forgot Password?</string>
-    <string name="auth_reset_password_title">Reset Password</string>
-    <string name="auth_reset_password_desc">Enter your email address and we will send you a password reset link.</string>
-    <string name="auth_btn_send_reset">Send Reset Link</string>
-    <string name="auth_reset_email_sent">Password reset email sent to %1$s!</string>
-    <string name="auth_invalid_credentials">Invalid email or password.</string>
-    <string name="auth_user_not_found">No account found with this email.</string>
-    <string name="barcode_format_qr">QR Code</string>
-    <string name="barcode_format_1d">Barcode (Code 128)</string>
-
-    <string name="settings_cloud_sync_title">Cloud Sync</string>
-    <string name="settings_cloud_sync_enabled">Sync enabled</string>
-    <string name="settings_cloud_sync_disabled">Sync disabled</string>
-    <string name="settings_alarm_clock_title">Alarm Clock Mode</string>
-    <string name="settings_alarm_clock_loud">Loud sound &amp; vibration</string>
-    <string name="settings_alarm_clock_standard">Standard notifications</string>
-    <string name="settings_alarm_repeat_title">Reminder Repeats</string>
-    <string name="settings_alarm_repeat_1">1 time</string>
-    <string name="settings_alarm_repeat_2">2 times</string>
-    <string name="settings_alarm_repeat_3">3 times</string>
-    <string name="settings_delete_account_btn">Delete Account &amp; Data</string>
     <string name="terms_of_service_title">Terms of Service</string>
     <string name="terms_of_service_desc">Service rules &amp; terms of use</string>
-    <string name="edit_profile_title">Edit Profile</string>
-    <string name="edit_profile_nickname">Name / Nickname</string>
-    <string name="edit_profile_change_photo">Tap avatar to change photo</string>
-    <string name="edit_profile_camera">Take Photo with Camera</string>
-    <string name="edit_profile_gallery">Choose from Gallery</string>
-
-    <!-- Profile Screen strings -->
-    <string name="profile_sync_active">Sync active</string>
-    <string name="profile_synced_at">Synced at %1$s</string>
-    <string name="profile_synced">Synced</string>
-    <string name="profile_guest_user">Guest User</string>
-    <string name="profile_default_user">User</string>
-    <string name="profile_guest_mode_local">Guest mode (Local data)</string>
-    <string name="profile_authorized_account">Authorized account</string>
-    <string name="profile_edit_name_photo">Edit name and photo</string>
-    <string name="profile_account_info">Account Information</string>
-    <string name="profile_account_status">Account Status</string>
-    <string name="profile_status_guest">GUEST</string>
-    <string name="profile_status_authorized">AUTHORIZED</string>
-    <string name="profile_cloud_status">Cloud Status</string>
-    <string name="profile_account_management">Account Management</string>
-    <string name="profile_deletion_scheduled">⚠️ Account scheduled for deletion in %1$d days (30-day grace period)</string>
-    <string name="profile_cancel_deletion">Cancel Account Deletion</string>
-    <string name="profile_signin_or_register">Sign In or Register</string>
-
-    <!-- Auth Guest Terms strings -->
-    <string name="auth_guest_terms_title">Terms for Guest Mode</string>
-    <string name="auth_guest_terms_desc">To continue in guest mode without account registration, you must agree to the Terms of Service and Privacy Policy.</string>
-    <string name="auth_guest_terms_bullet1">• All medication data is stored only on this device.</string>
-    <string name="auth_guest_terms_bullet2">• Cloud backup is disabled until account creation.</string>
-    <string name="auth_guest_terms_checkbox">I accept the Terms of Service and Privacy Policy</string>
-    <string name="auth_guest_terms_error">Please accept the terms to continue</string>
-    <string name="auth_guest_terms_continue">Continue as Guest</string>
-
-    <!-- Settings section extensions -->
-    <string name="settings_cloud_sync_auto">Automatic cloud backup enabled</string>
-    <string name="settings_cloud_sync_local">Data is stored locally on device</string>
-    <string name="settings_export_and_docs">Export &amp; Documents</string>
-
-    <!-- New Features Strings -->
     <string name="snooze_15m">15m</string>
     <string name="snooze_30m">30m</string>
     <string name="snooze_60m">1h</string>
     <string name="snooze_title">Snooze Reminder</string>
-    
     <string name="form_capsule">Capsule</string>
     <string name="form_tablet">Tablet</string>
     <string name="form_liquid">Syrup</string>
@@ -276,54 +115,36 @@
     <string name="form_injection">Injection</string>
     <string name="form_spray">Spray</string>
     <string name="form_patch">Patch</string>
-
     <string name="sched_daily">Daily</string>
     <string name="sched_interval">Every %1$d days</string>
     <string name="sched_interval_label">Schedule Interval (days)</string>
     <string name="sched_as_needed">As Needed (PRN)</string>
     <string name="add_med_form_type_label">Medication Form</string>
     <string name="add_med_schedule_type_label">Schedule Frequency</string>
-
     <string name="stock_track_label">Track package stock</string>
     <string name="stock_total_label">Initial Stock Count</string>
     <string name="stock_pcs">%1$d pcs</string>
     <string name="stock_low_tag">Low stock: %1$d pcs</string>
-    <string name="stock_empty_tag">Out of stock (0 pcs)</string>
-
     <string name="adherence_title">Medication Discipline</string>
-    <string name="adherence_subtitle">Last 30 days</string>
-    <string name="adherence_taken">On time</string>
     <string name="adherence_taken_count">%1$d of %2$d taken</string>
-    <string name="adherence_rate">Discipline</string>
     <string name="adherence_as_needed_section">As Needed Medications</string>
-    <string name="take_now">Take Now</string>
-
     <string name="dialog_cancel">Cancel</string>
-    <string name="adherence_discipline">Discipline</string>
-    <!-- ═══ Onboarding: interactive tour (first launch + replay from Settings) ═══ -->
     <string name="ob_skip">Skip</string>
     <string name="ob_step_of">Step %1$d of %2$d</string>
-
     <string name="ob_welcome_title">Welcome to Pill Tracker!</string>
     <string name="ob_welcome_desc">Your personal medication assistant — private, offline and always on time.</string>
     <string name="ob_welcome_b1">All your medications in one place</string>
     <string name="ob_welcome_b2">Works fully offline</string>
     <string name="ob_welcome_b3">Your data stays on your device</string>
-
-    <!-- Optional name on the welcome screen -->
     <string name="ob_name_label">What should we call you? (optional)</string>
     <string name="ob_name_placeholder">Your name…</string>
-
     <string name="ob_settings_replay_title">Show the guide again</string>
     <string name="ob_settings_replay_desc">An interactive tour of the app</string>
-
-    <!-- ═══ Interactive tour v2 (coach-marks over the real UI) ═══ -->
     <string name="tour_start">Start the tour</string>
     <string name="tour_interactive_hint">A short interactive walk — we\'ll tap real buttons together</string>
     <string name="tour_next">Next</string>
     <string name="tour_finish">Got it — I\'ll try it myself</string>
     <string name="tour_tap_hint">Tap the highlighted area to continue</string>
-
     <string name="tour_step_today_title">This is Today</string>
     <string name="tour_step_today_desc">Your intakes for the day live here. Tap a pill when you take it — the ring fills as you go.</string>
     <string name="tour_step_nav_title">Screens swipe like pages</string>
@@ -338,17 +159,13 @@
     <string name="tour_step_add_desc">The big + is all you need. Tap it — we\'ll fill in the first one together.</string>
     <string name="tour_step_form_title">Fill in the card</string>
     <string name="tour_step_form_desc">Name, dosage, times — flexible for any therapy. Try it yourself, it\'s simple!</string>
-
     <string name="tour_step_dose_title">A dose — one tap away</string>
     <string name="tour_step_dose_desc">Took your meds? Tap the circle next to the dose. The progress ring fills up and your day streak grows on its own.</string>
-
     <string name="tour_done_title">You\'re all set!</string>
     <string name="tour_done_desc">You already know the essentials. The rest comes with practice — the app will guide you along the way.</string>
     <string name="tour_done_b1">Mark doses with a tap — stats and streaks track themselves</string>
     <string name="tour_done_b2">Feeling lost? Replay this tour from Settings</string>
     <string name="tour_done_start">Start using the app</string>
-
-    <!-- ═══ In-app updater (GitHub Releases) ═══ -->
     <string name="upd_title">Update available</string>
     <string name="upd_body">A new version of Pill Tracker — %1$s — is out.</string>
     <string name="upd_whats_new">What\'s new:</string>

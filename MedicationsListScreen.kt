@@ -89,12 +89,12 @@ fun MedicationsListScreen(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         stringResource(R.string.meds_my_meds),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
-                    ) 
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent

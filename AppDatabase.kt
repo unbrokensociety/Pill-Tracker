@@ -21,13 +21,13 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS `users` (
-                        `email` TEXT NOT NULL, 
-                        `name` TEXT NOT NULL, 
-                        `authProvider` TEXT NOT NULL, 
-                        `avatarUrl` TEXT NOT NULL, 
-                        `passwordHash` TEXT NOT NULL, 
-                        `createdAt` INTEGER NOT NULL, 
-                        `lastLoginAt` INTEGER NOT NULL, 
+                        `email` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `authProvider` TEXT NOT NULL,
+                        `avatarUrl` TEXT NOT NULL,
+                        `passwordHash` TEXT NOT NULL,
+                        `createdAt` INTEGER NOT NULL,
+                        `lastLoginAt` INTEGER NOT NULL,
                         PRIMARY KEY(`email`)
                     )
                     """.trimIndent()

@@ -10,7 +10,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 class AlarmScheduler(private val context: Context) {
-
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun scheduleAlarm(schedule: Schedule, medicationName: String) {
@@ -33,8 +32,7 @@ class AlarmScheduler(private val context: Context) {
 
         val now = LocalDateTime.now()
         var nextTime = now.withHour(schedule.timeHour).withMinute(schedule.timeMinute).withSecond(0).withNano(0)
-        
-        // If time today has passed (more than 5 seconds ago), schedule for tomorrow
+
         if (nextTime.isBefore(now.minusSeconds(5))) {
             nextTime = nextTime.plusDays(1)
         }

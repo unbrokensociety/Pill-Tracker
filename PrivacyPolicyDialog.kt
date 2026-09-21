@@ -17,25 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
-/*
- * Политика конфиденциальности v2 (v2.4.0).
- *
- * ЧТО ИЗМЕНИЛОСЬ и почему это умнее старой версии:
- *  • БАГ «кнопка Понятно уезжает под экран» устранён архитектурно:
- *    это теперь ОБЫЧНЫЙ платформенный диалог (без decorFitsSystemWindows
- *    = false и ручной математики инсетов — на некоторых устройствах
- *    insets внутрь окна диалога не доезжали, и кнопка улетала за экран).
- *    Структура: шапка с крестиком + СКРОЛЛ в середине + кнопка,
- *    приклеенная к низу карточки. Высота ограничена 90% экрана.
- *  • Текст приведён к реальности v2.3+: у приложения появился интернет
- *    (только для проверки/скачивания обновлений с GitHub) — старый текст
- *    «работает полностью офлайн» был уже неправдой. Теперь сказано,
- *    какая именно сетевая активность есть и что по сети НЕ уходит.
- *  • Раскрыты разрешения Android и зачем каждое.
- *  • Честно про резервные копии: allowBackup=false — в облако ничего
- *    не уезжает даже автоматически.
- */
-
 @Composable
 fun PrivacyPolicyDialog(
     onDismiss: () -> Unit
@@ -43,7 +24,6 @@ fun PrivacyPolicyDialog(
     val context = LocalContext.current
     val lang = context.resources.configuration.locales[0].language
 
-    // 90% высоты экрана: карточка гарантированно влезает, кнопка видна
     val maxDialogHeight = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
 
     Dialog(onDismissRequest = onDismiss) {
@@ -58,7 +38,6 @@ fun PrivacyPolicyDialog(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                /* ── Шапка: иконка + название + крестик ── */
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -101,14 +80,12 @@ fun PrivacyPolicyDialog(
                     }
                 }
 
-                /* ── Середина: прокручиваемое содержимое ── */
                 Column(
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp)
                 ) {
-                    // Короткая сводка сверху
                     Surface(
                         shape = RoundedCornerShape(18.dp),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
@@ -138,7 +115,6 @@ fun PrivacyPolicyDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                /* ── Низ: кнопка всегда внутри экрана ── */
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

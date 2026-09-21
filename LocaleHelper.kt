@@ -29,7 +29,7 @@ object LocaleHelper {
     }
 
     // BUG FIX: the deprecated Locale(String) constructor and the pre-Nougat
-    // fallback branches were removed — the app's minSdk is 26, so
+
     // Configuration.locales and Locale.Builder are always available.
     private fun systemLanguage(context: Context): String {
         val sysLocale = context.resources.configuration.locales[0]

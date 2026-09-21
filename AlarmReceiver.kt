@@ -15,7 +15,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 
 class AlarmReceiver : BroadcastReceiver() {
-
     companion object {
         const val ACTION_SNOOZE = "com.aistudio.meditracker.meditracker.ACTION_SNOOZE"
         const val EXTRA_SNOOZE_MINUTES = "EXTRA_SNOOZE_MINUTES"
@@ -43,7 +42,7 @@ class AlarmReceiver : BroadcastReceiver() {
             try {
                 val settingsRepo = com.aistudio.meditracker.data.SettingsRepository(context.applicationContext)
                 val isNotifEnabled = settingsRepo.notificationsFlow.first()
-                
+
                 if (isNotifEnabled) {
                     showNotification(context, medicationName, scheduleId)
 

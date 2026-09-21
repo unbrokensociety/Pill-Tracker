@@ -82,9 +82,6 @@ fun SettingsScreen(
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var showTermsOfService by remember { mutableStateOf(false) }
 
-    // ── Персональное приветствие: имя редактируется ЗДЕСЬ ──
-    // (карандашик с главного экрана убран; карточка в Настройках —
-    // единственное место правки имени)
     var userName by remember { mutableStateOf(OnboardingPrefs.getUserName(context)) }
     var showNameDialog by remember { mutableStateOf(false) }
 
@@ -127,12 +124,12 @@ fun SettingsScreen(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         stringResource(R.string.settings_title),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
-                    ) 
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -144,8 +141,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .padding(top = padding.calculateTopPadding())
                 .fillMaxSize()
-                // Зона для шага тура «Налаштування»: как в других экранах,
-                // подсвечивается содержимое страницы целиком.
+
                 .coachTag("settings_content"),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -188,7 +184,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -209,7 +205,6 @@ fun SettingsScreen(
                                 )
                             }
 
-                            // Animated compliance ring — sweeps to the current
                             // ratio with a spring, gradient stroke, % in center
                             Box(
                                 modifier = Modifier.size(76.dp),
@@ -263,9 +258,6 @@ fun SettingsScreen(
                 }
             }
 
-            // Personal Greeting Glass Card — имя (перенесено сюда с
-            // главного экрана: карандашик у приветствия убран, правка
-            // имени живёт только в Настройках)
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -314,7 +306,7 @@ fun SettingsScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        // Карандашик: намёк, что имя можно поменять
+
                         Box(
                             modifier = Modifier
                                 .size(32.dp)
@@ -379,7 +371,7 @@ fun SettingsScreen(
                         )
 
                         // BUG FIX: the weight modifier is now passed in from the RowScope
-                        // call-site — the old version resolved ColumnScope.weight inside
+
                         // this local function, which Row silently ignores (the theme
                         // buttons did not stretch to equal widths).
                         @Composable
@@ -772,14 +764,13 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        // Liquid Glass effect — picked by itself at start,
                         // and re-pickable whenever the user wants: tap
-                        // «Обрати» and the three modes + the intensity
+
                         // slider bloom out (staggered spring slide-in),
-                        // tap one to lock it in — the picker folds back the
+
                         // exact same way. Layout is width-safe by design:
                         // every row stretches full width, texts wrap inside
-                        // weighted columns — nothing can ever get cut off
+
                         // at the sides, in any language, at any font scale.
                         val glassQuality by LiquidGlassState.quality
                         val glassUserMode by LiquidGlassState.userMode
@@ -806,7 +797,7 @@ fun SettingsScreen(
                         }
 
                         // Staggered reveal shared by every row of the expanded
-                        // picker — slides up + fades in with a spring, one row
+
                         // after another (70 ms apart), and folds back the
                         // exact same way when the picker closes.
                         @Composable
@@ -840,7 +831,7 @@ fun SettingsScreen(
                         }
 
                         // One mode row: gradient icon badge + title with a
-                        // description underneath (inside a weighted column —
+
                         // the text wraps, so it is NEVER clipped at the
                         // sides), check mark when selected.
                         @Composable
@@ -959,9 +950,9 @@ fun SettingsScreen(
                             modifier = Modifier.padding(vertical = 2.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                         )
-                        // Header: title + current mode on the left (weighted —
+
                         // wraps/ellipsizes strictly inside its own space), and
-                        // a fixed «Обрати» pill on the right. The pill can
+
                         // never be pushed off the edge, in any language.
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -983,7 +974,7 @@ fun SettingsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            // «Обрати» pill — tap it and the modes + the
+
                             // slider bloom out from right here
                             Box(
                                 modifier = Modifier
@@ -1064,10 +1055,10 @@ fun SettingsScreen(
                                     selected = glassUserMode == LiquidGlassQuality.FROST,
                                     onClick = { pickGlassMode(LiquidGlassQuality.FROST) }
                                 )
-                                // Intensity slider: matte → «very very liquid».
+
                                 // Every glass panel and card re-renders LIVE
                                 // while the thumb is dragged; in the matte
-                                // mode the slider rests disabled (dimmed) —
+
                                 // there is nothing to melt.
                                 GlassPickerRow(index = 3) {
                                     Surface(
@@ -1136,9 +1127,6 @@ fun SettingsScreen(
                 }
             }
 
-            // «Проверить обновления» — in-app апдейтер: смотрит GitHub
-            // Releases и, если есть новая версия, предлагает обновиться
-            // прямо отсюда (разрешение на установку спросит один раз).
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -1193,8 +1181,6 @@ fun SettingsScreen(
                 }
             }
 
-            // «Показать обучение снова» — внизу Настроек, чтобы каждый мог
-            // освежить в памяти все функции приложения
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -1252,13 +1238,6 @@ fun SettingsScreen(
     }
 }
 
-/* ────────────────────────────────────────────────────────────────
- * Диалог «Как к вам обращаться?»: необязательное имя для
- * персонального приветствия. Хранится локально (SharedPreferences),
- * удаляется одной кнопкой. Вызывается карточкой «Персональне
- * привітання» в Настройках — единственное место правки имени
- * (карандашик с главного экрана убран).
- * ──────────────────────────────────────────────────────────────── */
 @Composable
 private fun NameEditDialog(
     initial: String?,

@@ -65,10 +65,6 @@ fun HomeScreen(
     val alarmScheduler = remember { com.aistudio.meditracker.alarms.AlarmScheduler(context.applicationContext) }
     var snoozeScheduleToPrompt by remember { mutableStateOf<DailyScheduleView?>(null) }
 
-    // ── Живые часы: приветствие и дата обновляются на границе минут ──
-    // (приложение, оставшееся открытым на ночь, утром поздоровается
-    // по-новому, а не покажет вчерашнее «Доброго ранку» и дату).
-    // Тик выровнен по границе минуты — меньше пробуждений ЦП.
     var now by remember { mutableStateOf(java.time.LocalDateTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
@@ -78,9 +74,6 @@ fun HomeScreen(
         }
     }
 
-    // ── Персональное приветствие: имя читается из настроек ──
-    // (редактируется ТОЛЬКО в Настройках — карточка «Персональне
-    // привітання»; карандашик с главного экрана убран по просьбе)
     val userName = remember { OnboardingPrefs.getUserName(context) }
 
     if (snoozeScheduleToPrompt != null) {
@@ -155,11 +148,6 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // Приветствие по времени суток + дата.
-                    // Диапазоны — по человеческим ощущениям:
-                    //   04:00–09:59 ранок · 10:00–16:59 день
-                    //   17:00–21:59 вечір · 22:00–03:59 ніч
-                    // «now» живое — поэтому remember без ключа не годится.
                     val greetingBase = stringResource(
                         when (now.hour) {
                             in 4..9 -> R.string.home_greeting_morning
@@ -201,7 +189,6 @@ fun HomeScreen(
                 .padding(top = padding.calculateTopPadding())
                 .fillMaxSize()
         ) {
-
             // Streak motivation banner
             StreakBanner(streakDays = streakDays)
 
@@ -217,9 +204,6 @@ fun HomeScreen(
                 )
             }
 
-            // Horizontal Date strip (recomputed live so it stays correct past midnight)
-            // «today» берётся из живых часов выше: после полуночи полоса
-            // дат переезжает на новый день сама.
             val today = now.toLocalDate()
             val dateStrip = (-2..2).map { today.plusDays(it.toLong()) }
             Row(
@@ -250,7 +234,7 @@ fun HomeScreen(
             AnimatedContent(
                 targetState = selectedDate,
                 transitionSpec = {
-                    (fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing)) + 
+                    (fadeIn(animationSpec = tween(220, easing = LinearOutSlowInEasing)) +
                      scaleIn(initialScale = 0.985f, animationSpec = tween(220, easing = LinearOutSlowInEasing))
                     ).togetherWith(
                      fadeOut(animationSpec = tween(160, easing = FastOutLinearInEasing))
@@ -260,8 +244,7 @@ fun HomeScreen(
                 label = "dayContentTransition",
                 modifier = Modifier
                     .fillMaxSize()
-                    // Зона для шага тура «позначення прийому»: подсвечивается
-                    // список приёмов (или пустое состояние — тоже честная зона).
+
                     .coachTag("home_list")
             ) { currDate ->
                 if (visibleSchedules.isEmpty() && prnSchedules.isEmpty()) {
@@ -371,8 +354,8 @@ fun HomeScreen(
 
 @Composable
 fun DateItem(
-    date: LocalDate, 
-    isSelected: Boolean, 
+    date: LocalDate,
+    isSelected: Boolean,
     isToday: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
@@ -392,7 +375,6 @@ fun DateItem(
         else -> null
     }
 
-    // Fully localized short day initials (e.g. Пн, Вт, Ср, Mon, Tue etc.)
     val localizedDay = remember(date) {
         date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
@@ -571,9 +553,9 @@ fun MedicationCard(
                         )
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Text(
                     text = schedule.name,
                     style = MaterialTheme.typography.titleLarge,
@@ -587,7 +569,7 @@ fun MedicationCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             // High visibility check circle button with tactile haptic feedback
             val hapticView = LocalView.current
             Box(

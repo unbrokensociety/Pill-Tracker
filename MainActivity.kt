@@ -102,12 +102,10 @@ fun MyAppThemeWrapper(viewModel: MainViewModel, content: @Composable () -> Unit)
 }
 
 class MainActivity : ComponentActivity() {
-
     private val viewModel: MainViewModel by viewModels {
         MainViewModelFactory(this.applicationContext)
     }
 
-    // Modern non-deprecated runtime permission request (Android 13+ notifications)
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
             // Permission state is naturally reflected in the Settings toggle.
@@ -122,8 +120,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        capFrameRateAt60()
 
-        // Request notifications permission on Android 13+ dynamically to guarantee notifications are delivered
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             val permission = android.Manifest.permission.POST_NOTIFICATIONS
             if (checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -137,6 +135,27 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun capFrameRateAt60() {
+        try {
+            val modes = (
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                    display?.supportedModes
+                } else {
+                    @Suppress("DEPRECATION")
+                    windowManager.defaultDisplay?.supportedModes
+                }
+                ) ?: emptyArray<android.view.Display.Mode>()
+            val target = modes
+                .filter { it.refreshRate in 55f..65f }
+                .minByOrNull { kotlin.math.abs(it.refreshRate - 60f) }
+            window.attributes = window.attributes.apply {
+                if (target != null) preferredDisplayModeId = target.modeId
+                preferredRefreshRate = target?.refreshRate ?: 60f
+            }
+        } catch (t: Throwable) {
+        }
+    }
 }
 
 @Composable
@@ -144,7 +163,6 @@ fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    // ── Onboarding: интерактивный тур при первом входе + повтор из Настроек ──
     var onboardingDone by remember { mutableStateOf(OnboardingPrefs.isCompleted(context)) }
     LaunchedEffect(Unit) {
         snapshotFlow { OnboardingBus.replayRequested }
@@ -155,7 +173,6 @@ fun MainScreen(viewModel: MainViewModel) {
             }
     }
 
-    // ── Тур просит открыть экран добавления (тап по подсвеченному «+») ──
     LaunchedEffect(Unit) {
         snapshotFlow { OnboardingBus.addRequested }
             .filter { it }
@@ -165,7 +182,6 @@ fun MainScreen(viewModel: MainViewModel) {
             }
     }
 
-    // ── Тур просит вернуться назад (шаг «заполни карточку» ← назад) ──
     LaunchedEffect(Unit) {
         snapshotFlow { OnboardingBus.backRequested }
             .filter { it }
@@ -237,7 +253,6 @@ fun MainScreen(viewModel: MainViewModel) {
         }
     }
 
-        // ── Оверлей обучения (первый вход или повтор из Настроек) ──
         AnimatedVisibility(
             visible = !onboardingDone,
             exit = fadeOut(animationSpec = tween(240, easing = FastOutLinearInEasing)) +
@@ -252,8 +267,6 @@ fun MainScreen(viewModel: MainViewModel) {
             )
         }
 
-        // ── In-app обновления: проверка GitHub Releases, диалог,
-        //    разрешение установки, скачивание и запуск установщика ──
         UpdateGate()
     }
 }
@@ -266,15 +279,8 @@ fun MainPagerScreen(
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
 
-    // Во время тура свайпы отключены: человек не «уезжает» с шага.
     val tourActive = OnboardingBus.tourActive
 
-    // Переходы между вкладками БЕЗ вибрации: смена страницы ощущается
-    // только визуально — пружина страницы, растяжение пилюли, мягкий
-    // press-scale. Вибрация оставлена лишь подтверждениям действий
-    // (отметка приёма, сохранение формы), не навигации.
-
-    // ── Тур просит переключить страницу пейджера (тап по подсвеченному) ──
     LaunchedEffect(Unit) {
         snapshotFlow { OnboardingBus.pageRequested }
             .filter { it >= 0 }
@@ -305,7 +311,6 @@ fun MainPagerScreen(
 
     val rawFraction = if (isDraggingIsland) islandFractionAnim.value else pagerFraction
 
-    // Rubber-band edge physics: Asymptotically resist when dragged beyond boundaries [0..3]
     val effectiveFraction = when {
         rawFraction < 0f -> rawFraction * 0.25f
         rawFraction > 3f -> 3f + (rawFraction - 3f) * 0.25f
@@ -322,7 +327,6 @@ fun MainPagerScreen(
         val squish = ((rawFraction - 3f) * 0.35f).coerceIn(0f, 0.40f)
         (1f - squish) to (1f + squish * 0.5f)
     } else {
-        // Liquid horizontal stretch proportional to fractional distance from nearest tab
         val distFromCenter = abs(rawFraction - rawFraction.roundToInt())
         val stretch = (distFromCenter * 0.38f).coerceIn(0f, 0.30f)
         val sx = 1f + stretch
@@ -335,9 +339,9 @@ fun MainPagerScreen(
 
     // Adaptive quality governor: measures the device once (cores / RAM /
     // low-RAM flag / Android version), then watches real frame times and
-    // battery saver — full liquid glass on strong phones, a lighter blur on
+
     // mid-range, a solid OPAQUE matte panel on weak ones (nothing shows
-    // through — the bar never changes as content scrolls). Never lags.
+
     GlassPerformanceGovernor(backdrop)
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -348,9 +352,7 @@ fun MainPagerScreen(
                 .glassSource(backdrop)
                 .background(MaterialTheme.colorScheme.background)
                 .auroraBackdrop()
-                // Осевой замок: страница переворачивается ТОЛЬКО уверенным
-                // горизонтальным свайпом; вертикальные/диагональные жесты
-                // полностью уходят спискам — вверх-вниз листается чисто.
+
                 .pointerInput(tourActive) {
                     if (tourActive) return@pointerInput
                     axisLockedPagerGestures(
@@ -383,13 +385,7 @@ fun MainPagerScreen(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
                     beyondViewportPageCount = 1,
-                    // Жесты обрабатывает ось-замок выше: страницу переворачивает
-                    // только уверенно горизонтальный свайп (|dx| > 2.2·|dy|),
-                    // да ещё и только туда, где есть следующая страница. Любой
-                    // другой жест уходит вертикальным спискам — вверх-вниз
-                    // листается чисто даже на крайних страницах. Поэтому
-                    // встроенный скролл выключен — так конфликта «листать вниз
-                    // или перевернуть страницу» не существует.
+
                     userScrollEnabled = false
                 ) { page ->
                     val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
@@ -433,10 +429,10 @@ fun MainPagerScreen(
         // live backdrop blur (hardware gaussian on Android 12+, CPU-blurred
         // snapshot on older versions) + whisper-light scrim + specular rim
         // + fluid dragging. Content scrolls under it and reads through the
-        // frost — EXCEPT in the economy tier, where the panel goes fully
+
         // opaque matte: a constant, unchanging solid bar. How liquid the
         // glass is comes from the Settings slider (LiquidGlassState.
-        // intensity): from calm matte to «very very liquid», applied live.
+
         LiquidGlassPanel(
             backdrop = backdrop,
             modifier = Modifier
@@ -447,7 +443,7 @@ fun MainPagerScreen(
                 .coachTag("nav_island"),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            blurRadius = 32.dp
+            blurRadius = 26.dp
         ) {
             BoxWithConstraints(
                 modifier = Modifier
@@ -459,7 +455,7 @@ fun MainPagerScreen(
                 val indicatorOffset = tabWidth * effectiveFraction
 
                 // Smooth sliding active-tab pill: clean, borderless, softly
-                // tinted — the blur of the bar does the glass work, the pill
+
                 // just marks the selected tab. Jelly stretch physics intact.
                 val pillColor = MaterialTheme.colorScheme.primary
                 Box(
@@ -478,7 +474,7 @@ fun MainPagerScreen(
                             .padding(horizontal = 4.dp, vertical = 2.dp)
                             .drawBehind {
                                 // soft vertical pill gradient: barely-there at the
-                                // top, a touch richer at the bottom — reads as
+
                                 // light pooling inside the glass
                                 val r = 20.dp.toPx()
                                 drawRoundRect(
@@ -496,7 +492,6 @@ fun MainPagerScreen(
                     )
                 }
 
-                // Navigation Row with Direct Finger Scrubbing, Edge Resistance & Snap Physics
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -715,16 +710,6 @@ fun RowScope.FloatingNavItem(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Подпись вкладки не всегда влезает в свой слот («Налаштування»
-        // по-украински + системный масштаб шрифта). Прежний цикл
-        // «hasVisualOverflow → сжать → перемерить» не срабатывал:
-        // при softWrap=false измеренная ширина равна самой строке,
-        // переполнение не фиксируется — и текст выходил за пилюлю.
-        // Теперь замеряем ЕСТЕСТВЕННУЮ ширину подписи один раз
-        // (TextMeasurer, самый широкий вес — ExtraBold активной
-        // вкладки) и детерминированно масштабируем шрифт ровно
-        // настолько, чтобы влезть в слот. Работает для любого языка
-        // и ЛЮБОГО fontScale; overflow=Clip — страховка на экстремах.
         val textMeasurer = rememberTextMeasurer()
         val baseLabelStyle = MaterialTheme.typography.labelSmall
         BoxWithConstraints(
@@ -744,7 +729,7 @@ fun RowScope.FloatingNavItem(
                     constraints = Constraints(maxWidth = 100_000)
                 ).size.width
             }
-            // 2.dp внутреннего паддинга с каждой стороны от подписи
+
             val density = LocalDensity.current
             val availableWidthPx = with(density) { constraints.maxWidth - 4.dp.roundToPx() }
             val fitScale = if (naturalWidthPx > 0) {
@@ -768,36 +753,6 @@ fun RowScope.FloatingNavItem(
     }
 }
 
-/* ────────────────────────────────────────────────────────────────
- * Осевой замок жестов пейджера — v3 (починка вертикального скролла).
- *
- * Проблемы версий ≤ 2.4.0:
- *   1) «Мёртвый жест» на крайних страницах. Замок отбирал ЛЮБОЙ
- *      уверенно-горизонтальный жест, даже когда переворачивать
- *      страницу НЕКУДА (последняя страница, свайп «дальше»). События
- *      при этом всё равно поглощались (change.consume()), а дочерний
- *      LazyColumn, увидев consumed-событие, бросал свой touch-slop —
- *      итог: страница не двигается И список не листается. На
- *      «Налаштуваннях» (последняя страница) вертикальный скролл с
- *      лёгким левым дрейфом пальца умирал на полпути — та самая
- *      «перестало нормально листаться».
- *   2) Слишком щедрый порог захвата (|dx| > 1.6·|dy|): слегка
- *      диагональный старт скролла мог «продать» жест пейджеру.
- *   3) settleJob отменялся на КАЖДОМ касании — вертикальный скролл
- *      во время доводки страницы мог оставить её между страницами.
- *
- * Решение v3:
- *   • захват только если страница реально может перевернуться в эту
- *     сторону (край страницы + направление свайпа);
- *   • порог строже: |dx| > 2.2·|dy| и |dx| > 1.6·touch-slop — жест
- *     должен быть не просто «горизонтальнее», а ГОРИЗОНТАЛЬНЫМ;
- *   • доводка страницы отменяется только в момент реального захвата —
- *     вертикальные жесты её не трогают;
- *   • решение по-прежнему пересматривается на каждом событии
- *     («мёртвый свайп» из v2.3.1 не возвращается), а потреблённый
- *     дочерним скроллом жест по-прежнему неприкосновенен.
- * ──────────────────────────────────────────────────────────────── */
-
 private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
         .axisLockedPagerGestures(
     state: PagerState,
@@ -805,8 +760,8 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
 ) {
     val slop = viewConfiguration.touchSlop
     val flingPx = 560.dp.toPx()
-    val axisRatio = 2.2f          // строго горизонтально, не «диагонально»
-    val commitPx = slop * 1.6f    // жест должен набрать разгон до захвата
+    val axisRatio = 2.2f
+    val commitPx = slop * 1.6f
     var settleJob: Job? = null
 
     awaitEachGesture {
@@ -816,7 +771,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
         tracker.resetTracking()
         tracker.addPosition(down.uptimeMillis, down.position)
 
-        var horizontal = false // сейчас ведём страницу пальцем
+        var horizontal = false
         var dx = 0f
         var dy = 0f
 
@@ -826,9 +781,6 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
             if (!change.pressed) break
 
             if (change.isConsumed) {
-                // Жест забрал дочерний элемент (вертикальный список и
-                // т.п.) — не мешаем; если даже мы уже вели страницу —
-                // тихо отпускаем и в конце snap'имся к ближайшей.
                 continue
             }
 
@@ -839,14 +791,8 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
             dx += delta.x
             dy += delta.y
 
-            // Решение НЕ одноразовое: жест, начавшийся вертикально или
-            // диагонально на не-скроллируемом месте (шапка, карточка),
-            // «перехватывается», как только стал уверенно горизонтальным.
-            // НО: сначала проверяем, что страницу ЕСТЬ куда вертеть —
-            // на краях пейджера горизонтальный жест просто не наш, он
-            // остаётся списку (иначе — «мёртвый жест» обеих сторон).
             if (!horizontal) {
-                val pageWantsNext = dx < 0f // палец влево → следующая страница
+                val pageWantsNext = dx < 0f
                 val pagerCanMove = if (pageWantsNext) {
                     state.currentPage < state.pageCount - 1
                 } else {
@@ -856,9 +802,6 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
                     abs(dx) > commitPx &&
                     abs(dx) > axisRatio * abs(dy)
                 ) {
-                    // Доводку прошлой страницы прерываем ТОЛЬКО сейчас:
-                    // вертикальные жесты её не трогают (фикс «страница
-                    // застревает между вкладками»).
                     settleJob?.cancel()
                     horizontal = true
                 }
@@ -866,9 +809,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
 
             if (horizontal) {
                 change.consume()
-                // dispatchRawDelta — синхронный путь (как у родного scrollable):
-                // внутри restricted-скопа awaitEachGesture нельзя звать
-                // посторонние suspend-функции, а это — не suspend.
+
                 state.dispatchRawDelta(-delta.x)
             }
         }
@@ -889,8 +830,6 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
                 )
             }
         } else if (state.currentPageOffsetFraction != 0f) {
-            // Страховка: страница каким-то образом осталась между
-            // вкладками (например, жест оборвался) — мягко доводим.
             settleJob = scope.launch {
                 state.animateScrollToPage(
                     state.currentPage,

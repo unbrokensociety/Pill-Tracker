@@ -4,14 +4,11 @@
     <string name="nav_calendar">Календарь</string>
     <string name="nav_meds">Лекарства</string>
     <string name="nav_settings">Настройки</string>
-    
     <string name="home_no_schedules">На этот день приёмов нет</string>
     <string name="home_greeting_morning">Доброе утро</string>
     <string name="home_greeting_afternoon">Добрый день</string>
     <string name="home_greeting_evening">Добрый вечер</string>
     <string name="home_greeting_night">Доброй ночи</string>
-
-    <!-- Личное обращение (имя в приветствии) -->
     <string name="name_dialog_title">Как к вам обращаться?</string>
     <string name="name_dialog_hint">Например: Богдан</string>
     <string name="name_dialog_support">Имя хранится только на вашем устройстве и показывается в приветствии.</string>
@@ -21,35 +18,26 @@
     <string name="cd_edit_name">Изменить имя в приветствии</string>
     <string name="settings_name_title">Персональное приветствие</string>
     <string name="settings_name_empty">Имя не задано — добавьте, и приветствие станет личным</string>
-    
     <string name="add_med_title">Добавить лекарство</string>
     <string name="add_med_name_label">Название лекарства</string>
     <string name="add_med_dosage_label">Дозировка (например, 1 таблетка)</string>
     <string name="add_med_time_label">Время приема</string>
     <string name="add_med_add_time">Добавить время</string>
-    
     <string name="action_save">Сохранить</string>
     <string name="action_add">Добавить</string>
     <string name="action_delete">Удалить</string>
     <string name="action_cancel">Отмена</string>
     <string name="action_edit">Редактировать</string>
-    
     <string name="dialog_delete_title">Удалить лекарство</string>
     <string name="dialog_delete_msg">Вы уверены, что хотите удалить %1$s? Вся история расписания для этого препарата будет удалена.</string>
-    
-    <string name="calendar_history">История приема</string>
-    <string name="calendar_placeholder">Выберите день на главном экране, чтобы посмотреть историю приёмов.</string>
-    
     <string name="meds_my_meds">Мои лекарства</string>
     <string name="meds_no_meds">Вы ещё не добавили ни одного лекарства</string>
     <string name="meds_intakes_per_day">%1$d × в день</string>
-
     <string name="alarm_default_med">Лекарство</string>
     <string name="alarm_title">Время принять %1$s</string>
     <string name="alarm_text">Не забудьте принять лекарство!</string>
     <string name="alarm_channel_name">Уведомления о лекарствах</string>
     <string name="alarm_channel_desc">Напоминания о приеме препаратов</string>
-    
     <string name="settings_title">Настройки</string>
     <string name="settings_theme">Тема</string>
     <string name="settings_theme_system">Системная</string>
@@ -57,19 +45,16 @@
     <string name="settings_theme_dark">Тёмная</string>
     <string name="settings_theme_brand">Фирменная</string>
     <string name="settings_notifications">Уведомления</string>
-    
     <string name="settings_language">Язык</string>
     <string name="settings_lang_system">Системный язык</string>
     <string name="settings_lang_en">Английский (English)</string>
     <string name="settings_lang_uk">Украинский (Українська)</string>
-    <string name="settings_lang_ru">Русский (Русский)</string>
-    
+    <string name="settings_lang_ru">Русский</string>
     <string name="settings_stats">Прогресс приема</string>
     <string name="settings_stats_today_ratio">Принято сегодня</string>
     <string name="settings_stats_active_meds">Зарегистрировано лекарств: %1$d</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональный медицинский помощник. Принимайте лекарства вовремя и будьте здоровы!</string>
-    <string name="settings_version">Версия 2.4.6</string>
     <string name="settings_glass_title">Эффект жидкого стекла</string>
     <string name="settings_glass_full">Полный</string>
     <string name="settings_glass_full_desc">Живое размытие и преломление света</string>
@@ -81,10 +66,7 @@
     <string name="settings_glass_intensity">Насколько жидкое</string>
     <string name="settings_glass_intensity_matte">Матовый</string>
     <string name="settings_glass_intensity_liquid">Очень жидкое</string>
-    
     <string name="status_taken">Принято</string>
-    
-    <!-- Add Medication localization elements -->
     <string name="add_med_info_title">Информация о препарате</string>
     <string name="add_med_name_placeholder">Например: Аспирин</string>
     <string name="add_med_dosage_placeholder">Например: 1 таблетка / 5 мл</string>
@@ -106,15 +88,8 @@
     <string name="food_with_meal">С едой</string>
     <string name="food_after_meal">После еды</string>
     <string name="food_before_bed">Перед сном</string>
-    
-    <!-- Settings section localization elements -->
-    <string name="settings_group_general">Общие параметры</string>
     <string name="settings_notif_active">Да</string>
     <string name="settings_notif_disabled">Нет</string>
-    <string name="settings_my_profile">Мой профиль</string>
-    <string name="settings_active_user">Активный пользователь</string>
-
-    <!-- Streak and Flame Mini-Game strings -->
     <string name="streak_title">Серия приёма: %1$d %2$s 🔥</string>
     <string name="streak_zero_title">Серия приёма: 0 дней</string>
     <string name="streak_sub_active">Отличный результат! Не пропускайте приём</string>
@@ -122,153 +97,17 @@
     <string name="streak_day_1">день</string>
     <string name="streak_day_2_4">дня</string>
     <string name="streak_day_5">дней</string>
-    <string name="streak_menu_title">Огненная серия и достижения 🔥</string>
-    <string name="streak_menu_level">Уровень пламени: %1$d</string>
-    <string name="streak_menu_keep_flame">Мини-игра: поддерживайте огонь!</string>
-    <string name="streak_menu_tap_flame">Нажимайте на пламя!</string>
-    <string name="streak_menu_sparks">Собрано искр: %1$d</string>
-    <string name="streak_menu_achievements">Достижения пламени</string>
-    <string name="streak_achievement_1">Первая искра (1 день)</string>
-    <string name="streak_achievement_3">Разжигатель (3 дня)</string>
-    <string name="streak_achievement_7">Неделя силы (7 дней)</string>
-    <string name="streak_achievement_30">Неугасимое пламя (30 дней)</string>
-
-    <!-- Auth & Database Onboarding strings -->
-    <string name="auth_welcome_title">Добро пожаловать в PillTracker</string>
-    <string name="auth_welcome_subtitle">Контролируйте здоровье и приём лекарств безопасно</string>
-    <string name="auth_tab_signin">Вход</string>
-    <string name="auth_tab_signup">Регистрация</string>
-    <string name="auth_field_name">Имя и фамилия</string>
-    <string name="auth_field_email">Электронная почта</string>
-    <string name="auth_field_password">Пароль</string>
-    <string name="auth_btn_signin">Войти и синхронизировать</string>
-    <string name="auth_btn_signup">Создать аккаунт</string>
-    <string name="auth_btn_skip">Пропустить / Войти как гость</string>
-    <string name="auth_skip_desc">Все функции работают локально без регистрации. Создавать аккаунт необязательно.</string>
-    <string name="auth_guest_title">Гостевой профиль</string>
-    <string name="auth_guest_subtitle">Локальный режим базы данных (Офлайн)</string>
-    <string name="auth_cloud_title">Облачный аккаунт</string>
-    <string name="auth_cloud_subtitle">База данных синхронизирована</string>
-    <string name="auth_action_link_account">Войти через Google / Аккаунт</string>
-    <string name="auth_action_sign_out">Выйти (Перейти в гостевой режим)</string>
-    <string name="db_export_title">Резервная копия базы данных</string>
-    <string name="db_export_desc">Локальная база данных активна и защищена</string>
-    <string name="db_export_success">Локальный снимок базы данных сохранён!</string>
-
-    <string name="auth_btn_google">Войти через Google</string>
-    <string name="auth_google_select_account">Выберите аккаунт Google</string>
-    <string name="auth_google_simulated_subtitle">Выберите профиль Google для входа и синхронизации с PillTracker</string>
-    <string name="auth_registered_users">Сохранённые профили (локально)</string>
-    <string name="auth_error_invalid_email">Введите корректный адрес электронной почты</string>
-    <string name="auth_error_short_password">Пароль должен содержать минимум 6 символов</string>
-    <string name="auth_provider_google">Аккаунт Google</string>
-    <string name="auth_provider_email">Email / Пароль</string>
-
-    <string name="stock_title">Запас лекарств</string>
     <string name="stock_remaining">Осталось: %1$d шт.</string>
     <string name="stock_low_warning">Запас на исходе!</string>
-    <string name="stock_refill_btn">+ Пополнить запас</string>
     <string name="stock_refill_30">+30 шт.</string>
-    <string name="stock_refill_success">Запас успешно пополнен!</string>
-
-    <string name="report_export_title">Экспорт отчёта для врача</string>
-    <string name="report_export_desc">Поделиться историей приёма и статистикой</string>
-    <string name="report_share_btn">Поделиться отчётом</string>
-
-    <string name="qr_doctor_title">QR-карта для врача</string>
-    <string name="qr_doctor_desc">Показать QR-код со списком препаратов и расписанием</string>
-    <string name="qr_dialog_title">Медицинский QR-код</string>
-
-    <string name="ai_advisor_title">Gemini AI Консультант</string>
-    <string name="ai_advisor_desc">Задать вопрос о приёме лекарств, совместимости и советах</string>
-    <string name="ai_advisor_prompt_hint">Спросите о здоровье или лекарствах…</string>
-
     <string name="privacy_policy_title">Политика конфиденциальности и HIPAA</string>
     <string name="privacy_policy_desc">Защита личных данных, условия Firestore и отмена доступа</string>
-
-    <string name="welcome_message">Добро пожаловать в PillTracker, %1$s! 🎉</string>
-    <string name="welcome_back_message">С возвращением, %1$s! 👋</string>
-    <string name="account_created_message">Добро пожаловать в PillTracker, %1$s! 🎉 Аккаунт создан.</string>
-    <string name="verification_email_sent">Ссылка для подтверждения отправлена на %1$s! (Проверьте папку СПАМ)</string>
-
-    <string name="auth_verification_title">Проверьте вашу почту</string>
-    <string name="auth_verification_desc">Ссылка для активации отправлена на %1$s.\n\n1. Откройте приложение электронной почты\n2. Перейдите по ссылке в письме\n3. Проверьте папку СПАМ, если письмо задерживается\n\nПриложение автоматически войдет в аккаунт, как только почта будет подтверждена!</string>
-    <string name="auth_verification_auto_checking">Авто-проверка статуса ссылки…</string>
-    <string name="auth_verification_confirm">Подтвердить и войти</string>
-    <string name="auth_verification_wrong_code">Почта ещё не подтверждена. Проверьте папку СПАМ и нажмите ссылку в письме.</string>
-    <string name="auth_verification_check_link">Я открыл(а) ссылку из письма</string>
-    <string name="auth_verification_resend">Отправить письмо повторно</string>
-    <string name="auth_verification_skip">Продолжить без аккаунта (офлайн-режим)</string>
-    <string name="auth_privacy_checkbox">Я принимаю Политику конфиденциальности и юридические условия</string>
-    <string name="auth_privacy_required_error">Для регистрации необходимо принять Политику конфиденциальности.</string>
-    <string name="auth_forgot_password">Забыли пароль?</string>
-    <string name="auth_reset_password_title">Сброс пароля</string>
-    <string name="auth_reset_password_desc">Введите ваш email, и мы отправим ссылку для восстановления пароля.</string>
-    <string name="auth_btn_send_reset">Отправить ссылку</string>
-    <string name="auth_reset_email_sent">Ссылка для сброса пароля отправлена на %1$s!</string>
-    <string name="auth_invalid_credentials">Неверный email или пароль.</string>
-    <string name="auth_user_not_found">Пользователь с таким email не найден.</string>
-    <string name="barcode_format_qr">QR-код</string>
-    <string name="barcode_format_1d">Штрихкод (Code 128)</string>
-
-    <string name="settings_cloud_sync_title">Облачная синхронизация</string>
-    <string name="settings_cloud_sync_enabled">Синхронизация включена</string>
-    <string name="settings_cloud_sync_disabled">Синхронизация отключена</string>
-    <string name="settings_alarm_clock_title">Режим будильника</string>
-    <string name="settings_alarm_clock_loud">Громкий сигнал и вибрация</string>
-    <string name="settings_alarm_clock_standard">Стандартные напоминания</string>
-    <string name="settings_alarm_repeat_title">Повтор напоминаний</string>
-    <string name="settings_alarm_repeat_1">1 раз</string>
-    <string name="settings_alarm_repeat_2">2 раза</string>
-    <string name="settings_alarm_repeat_3">3 раза</string>
-    <string name="settings_delete_account_btn">Удалить аккаунт и данные</string>
     <string name="terms_of_service_title">Условия использования</string>
     <string name="terms_of_service_desc">Правила сервиса и условия использования</string>
-    <string name="edit_profile_title">Редактировать профиль</string>
-    <string name="edit_profile_nickname">Имя / Никнейм</string>
-    <string name="edit_profile_change_photo">Нажмите на аватар, чтобы изменить фото</string>
-    <string name="edit_profile_camera">Сделать фото с камеры</string>
-    <string name="edit_profile_gallery">Выбрать из галереи</string>
-
-    <!-- Profile Screen strings -->
-    <string name="profile_sync_active">Синхронизация активна</string>
-    <string name="profile_synced_at">Синхронизировано в %1$s</string>
-    <string name="profile_synced">Синхронизировано</string>
-    <string name="profile_guest_user">Гостевой Пользователь</string>
-    <string name="profile_default_user">Пользователь</string>
-    <string name="profile_guest_mode_local">Гостевой режим (Локальные данные)</string>
-    <string name="profile_authorized_account">Авторизованный аккаунт</string>
-    <string name="profile_edit_name_photo">Редактировать имя и фото</string>
-    <string name="profile_account_info">Информация об аккаунте</string>
-    <string name="profile_account_status">Статус аккаунта</string>
-    <string name="profile_status_guest">ГОСТЬ</string>
-    <string name="profile_status_authorized">АВТОРИЗОВАН</string>
-    <string name="profile_cloud_status">Облачный статус</string>
-    <string name="profile_account_management">Управление аккаунтом</string>
-    <string name="profile_deletion_scheduled">⚠️ Аккаунт будет удалён через %1$d дн. (льготный период 30 дней)</string>
-    <string name="profile_cancel_deletion">Отменить удаление аккаунта</string>
-    <string name="profile_signin_or_register">Войти или зарегистрироваться</string>
-
-    <!-- Auth Guest Terms strings -->
-    <string name="auth_guest_terms_title">Условия для гостевого режима</string>
-    <string name="auth_guest_terms_desc">Для продолжения работы в гостевом режиме без регистрации аккаунта необходимо подтвердить согласие с Условиями использования и Политикой конфиденциальности.</string>
-    <string name="auth_guest_terms_bullet1">• Все данные лекарств хранятся только на этом устройстве.</string>
-    <string name="auth_guest_terms_bullet2">• Облачная резервная копия отключена до создания аккаунта.</string>
-    <string name="auth_guest_terms_checkbox">Я принимаю Условия использования и Политику конфиденциальности</string>
-    <string name="auth_guest_terms_error">Пожалуйста, согласитесь с условиями для продолжения</string>
-    <string name="auth_guest_terms_continue">Продолжить как гость</string>
-
-    <!-- Settings section extensions -->
-    <string name="settings_cloud_sync_auto">Автоматическая резервная копия включена</string>
-    <string name="settings_cloud_sync_local">Данные хранятся локально на устройстве</string>
-    <string name="settings_export_and_docs">Экспорт и Документы</string>
-
-    <!-- New Features Strings -->
     <string name="snooze_15m">На 15 мин</string>
     <string name="snooze_30m">На 30 мин</string>
     <string name="snooze_60m">На 1 час</string>
     <string name="snooze_title">Отложить напоминание</string>
-    
     <string name="form_capsule">Капсула</string>
     <string name="form_tablet">Таблетка</string>
     <string name="form_liquid">Сироп</string>
@@ -276,79 +115,57 @@
     <string name="form_injection">Инъекция</string>
     <string name="form_spray">Спрей</string>
     <string name="form_patch">Пластырь</string>
-
     <string name="sched_daily">Ежедневно</string>
     <string name="sched_interval">Каждые %1$d дн.</string>
     <string name="sched_interval_label">Интервал приема (дней)</string>
     <string name="sched_as_needed">По необходимости</string>
     <string name="add_med_form_type_label">Форма выпуска лекарства</string>
     <string name="add_med_schedule_type_label">Режим приема</string>
-
     <string name="stock_track_label">Отслеживать остаток в упаковке</string>
     <string name="stock_total_label">Начальный запас (шт.)</string>
     <string name="stock_pcs">%1$d шт.</string>
     <string name="stock_low_tag">Мало: %1$d шт.</string>
-    <string name="stock_empty_tag">Закончились (0 шт.)</string>
-
     <string name="adherence_title">Дисциплина приема</string>
-    <string name="adherence_subtitle">За последние 30 дней</string>
-    <string name="adherence_taken">Вовремя</string>
     <string name="adherence_taken_count">Принято %1$d из %2$d</string>
-    <string name="adherence_rate">Дисциплина</string>
     <string name="adherence_as_needed_section">Лекарства по необходимости</string>
-    <string name="take_now">Принять сейчас</string>
-
     <string name="dialog_cancel">Отмена</string>
-    <string name="adherence_discipline">Дисциплина</string>
-    <!-- ═══ Onboarding: интерактивный тур (первый вход + повтор из Настроек) ═══ -->
     <string name="ob_skip">Пропустить</string>
     <string name="ob_step_of">Шаг %1$d из %2$d</string>
-
     <string name="ob_welcome_title">Добро пожаловать в Pill Tracker!</string>
     <string name="ob_welcome_desc">Ваш личный помощник для лекарств — приватно, офлайн и всегда вовремя.</string>
     <string name="ob_welcome_b1">Все лекарства в одном месте</string>
     <string name="ob_welcome_b2">Работает полностью офлайн</string>
     <string name="ob_welcome_b3">Данные остаются на устройстве</string>
-
-    <!-- Необязательное имя на экране приветствия -->
     <string name="ob_name_label">Как к вам обращаться? (необязательно)</string>
     <string name="ob_name_placeholder">Ваше имя…</string>
-
     <string name="ob_settings_replay_title">Показать обучение снова</string>
     <string name="ob_settings_replay_desc">Интерактивный тур по приложению</string>
-
-    <!-- ═══ Интерактивный тур v2 (подсветка реальных кнопок) ═══ -->
     <string name="tour_start">Начать тур</string>
-    <string name="tour_interactive_hint">Короткая прогулка по приложению — потапаем настоящие кнопки вместе</string>
+    <string name="tour_interactive_hint">Короткая прогулка по приложению — нажимаем на настоящие кнопки вместе</string>
     <string name="tour_next">Дальше</string>
     <string name="tour_finish">Понятно, попробую сам</string>
-    <string name="tour_tap_hint">Тапни по подсвеченному, чтобы продолжить</string>
-
+    <string name="tour_tap_hint">Нажмите на подсвеченный элемент, чтобы продолжить</string>
     <string name="tour_step_today_title">Это экран «Сегодня»</string>
-    <string name="tour_step_today_desc">Приёмы на день живут здесь. Тапни по пилюле, когда выпил — кольцо заполнится по ходу дела.</string>
+    <string name="tour_step_today_desc">Приёмы на день живут здесь. Нажмите на пилюлю, когда приняли лекарство, — кольцо заполнится на ходу.</string>
     <string name="tour_step_nav_title">Экраны листаются как страницы</string>
-    <string name="tour_step_nav_desc">Свайпни влево или тапни по подсвеченной панели — перейдём в Календарь.</string>
+    <string name="tour_step_nav_desc">Смахните влево или нажмите на подсвеченную панель — перейдём в Календарь.</string>
     <string name="tour_step_calendar_title">Календарь</string>
     <string name="tour_step_calendar_desc">Весь месяц как на ладони: зелёные дни — всё принято вовремя.</string>
-    <string name="tour_step_meds_title">Твои лекарства</string>
+    <string name="tour_step_meds_title">Ваши лекарства</string>
     <string name="tour_step_meds_desc">Каждое лекарство с дозой, остатком и графиком — редактируется в один тап.</string>
     <string name="tour_step_settings_title">Настройки</string>
     <string name="tour_step_settings_desc">Тема, язык, уведомления, проверка обновлений и это обучение — всё под рукой на последней странице.</string>
     <string name="tour_step_add_title">Добавить лекарство</string>
-    <string name="tour_step_add_desc">Большой плюс — и добавим. Тапни его — заполним первое вместе.</string>
-    <string name="tour_step_form_title">Заполни карточку</string>
-    <string name="tour_step_form_desc">Название, доза, время — гибко под любую терапию. Попробуй сам, это просто!</string>
-
+    <string name="tour_step_add_desc">Большой плюс — и новое лекарство в приложении. Нажмите на него — заполним первую карточку вместе.</string>
+    <string name="tour_step_form_title">Заполните карточку</string>
+    <string name="tour_step_form_desc">Название, доза, время — гибко под любую терапию. Попробуйте сами, это просто!</string>
     <string name="tour_step_dose_title">Приём — одним касанием</string>
-    <string name="tour_step_dose_desc">Выпили лекарство — коснитесь кружка напротив приёма. Кольцо прогресса заполнится, а серия дней начнёт расти сама.</string>
-
+    <string name="tour_step_dose_desc">Приняли лекарство — коснитесь кружка напротив приёма. Кольцо прогресса заполнится, а серия дней начнёт расти сама.</string>
     <string name="tour_done_title">Всё готово!</string>
     <string name="tour_done_desc">Вы уже умеете всё главное. Дальше — практика, а приложение подскажет в пути.</string>
     <string name="tour_done_b1">Приём отмечаете касанием — статистика и серия считаются сами</string>
     <string name="tour_done_b2">Потеряетесь — повторите этот тур в Настройках</string>
     <string name="tour_done_start">Начать пользоваться</string>
-
-    <!-- ═══ Обновления прямо из приложения (GitHub Releases) ═══ -->
     <string name="upd_title">Доступно обновление</string>
     <string name="upd_body">Вышла новая версия Pill Tracker — %1$s.</string>
     <string name="upd_whats_new">Что нового:</string>
@@ -359,14 +176,14 @@
     <string name="upd_checking">Проверяем обновления…</string>
     <string name="upd_uptodate">У вас последняя версия!</string>
     <string name="upd_ok">Ок</string>
-    <string name="upd_failed">Не удалось проверить обновления. Проверь соединение и попробуй ещё раз.</string>
+    <string name="upd_failed">Не удалось проверить обновления. Проверьте соединение и попробуйте ещё раз.</string>
     <string name="upd_retry">Попробовать снова</string>
     <string name="upd_close">Закрыть</string>
     <string name="upd_perm_title">Разовое разрешение</string>
     <string name="upd_perm_body">Чтобы обновляться прямо из приложения, Android один раз попросит разрешить установку из этого источника.</string>
     <string name="upd_perm_step1">Сейчас откроются Настройки</string>
-    <string name="upd_perm_step2">Разреши установку для Pill Tracker</string>
-    <string name="upd_perm_step3">Вернись — обновление скачается само</string>
+    <string name="upd_perm_step2">Разрешите установку для Pill Tracker</string>
+    <string name="upd_perm_step3">Вернитесь — обновление скачается само</string>
     <string name="upd_open_settings">Открыть настройки</string>
     <string name="upd_waiting">Ждём разрешения в Настройках…</string>
     <string name="upd_downloading">Скачиваем обновление…</string>

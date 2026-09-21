@@ -98,7 +98,7 @@ fun AddMedicationScreen(
                 val scheds = viewModel.getSchedulesForMedication(editingMedicationId)
                 times.clear()
                 // "As needed" medications store placeholder (-1, -1) schedule rows.
-                // Filtering them out prevents LocalTime.of(-1, -1) from crashing the editor.
+
                 scheds
                     .filter { s -> s.timeHour in 0..23 && s.timeMinute in 0..59 }
                     .forEach { s ->
@@ -107,11 +107,9 @@ fun AddMedicationScreen(
             }
         }
     }
-    
-    // Respect the IN-APP selected theme (not just the system theme) so date/time
-    // picker dialogs match the application appearance in Light/Dark/Brand modes.
+
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    
+
     // Check if form is valid
     val isFormValid = name.isNotBlank() && dosage.isNotBlank() && (scheduleTypeKey == "as_needed" || times.isNotEmpty())
 
@@ -119,12 +117,12 @@ fun AddMedicationScreen(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = stringResource(if (editingMedicationId != null) R.string.edit_med_title else R.string.add_med_title),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
-                    ) 
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -245,7 +243,7 @@ fun AddMedicationScreen(
                             ),
                             singleLine = true
                         )
-                        
+
                         OutlinedTextField(
                             value = dosage,
                             onValueChange = { dosage = it },
@@ -282,7 +280,6 @@ fun AddMedicationScreen(
                             singleLine = true
                         )
 
-                        // Quick Food Presets — FlowRow: chips keep their natural
                         // width and wrap to a new line as a whole, so long
                         // translations (e.g. "After meals") never get squeezed
                         // into per-character line breaks.
@@ -413,7 +410,6 @@ fun AddMedicationScreen(
                             fontWeight = FontWeight.Bold
                         )
 
-                        // Schedule frequency: FlowRow with natural-width chips —
                         // long translations wrap as whole chips instead of
                         // crushing the text inside a fixed-width slot.
                         FlowRow(
@@ -648,7 +644,7 @@ fun AddMedicationScreen(
                                 modifier = Modifier.size(22.dp)
                             )
                         }
-                        
+
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.Center
@@ -771,9 +767,9 @@ fun AddMedicationScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        
+
                         TextButton(
-                            onClick = { 
+                            onClick = {
                                 val nextTime = if (times.isNotEmpty()) {
                                     val last = times.last()
                                     last.plusHours(4)
@@ -791,7 +787,6 @@ fun AddMedicationScreen(
                     }
                 }
 
-                // List of pill shaped times with interactive TimePickerDialogs & delete button
                 if (times.isEmpty()) {
                     item {
                         Box(
@@ -828,7 +823,7 @@ fun AddMedicationScreen(
                                 // Time Slot Glass Card
                                 // explicit locale keeps digit rendering stable in every language
                                 val formattedTime = String.format(java.util.Locale.US, "%02d:%02d", time.hour, time.minute)
-                                
+
                                 GlassCard(
                                     modifier = Modifier.weight(1f),
                                     onClick = {

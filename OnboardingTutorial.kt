@@ -1,41 +1,25 @@
 package com.aistudio.meditracker.ui.components
 
-/*
- * OnboardingTutorial v2 — ИНТЕРАКТИВНЫЙ тур по приложению.
- *
- *  • Первая страница — приветствие (что это за приложение).
- *  • Дальше — живые coach-marks ПОВЕРХ РЕАЛЬНОГО интерфейса:
- *    подсвечивается настоящая кнопка/зона, тап по подсветке
- *    программно выполняет то же действие (переключает страницу,
- *    открывает экран добавления) — человека реально «перекидывает».
- *  • Кнопка «Пропустить» — всегда сверху; шаги можно листать кнопкой
- *    «Дальше»; системный «назад» идёт по шагам.
- *  • Кнопка в Настройках перезапускает тур через OnboardingBus.
- *
- * Механика подсветки: экраны вешают теги через Modifier.coachTag("key")
- * — их рамки складываются в CoachMarks.rects; оверлей читает рамку
- * текущего шага и рисует затемнение с «дыркой» (Path + EvenOdd).
- */
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector4D
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.TwoWayConverter
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -93,6 +77,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -103,6 +88,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -112,15 +98,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.aistudio.meditracker.R
-import kotlinx.coroutines.flow.filter
-
-/* ────────────────────────────────────────────────────────────────
- * Персистентность + сигналы навигации
- * ──────────────────────────────────────────────────────────────── */
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 object OnboardingPrefs {
     private const val PREFS_NAME = "onboarding_prefs"
@@ -142,7 +131,6 @@ object OnboardingPrefs {
         prefs.edit().putBoolean(KEY_COMPLETED, false).apply()
     }
 
-    /** Имя для персонального приветствия (необязательно, только на устройстве). */
     fun getUserName(context: android.content.Context): String? {
         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
         val name = prefs.getString(KEY_USER_NAME, null)?.trim()
@@ -160,25 +148,16 @@ object OnboardingPrefs {
     }
 }
 
-/**
- * Шина туториала: повтор из Настройок + запросы навигации, которые
- * тур отдаёт главному экрану (переключить страницу / открыть добавление /
- * вернуться назад). MainScreen/MainPagerScreen слушают и выполняют.
- */
 object OnboardingBus {
     var replayRequested by mutableStateOf(false)
         private set
 
-    /** Тур активен — на это время блокируем свайпы пейджера. */
     var tourActive by mutableStateOf(false)
 
-    /** Запрос «переключиться на страницу пейджера 0..3». */
     var pageRequested by mutableStateOf(-1)
 
-    /** Запрос «открыть экран добавления лекарства». */
     var addRequested by mutableStateOf(false)
 
-    /** Запрос «вернуться назад (закрыть экран добавления)». */
     var backRequested by mutableStateOf(false)
 
     fun requestReplay(context: android.content.Context) {
@@ -219,19 +198,10 @@ object OnboardingBus {
     }
 }
 
-/* ────────────────────────────────────────────────────────────────
- * Coach-marks: реестр рамок реальных элементов UI
- * ──────────────────────────────────────────────────────────────── */
-
 object CoachMarks {
-    /** key → рамка элемента в координатах окна (обновляется onGloballyPositioned). */
     val rects = mutableStateMapOf<String, Rect>()
 }
 
-/**
- * Повесить на реальный элемент интерфейса, чтобы тур мог его подсветить:
- *   Modifier.coachTag("home_hero")
- */
 fun Modifier.coachTag(key: String): Modifier {
     return this.onGloballyPositioned { coordinates ->
         val rect = coordinates.boundsInWindow()
@@ -243,34 +213,18 @@ fun Modifier.coachTag(key: String): Modifier {
     }
 }
 
-/* ────────────────────────────────────────────────────────────────
- * Описание шагов тура
- * ──────────────────────────────────────────────────────────────── */
-
-/** Что делает тап по подсвеченной зоне. */
 private enum class TourTap { NEXT, OPEN_CALENDAR, OPEN_ADD }
 
 private data class TourStep(
-    val tag: String,          // ключ в CoachMarks
-    val wantPage: Int? = null, // страницу пейджера выставить при входе в шаг
+    val tag: String,
+    val wantPage: Int? = null,
     val wantAddScreen: Boolean = false,
     val icon: ImageVector,
     val titleRes: Int,
     val descRes: Int,
     val tap: TourTap = TourTap.NEXT,
     val isLast: Boolean = false,
-    val animatedIcon: Boolean = false // иконка-«палец/свайп» живёт на месте
-)
-
-private val TOUR_ICONS = listOf(
-    Icons.Filled.Today,
-    Icons.Filled.CheckCircle,
-    Icons.Filled.SwipeLeft,
-    Icons.Filled.CalendarMonth,
-    Icons.AutoMirrored.Filled.List,
-    Icons.Filled.Settings,
-    Icons.Filled.AddCircle,
-    Icons.Filled.TouchApp
+    val animatedIcon: Boolean = false
 )
 
 private fun buildTourSteps(): List<TourStep> = listOf(
@@ -343,21 +297,21 @@ private fun buildTourSteps(): List<TourStep> = listOf(
     )
 )
 
-/* ────────────────────────────────────────────────────────────────
- * Оверлей: приветствие → интерактивные шаги
- * ──────────────────────────────────────────────────────────────── */
+private val RectConverter = TwoWayConverter<Rect, AnimationVector4D>(
+    convertToVector = { AnimationVector4D(it.left, it.top, it.right, it.bottom) },
+    convertFromVector = { Rect(it.v1, it.v2, it.v3, it.v4) }
+)
 
 @Composable
 fun OnboardingOverlay(onFinished: () -> Unit) {
     val steps = remember { buildTourSteps() }
-    var phase by remember { mutableStateOf(0) } // 0 = приветствие, 1 = тур
+    var phase by remember { mutableStateOf(0) }
     var stepIndex by remember { mutableStateOf(0) }
 
     SideEffect {
         OnboardingBus.tourActive = phase == 1
     }
     if (phase == 0) {
-        // Системный «назад» на приветствии = выйти из обучения
         BackHandler { onFinished() }
         WelcomeCard(
             onStart = {
@@ -371,18 +325,15 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
             steps = steps,
             stepIndex = stepIndex,
             onStepChange = { stepIndex = it },
-            onFinish = { phase = 2 } // последний шаг → финальная карточка
+            onFinish = { phase = 2 }
         )
     } else {
-        // Финал: мягкая «победная» карточка вместо резкого обрыва
         BackHandler { onFinished() }
         FinishCard(
             onStart = onFinished
         )
     }
 }
-
-/* ── Приветствие ── */
 
 @Composable
 private fun WelcomeCard(
@@ -395,10 +346,8 @@ private fun WelcomeCard(
         entrance.animateTo(1f, tween(360, easing = EaseOutCubic))
     }
 
-    // Необязательное имя — оно попадёт в приветствие на главном экране
     var userName by remember { mutableStateOf(OnboardingPrefs.getUserName(context) ?: "") }
 
-    // Живой фон: три медленно дрейфующих радиальных пятна
     val drift = rememberInfiniteTransition(label = "onboardingDrift")
     val phase by drift.animateFloat(
         initialValue = 0f,
@@ -420,48 +369,52 @@ private fun WelcomeCard(
                 scaleX = 0.94f + 0.06f * entrance.value
                 scaleY = 0.94f + 0.06f * entrance.value
             }
-            // Почти непрозрачный фон: приложение за ним не просвечивает,
-            // читается только карточка приветствия.
             .background(Color.Black.copy(alpha = 0.92f))
-            .drawBehind {
-                val t = phase * 2f * Math.PI.toFloat()
-                fun blob(color: Color, cx: Float, cy: Float, radius: Float) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(color, Color.Transparent),
-                            center = Offset(x = cx, y = cy),
-                            radius = radius
-                        ),
-                        radius = radius,
-                        center = Offset(x = cx, y = cy)
-                    )
+            .drawWithCache {
+                val w = size.width
+                val h = size.height
+                val blob1 = Brush.radialGradient(
+                    colors = listOf(roleColors[0].copy(alpha = 0.30f), Color.Transparent),
+                    center = Offset.Zero,
+                    radius = w * 0.75f
+                )
+                val blob2 = Brush.radialGradient(
+                    colors = listOf(roleColors[1].copy(alpha = 0.24f), Color.Transparent),
+                    center = Offset.Zero,
+                    radius = w * 0.65f
+                )
+                val blob3 = Brush.radialGradient(
+                    colors = listOf(roleColors[2].copy(alpha = 0.20f), Color.Transparent),
+                    center = Offset.Zero,
+                    radius = w * 0.70f
+                )
+                onDrawBehind {
+                    val t = phase * 2f * Math.PI.toFloat()
+                    translate(
+                        w * (0.22f + 0.10f * cos(t)),
+                        h * (0.16f + 0.08f * sin(t))
+                    ) {
+                        drawCircle(brush = blob1, radius = w * 0.75f, center = Offset.Zero)
+                    }
+                    translate(
+                        w * (0.82f + 0.08f * sin(t)),
+                        h * (0.30f + 0.10f * cos(t))
+                    ) {
+                        drawCircle(brush = blob2, radius = w * 0.65f, center = Offset.Zero)
+                    }
+                    translate(
+                        w * (0.50f + 0.12f * cos(t * 0.7f)),
+                        h * (0.92f + 0.06f * sin(t * 0.7f))
+                    ) {
+                        drawCircle(brush = blob3, radius = w * 0.70f, center = Offset.Zero)
+                    }
                 }
-                blob(
-                    color = roleColors[0].copy(alpha = 0.30f),
-                    cx = size.width * (0.22f + 0.10f * kotlin.math.cos(t)),
-                    cy = size.height * (0.16f + 0.08f * kotlin.math.sin(t)),
-                    radius = size.width * 0.75f
-                )
-                blob(
-                    color = roleColors[1].copy(alpha = 0.24f),
-                    cx = size.width * (0.82f + 0.08f * kotlin.math.sin(t)),
-                    cy = size.height * (0.30f + 0.10f * kotlin.math.cos(t)),
-                    radius = size.width * 0.65f
-                )
-                blob(
-                    color = roleColors[2].copy(alpha = 0.20f),
-                    cx = size.width * (0.50f + 0.12f * kotlin.math.cos(t * 0.7f)),
-                    cy = size.height * (0.92f + 0.06f * kotlin.math.sin(t * 0.7f)),
-                    radius = size.width * 0.70f
-                )
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ) { /* поглощаем тапы по затемнению */ }
+            ) { }
     ) {
-        // Локальная копия ограничения по высоте — доступна во всех
-        // вложенных лямбдах без танцев с неявными ресиверами.
         val screenMaxHeight = maxHeight
         Column(
             modifier = Modifier
@@ -469,7 +422,6 @@ private fun WelcomeCard(
                 .systemBarsPadding()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            // Верхняя строка: логотип + «Пропустить»
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -531,8 +483,6 @@ private fun WelcomeCard(
 
             Spacer(modifier = Modifier.weight(0.55f))
 
-            // Карточка приветствия: на высоких экранах — как раньше,
-            // на низких (ландшафт) — ограничена по высоте и скроллится изнутри
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -546,7 +496,6 @@ private fun WelcomeCard(
                     .verticalScroll(rememberScrollState())
                     .padding(26.dp)
             ) {
-                // Дышащая иконка
                 val breathe = rememberInfiniteTransition(label = "breathe")
                 val scale by breathe.animateFloat(
                     initialValue = 0.96f,
@@ -623,7 +572,6 @@ private fun WelcomeCard(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Необязательное имя → персональное приветствие на главном
                 Text(
                     text = stringResource(R.string.ob_name_label),
                     style = MaterialTheme.typography.labelMedium,
@@ -656,7 +604,6 @@ private fun WelcomeCard(
 
                 Spacer(modifier = Modifier.height(22.dp))
 
-                // Кнопка «Начать тур»
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -701,7 +648,7 @@ private fun WelcomeCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.55f),
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
             }
 
@@ -709,8 +656,6 @@ private fun WelcomeCard(
         }
     }
 }
-
-/* ── Финал: «готово» вместо резкого обрыва ── */
 
 @Composable
 private fun FinishCard(
@@ -721,10 +666,9 @@ private fun FinishCard(
         entrance.animateTo(1f, tween(360, easing = EaseOutCubic))
     }
 
-    // Чек-марка «влетает» пружиной
     val checkScale = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(160)
+        delay(160)
         checkScale.animateTo(
             1f,
             spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
@@ -740,15 +684,13 @@ private fun FinishCard(
                 scaleY = 0.94f + 0.06f * entrance.value
             }
             .background(Color.Black.copy(alpha = 0.92f))
-            // Поглощаем и тапы, и драги: пейджер под оверлеем не
-            // должен «листаться» сквозь финальную карточку.
             .pointerInput(Unit) {
                 detectDragGestures { change, _ -> change.consume() }
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ) { /* тап по затемнению — ничего */ },
+            ) { },
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -764,7 +706,6 @@ private fun FinishCard(
                 .padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Большой кружок с галочкой
             Box(
                 modifier = Modifier
                     .size(88.dp)
@@ -803,7 +744,7 @@ private fun FinishCard(
                 text = stringResource(R.string.tour_done_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.82f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(18.dp))
@@ -873,8 +814,6 @@ private fun FinishCard(
     }
 }
 
-/* ── Интерактивный тур ── */
-
 @Composable
 private fun CoachTour(
     steps: List<TourStep>,
@@ -883,12 +822,14 @@ private fun CoachTour(
     onFinish: () -> Unit
 ) {
     val step = steps[stepIndex]
-    var nudge by remember { mutableStateOf(0) } // «пни» рамку, если тап мимо
+    val density = LocalDensity.current
 
-    // Системный «назад»: по шагам, с последнего — выход.
-    // ВАЖНО: если ТЕКУЩИЙ шаг живёт на экране добавления — сначала
-    // закрываем его (requestBack), иначе тур вернётся на шаг «+»,
-    // а экран добавления останется висеть поверх пейджера.
+    var shownStep by remember { mutableStateOf(0) }
+    var holeTarget by remember { mutableStateOf<Rect?>(null) }
+    var nudge by remember { mutableStateOf(0) }
+
+    val holeAnim = remember { Animatable(Rect(0f, 0f, 0f, 0f), RectConverter) }
+
     BackHandler(enabled = true) {
         if (stepIndex > 0) {
             if (step.wantAddScreen) OnboardingBus.requestBack()
@@ -898,18 +839,45 @@ private fun CoachTour(
         }
     }
 
-    /* При входе в шаг — попросить главный экран поставить нужную страницу
-       или открыть экран добавления. MainScreen слушает шину. */
     LaunchedEffect(stepIndex) {
-        kotlinx.coroutines.delay(60) // кадр на композицию предыдущего шага
         if (step.wantAddScreen) {
             OnboardingBus.requestAdd()
         } else {
             step.wantPage?.let { OnboardingBus.requestPage(it) }
         }
+        val tag = step.tag
+        withTimeoutOrNull(900L) {
+            snapshotFlow { CoachMarks.rects[tag] }.filterNotNull().first()
+        }
+        shownStep = stepIndex
     }
 
-    /* Пульсирующая рамка подсветки */
+    LaunchedEffect(shownStep) {
+        val tag = steps[shownStep].tag
+        snapshotFlow { CoachMarks.rects[tag] }
+            .filterNotNull()
+            .collect { r ->
+                val maxHoleH = with(density) { 300.dp.toPx() }
+                holeTarget = if (r.height > maxHoleH) {
+                    Rect(r.left, r.top, r.right, r.top + maxHoleH)
+                } else {
+                    r
+                }
+            }
+    }
+
+    LaunchedEffect(holeTarget) {
+        val target = holeTarget ?: return@LaunchedEffect
+        if (holeAnim.value.isEmpty) {
+            holeAnim.snapTo(target)
+        } else {
+            holeAnim.animateTo(
+                target,
+                spring(dampingRatio = 0.88f, stiffness = 460f)
+            )
+        }
+    }
+
     val pulse = rememberInfiniteTransition(label = "coachPulse")
     val pulseAlpha by pulse.animateFloat(
         initialValue = 0.55f,
@@ -921,7 +889,6 @@ private fun CoachTour(
         label = "coachPulseAlpha"
     )
 
-    /* «Тапни сюда»: фаза расходящихся колец в центре дырки */
     val tapPulse = rememberInfiniteTransition(label = "tapPulse")
     val tapPhase by tapPulse.animateFloat(
         initialValue = 0f,
@@ -933,34 +900,34 @@ private fun CoachTour(
         label = "tapPhase"
     )
 
-    val rawHole = CoachMarks.rects[step.tag]
-    val density = LocalDensity.current
-    // Полноэкранные зоны (список приёмов, настройки) подсвечиваем как
-    // «зону»: высота дырки ограничена, иначе тултип не помещается под
-    // ней, а сама подсветка выглядит как «весь экран» и не читается.
-    val holeRect = rawHole?.let { hole ->
-        val maxHoleH = with(density) { 300.dp.toPx() }
-        if (hole.height > maxHoleH) {
-            Rect(hole.left, hole.top, hole.right, hole.top + maxHoleH)
-        } else {
-            hole
-        }
-    }
-    val appear = remember(stepIndex) { Animatable(0f) }
-    LaunchedEffect(stepIndex) {
-        appear.animateTo(1f, tween(340, easing = EaseOutCubic))
+    val appear = remember(shownStep) { Animatable(0f) }
+    LaunchedEffect(shownStep) {
+        appear.animateTo(1f, tween(360, easing = EaseOutCubic))
     }
 
-    // ГУСТОЙ scrim: приложение за оверлеем не просвечивает — «дырка»
-    // подсветки остаётся единственным ярким пятном на экране.
-    val scrimAlpha = (0.88f * appear.value)
+    val nudgeShake by animateFloatAsState(
+        targetValue = if (nudge > 0) 1f else 0f,
+        animationSpec = spring(dampingRatio = 0.35f, stiffness = 400f),
+        label = "nudgeShake"
+    )
+    LaunchedEffect(nudge) {
+        if (nudge > 0) {
+            delay(450)
+            nudge = 0
+        }
+    }
+
+    val gap = 10.dp
+    val arrowSize = 14.dp
+    var tooltipH by remember { mutableStateOf(232.dp) }
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(holeRect, stepIndex) {
+            .pointerInput(holeTarget, stepIndex) {
                 detectTapGestures { offset ->
-                    if (holeRect != null && holeRect.inflate(12f).contains(offset)) {
+                    val hole = holeTarget
+                    if (hole != null && hole.inflate(12f).contains(offset)) {
                         when (step.tap) {
                             TourTap.NEXT -> {
                                 if (step.isLast) onFinish() else onStepChange(stepIndex + 1)
@@ -980,11 +947,11 @@ private fun CoachTour(
                 }
             }
             .drawBehind {
-                // Затемнение с «дыркой» над подсвеченным элементом
+                val hole = holeAnim.value
                 val path = Path()
                 path.fillType = PathFillType.EvenOdd
                 path.addRect(Rect(0f, 0f, size.width, size.height))
-                holeRect?.let { hole ->
+                if (!hole.isEmpty) {
                     val cornerRadius = 22.dp.toPx()
                     path.addRoundRect(
                         RoundRect(
@@ -996,78 +963,61 @@ private fun CoachTour(
                         )
                     )
                 }
-                drawPath(path, Color.Black.copy(alpha = scrimAlpha))
+                drawPath(path, Color.Black.copy(alpha = 0.88f * appear.value))
             }
     ) {
-        // Рамка вокруг дырки (двойная: тонкая яркая + широкая мягкая)
-        holeRect?.let { hole ->
-            val cornerRadius = 22.dp
-            val nudgeShake by animateFloatAsState(
-                targetValue = if (nudge > 0) 1f else 0f,
-                animationSpec = spring(dampingRatio = 0.35f, stiffness = 400f),
-                label = "nudgeShake"
-            )
-            LaunchedEffect(nudge) {
-                if (nudge > 0) {
-                    kotlinx.coroutines.delay(450)
-                    nudge = 0
-                }
-            }
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        alpha = appear.value
-                        translationX = nudgeShake * 6f *
-                            kotlin.math.sin(nudge * 12.9898f * 100f)
-                    }
-            ) {
-                val insetHole = Rect(
-                    left = hole.left - 8f,
-                    top = hole.top - 8f,
-                    right = hole.right + 8f,
-                    bottom = hole.bottom + 8f
-                )
-                val rr = RoundRect(
-                    insetHole,
-                    cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx())
-                )
-                // мягкое свечение
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.10f * pulseAlpha),
-                    topLeft = Offset(insetHole.left, insetHole.top),
-                    size = Size(insetHole.width, insetHole.height),
-                    cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx()),
-                    style = Stroke(width = 10.dp.toPx())
-                )
-                // яркая рамка
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.95f * pulseAlpha),
-                    topLeft = Offset(insetHole.left, insetHole.top),
-                    size = Size(insetHole.width, insetHole.height),
-                    cornerRadius = CornerRadius(cornerRadius.toPx(), cornerRadius.toPx()),
-                    style = Stroke(width = 2.5.dp.toPx())
-                )
+        val maxHPx = with(density) { maxHeight.toPx() }
+        val topMinPx = with(density) { 100.dp.toPx() }
+        val bottomGuardPx = with(density) { 24.dp.toPx() }
 
-                // «Тапни сюда»: расходящееся кольцо + точка в центре дырки
-                val c = hole.center
-                val rMin = kotlin.math.min(hole.width, hole.height) / 2f
-                val ringR = rMin * (0.34f + 0.62f * tapPhase)
-                drawCircle(
-                    color = Color.White.copy(alpha = (1f - tapPhase) * 0.50f),
-                    radius = ringR,
-                    center = c,
-                    style = Stroke(width = 3.dp.toPx())
-                )
-                drawCircle(
-                    color = Color.White.copy(alpha = 0.92f),
-                    radius = 5.dp.toPx(),
-                    center = c
-                )
-            }
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = appear.value
+                    translationX = nudgeShake * 6f * sin(nudge * 12.9898f * 100f)
+                }
+        ) {
+            val hole = holeAnim.value
+            if (hole.isEmpty) return@Canvas
+            val cornerRadius = 22.dp.toPx()
+            val insetHole = Rect(
+                left = hole.left - 8f,
+                top = hole.top - 8f,
+                right = hole.right + 8f,
+                bottom = hole.bottom + 8f
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.10f * pulseAlpha),
+                topLeft = Offset(insetHole.left, insetHole.top),
+                size = Size(insetHole.width, insetHole.height),
+                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                style = Stroke(width = 10.dp.toPx())
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.95f * pulseAlpha),
+                topLeft = Offset(insetHole.left, insetHole.top),
+                size = Size(insetHole.width, insetHole.height),
+                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                style = Stroke(width = 2.5.dp.toPx())
+            )
+
+            val c = hole.center
+            val rMin = kotlin.math.min(hole.width, hole.height) / 2f
+            val ringR = rMin * (0.34f + 0.62f * tapPhase)
+            drawCircle(
+                color = Color.White.copy(alpha = (1f - tapPhase) * 0.50f),
+                radius = ringR,
+                center = c,
+                style = Stroke(width = 3.dp.toPx())
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = 0.92f),
+                radius = 5.dp.toPx(),
+                center = c
+            )
         }
 
-        // «Пропустить» — всегда сверху
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1095,62 +1045,39 @@ private fun CoachTour(
             }
         }
 
-        // ── Тултип шага: меряем РЕАЛЬНУЮ высоту карточки ──
-        var tooltipH by remember { mutableStateOf(232.dp) }
-        val arrowSize = 14.dp
-        val gap = 10.dp
-
-        // Куда ставить карточку: под дыркой (стрелка сверху смотрит на
-        // кнопку), а если снизу не влезает — над дыркой (стрелка снизу).
-        // Меряется реальная высота карточки — она зависит от текста шага,
-        // поэтому константа вроде 230dp «на глаз» здесь не годится:
-        // карточка может наехать на дырку или вылезти за экран.
-        val tipTopTarget: Dp
-        val belowHole: Boolean
-        val arrowCx: Dp
-        if (holeRect == null) {
-            tipTopTarget = (maxHeight - tooltipH) / 2
-            belowHole = true
-            arrowCx = maxWidth / 2
-        } else {
-            with(density) {
-                val holeBottom = holeRect.bottom.toDp()
-                val holeTop = holeRect.top.toDp()
-                val cx = holeRect.center.x.toDp()
-                val fitsBelow =
-                    holeBottom + tooltipH + gap + 28.dp < maxHeight - 24.dp
-                if (fitsBelow) {
-                    tipTopTarget = (holeBottom + gap)
-                        .coerceAtMost(maxHeight - tooltipH - 24.dp)
-                    belowHole = true
-                } else {
-                    tipTopTarget = (holeTop - tooltipH - gap)
-                        .coerceAtLeast(100.dp)
-                    belowHole = false
-                }
-                arrowCx = cx
-            }
-        }
-        val topOffset by animateDpAsState(
-            targetValue = tipTopTarget,
-            animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
-            label = "tipTop"
-        )
-        val arrowCxSafe = arrowCx.coerceIn(36.dp, maxWidth - 36.dp)
-
         AnimatedContent(
-            targetState = stepIndex,
+            targetState = shownStep,
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(x = 0.dp, y = topOffset)
+                .offset {
+                    val hole = holeAnim.value
+                    val tipHPx = tooltipH.toPx()
+                    val gapPx = gap.toPx()
+                    val y: Float = if (hole.isEmpty) {
+                        (maxHPx - tipHPx) / 2f
+                    } else {
+                        val fitsBelow =
+                            hole.bottom + gapPx + tipHPx + bottomGuardPx < maxHPx
+                        if (fitsBelow) {
+                            (hole.bottom + gapPx)
+                                .coerceAtMost(maxHPx - tipHPx - bottomGuardPx)
+                        } else {
+                            (hole.top - tipHPx - gapPx).coerceAtLeast(topMinPx)
+                        }
+                    }
+                    IntOffset(0, y.roundToInt())
+                }
                 .padding(horizontal = 20.dp),
             transitionSpec = {
                 (
-                    fadeIn(tween(280, easing = EaseOutCubic)) +
-                        slideInVertically(tween(300, easing = EaseOutCubic)) { it / 4 }
+                    fadeIn(tween(260, easing = EaseOutCubic)) +
+                        scaleIn(
+                            initialScale = 0.97f,
+                            animationSpec = tween(260, easing = EaseOutCubic)
+                        )
                     ) togetherWith (
-                    fadeOut(tween(150, easing = FastOutLinearInEasing)) +
-                        slideOutVertically(tween(180)) { -it / 6 }
+                    fadeOut(tween(140, easing = FastOutLinearInEasing)) +
+                        scaleOut(targetScale = 0.98f, animationSpec = tween(140))
                     )
             },
             label = "coachTooltip"
@@ -1160,27 +1087,29 @@ private fun CoachTour(
                 modifier = Modifier
                     .fillMaxWidth()
                     .graphicsLayer { alpha = appear.value }
-                    // Реальная высота карточки → позиция пересчитывается
                     .onGloballyPositioned { coords ->
                         with(density) { tooltipH = coords.size.height.toDp() }
                     }
-                    // Стрелка-ромб к подсвеченной кнопке (рисуется ДО clip,
-                    // поэтому не срезается скруглением карточки)
                     .drawBehind {
+                        val hole = holeAnim.value
                         val a = arrowSize.toPx()
-                        // координаты AnimatedContent сдвинуты на 20dp паддинг
-                        val cx = (arrowCxSafe - 20.dp).toPx()
-                            .coerceIn(a, size.width - a)
+                        val cx = if (hole.isEmpty) {
+                            size.width / 2f
+                        } else {
+                            val screenCx = (hole.left + hole.right) / 2f - 20.dp.toPx()
+                            screenCx.coerceIn(a, size.width - a)
+                        }
                         val tipColor = Color(0xFF1D242F)
                         val path = Path()
-                        if (belowHole) {
-                            // карточка ПОД дыркой: остриё вверх, из верхнего ребра
+                        val fitsBelow = if (hole.isEmpty) true else {
+                            hole.bottom + gap.toPx() + size.height + 24.dp.toPx() < maxHPx
+                        }
+                        if (fitsBelow) {
                             path.moveTo(cx, -a / 2f)
                             path.lineTo(cx + a / 2f, a / 2f)
                             path.lineTo(cx, a * 1.5f)
                             path.lineTo(cx - a / 2f, a / 2f)
                         } else {
-                            // карточка НАД дыркой: остриё вниз, из нижнего ребра
                             path.moveTo(cx, size.height + a / 2f)
                             path.lineTo(cx + a / 2f, size.height - a / 2f)
                             path.lineTo(cx, size.height - a * 1.5f)
@@ -1201,7 +1130,6 @@ private fun CoachTour(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Иконка шага: «палец»/«свайп» слегка живые
                     val wiggle = rememberInfiniteTransition(label = "wiggle")
                     val wiggleX by wiggle.animateFloat(
                         initialValue = -7f,
@@ -1257,7 +1185,6 @@ private fun CoachTour(
                             color = Color.White
                         )
                     }
-                    // Счётчик шага
                     Text(
                         text = stringResource(
                             R.string.ob_step_of, index + 1, steps.size
@@ -1277,7 +1204,6 @@ private fun CoachTour(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Точки прогресса тура
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -1303,7 +1229,6 @@ private fun CoachTour(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Кнопка шага
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1337,13 +1262,12 @@ private fun CoachTour(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Подсказка «тапни по подсвеченному»
                 Text(
                     text = stringResource(R.string.tour_tap_hint),
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
             }
         }

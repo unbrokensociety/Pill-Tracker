@@ -46,19 +46,19 @@ fun CalendarScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val dailySchedules by viewModel.dailySchedules.collectAsState()
     val logs by viewModel.todayIntakeLogs.collectAsState()
-    
+
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
-    
+
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         stringResource(R.string.nav_calendar),
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
-                    ) 
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
@@ -108,7 +108,7 @@ fun CalendarScreen(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
-                            
+
                             val monthName = remember(currentMonth) {
                                 currentMonth.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.getDefault())
                                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
@@ -119,7 +119,7 @@ fun CalendarScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            
+
                             IconButton(
                                 onClick = { currentMonth = currentMonth.plusMonths(1) },
                                 modifier = Modifier
@@ -134,9 +134,9 @@ fun CalendarScreen(
                                 )
                             }
                         }
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
+
                         // Localized dynamic days of week (Mon - Sun)
                         val daysOfWeek = remember {
                             listOf(
@@ -147,7 +147,7 @@ fun CalendarScreen(
                                 DayOfWeek.FRIDAY,
                                 DayOfWeek.SATURDAY,
                                 DayOfWeek.SUNDAY
-                            ).map { d -> 
+                            ).map { d ->
                                 d.getDisplayName(TextStyle.SHORT, Locale.getDefault())
                                     .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
                             }
@@ -165,9 +165,9 @@ fun CalendarScreen(
                                 )
                             }
                         }
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         // Calendar Grid of Days
                         AnimatedContent(
                             targetState = currentMonth,
@@ -195,7 +195,7 @@ fun CalendarScreen(
                             val firstDayOfWeek = remember(targetMonth) { targetMonth.atDay(1).dayOfWeek.value } // 1 (Mon) -> 7 (Sun)
                             val daysInMonth = remember(targetMonth) { targetMonth.lengthOfMonth() }
                             val firstWeekOffset = firstDayOfWeek - 1
-                            
+
                             val gridDates = remember(targetMonth) {
                                 val list = mutableListOf<LocalDate?>()
                                 for (i in 0 until firstWeekOffset) {
@@ -238,7 +238,7 @@ fun CalendarScreen(
                     }
                 }
             }
-            
+
             // Adherence Stats Card
             item {
                 val scheduledItems = remember(dailySchedules) { dailySchedules.filter { it.scheduleType != "as_needed" } }
@@ -342,7 +342,7 @@ fun CalendarScreen(
                     )
                 }
             }
-            
+
             // List of medications and intake status for the selected day
             if (dailySchedules.isEmpty()) {
                 item {
@@ -370,8 +370,8 @@ fun CalendarScreen(
                 }
             } else {
                 items(dailySchedules, key = { it.scheduleId }) { schedule ->
-                    val isTaken = remember(logs, schedule.scheduleId) { 
-                        logs.any { it.scheduleId == schedule.scheduleId } 
+                    val isTaken = remember(logs, schedule.scheduleId) {
+                        logs.any { it.scheduleId == schedule.scheduleId }
                     }
                     Box(
                         modifier = Modifier.animateItem(
@@ -408,7 +408,7 @@ fun CalendarDayCell(
         },
         label = "cellBg"
     )
-    
+
     val animatedText by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.onPrimary

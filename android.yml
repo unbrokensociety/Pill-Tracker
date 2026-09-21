@@ -81,12 +81,8 @@ jobs:
           fi
 
       - name: Build Release APK
-        # The -PallowDebugSigning flag is BELT-AND-SUSPENDERS only: since
-        # v2.4.8 the same opt-in ships as a commented line inside
-        # gradle.properties, so even an OLD workflow that runs a bare
-        # `gradle assembleRelease` (no flags, no secrets) builds green.
-        # Strict mode = remove BOTH (the gradle.properties line and this
-        # flag) or provide a real KEYSTORE_BASE64 secret.
+        # The flag is a fallback: allowDebugSigning=true also ships in
+        # gradle.properties, so a bare `gradle assembleRelease` builds too.
         run: gradle assembleRelease --no-daemon --stacktrace -PallowDebugSigning=true
         env:
           KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}

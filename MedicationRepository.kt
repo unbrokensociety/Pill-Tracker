@@ -41,8 +41,6 @@ class MedicationRepository(private val dao: MedicationDao) {
         dao.insertSchedules(schedulesToInsert)
         val newSchedules = dao.getSchedulesForMedication(medication.id)
 
-        // BUG FIX: schedule rows are recreated with new IDs on every edit, which used to
-        // orphan today's "taken" state and history. Re-attach the logs to the fresh rows
         // by matching medication + intake time so state & history survive edits.
         newSchedules.forEach { schedule ->
             dao.reassignIntakeLogs(

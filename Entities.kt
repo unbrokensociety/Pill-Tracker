@@ -45,4 +45,3 @@ data class IntakeLog(
     val sideEffectNote: String = ""
 )
 
-

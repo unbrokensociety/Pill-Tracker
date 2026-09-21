@@ -17,17 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
-/*
- * Условия использования v2 (v2.4.0).
- *
- *  • Тот же фикс «кнопка уезжает под экран»: платформенный диалог,
- *    скролл в середине, кнопка приклеена к низу карточки, высота ≤ 90%
- *    экрана — кнопка видна всегда, на любом устройстве.
- *  • Текст умнее и честнее: условия теперь описывают и встроенный
- *    апдейтер (обновления из GitHub, разовое разрешение установки),
- *    и то, что сервис бесплатный и персональный.
- */
-
 @Composable
 fun TermsOfServiceDialog(
     onDismiss: () -> Unit
@@ -49,7 +38,6 @@ fun TermsOfServiceDialog(
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                /* ── Шапка ── */
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -92,7 +80,6 @@ fun TermsOfServiceDialog(
                     }
                 }
 
-                /* ── Середина: скролл ── */
                 Column(
                     modifier = Modifier
                         .weight(1f, fill = false)
@@ -128,7 +115,6 @@ fun TermsOfServiceDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                /* ── Низ: кнопка всегда на экране ── */
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -38,8 +38,8 @@ interface MedicationDao {
     // A unified query to get today's schedules with medication info
     @Query("""
         SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
-               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
-        FROM medications m 
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate
+        FROM medications m
         INNER JOIN schedules s ON m.id = s.medicationId
         WHERE :date >= m.startDate AND (m.endDate IS NULL OR :date <= m.endDate)
         ORDER BY s.timeHour, s.timeMinute
@@ -66,7 +66,7 @@ interface MedicationDao {
 
     @Query("DELETE FROM intake_logs")
     suspend fun deleteAllIntakeLogs()
-    
+
     @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND scheduledDateEpoch = :dateEpoch LIMIT 1")
     suspend fun getIntakeLog(scheduleId: Int, dateEpoch: Long): IntakeLog?
 
@@ -87,26 +87,21 @@ interface MedicationDao {
 
     @Query("""
         SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
-               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
-        FROM medications m 
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate
+        FROM medications m
         INNER JOIN schedules s ON m.id = s.medicationId
     """)
     suspend fun getAllActiveScheduleViews(): List<DailyScheduleView>
 
     @Query("""
         SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
-               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate 
-        FROM medications m 
+               m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate
+        FROM medications m
         INNER JOIN schedules s ON m.id = s.medicationId
         WHERE s.id = :scheduleId LIMIT 1
     """)
     suspend fun getActiveScheduleViewByScheduleId(scheduleId: Int): DailyScheduleView?
 
-    /**
-     * Re-attaches intake logs (history & "taken" state) to freshly recreated schedule rows
-     * after a medication edit, matching by medication + intake time. This prevents
-     * orphaned logs, lost "taken" state and duplicated entries.
-     */
     @Query("""
         UPDATE intake_logs SET scheduleId = :newScheduleId
         WHERE medicationId = :medicationId AND timeHour = :timeHour AND timeMinute = :timeMinute

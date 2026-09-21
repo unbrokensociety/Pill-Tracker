@@ -30,7 +30,6 @@ class MainViewModel(
     private val alarmScheduler: AlarmScheduler,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
-
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeModeFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),

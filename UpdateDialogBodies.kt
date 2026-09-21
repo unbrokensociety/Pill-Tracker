@@ -1,13 +1,5 @@
 package com.aistudio.meditracker.ui.components
 
-/*
- * UpdateDialogBodies — тела состояний карточки обновления (v2.4.7:
- * вынесено из UpdateChecker.kt, код без изменений). Каждый экран диалога —
- * «проверяем», «доступно обновление», «разрешение», «ждём разрешение»,
- * «качается», «актуально», «ошибка» — маленький самостоятельный
- * composable; каркас карточки живёт в UpdateDialog.kt.
- */
-
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -51,8 +43,6 @@ import androidx.compose.ui.unit.sp
 import com.aistudio.meditracker.R
 import kotlin.math.roundToInt
 
-/* ── «Проверяем…» ── */
-
 @Composable
 internal fun CheckingBody() {
     Row(
@@ -71,8 +61,6 @@ internal fun CheckingBody() {
         )
     }
 }
-
-/* ── «Доступно обновление» + заметки + кнопки ── */
 
 @Composable
 internal fun AskingBody(
@@ -148,8 +136,6 @@ internal fun AskingBody(
     }
 }
 
-/* ── «Разреши установку из приложения» (инструкция, 3 шага) ── */
-
 @Composable
 internal fun PermissionBody(
     onConfirm: () -> Unit,
@@ -197,8 +183,6 @@ internal fun PermissionBody(
         }
     }
 }
-
-/* ── «Ушли в настройки — ждём возвращения» ── */
 
 @Composable
 internal fun AwaitingBody(
@@ -285,8 +269,6 @@ private fun PermissionSteps() {
     }
 }
 
-/* ── «Качаем в фон» + прогресс ── */
-
 @Composable
 internal fun DownloadingBody(
     progress: Float,
@@ -339,7 +321,7 @@ internal fun DownloadingBody(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        // Как это устроено: скрыто, внутри приложения, само ставится
+
         Row(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -383,8 +365,6 @@ internal fun DownloadingBody(
     }
 }
 
-/* ── «У вас последняя версия» ── */
-
 @Composable
 internal fun UpToDateBody(
     onDismiss: () -> Unit
@@ -407,7 +387,7 @@ internal fun UpToDateBody(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        // Кнопка «ОК»: карточка закрывается и руками — не только таймером
+
         Button(
             onClick = onDismiss,
             modifier = Modifier
@@ -423,8 +403,6 @@ internal fun UpToDateBody(
         }
     }
 }
-
-/* ── «Не получилось» ── */
 
 @Composable
 internal fun FailedBody(

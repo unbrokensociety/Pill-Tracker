@@ -9,6 +9,16 @@
     <string name="home_greeting_morning">Доброе утро</string>
     <string name="home_greeting_afternoon">Добрый день</string>
     <string name="home_greeting_evening">Добрый вечер</string>
+    <string name="home_greeting_night">Доброй ночи</string>
+
+    <!-- Личное обращение (имя в приветствии) -->
+    <string name="name_dialog_title">Как к вам обращаться?</string>
+    <string name="name_dialog_hint">Например: Богдан</string>
+    <string name="name_dialog_support">Имя хранится только на вашем устройстве и показывается в приветствии.</string>
+    <string name="name_dialog_save">Сохранить</string>
+    <string name="name_dialog_clear">Убрать имя</string>
+    <string name="name_dialog_cancel">Отмена</string>
+    <string name="cd_edit_name">Изменить имя в приветствии</string>
     
     <string name="add_med_title">Добавить лекарство</string>
     <string name="add_med_name_label">Название лекарства</string>
@@ -57,7 +67,7 @@
     <string name="settings_stats_active_meds">Зарегистрировано лекарств: %1$d</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональный медицинский помощник. Принимайте лекарства вовремя и будьте здоровы!</string>
-    <string name="settings_version">Версия 2.1.1</string>
+    <string name="settings_version">Версия 2.4.0</string>
     
     <string name="status_taken">Принято</string>
     
@@ -287,6 +297,10 @@
     <string name="ob_welcome_b2">Работает полностью офлайн</string>
     <string name="ob_welcome_b3">Данные остаются на устройстве</string>
 
+    <!-- Необязательное имя на экране приветствия -->
+    <string name="ob_name_label">Как к вам обращаться? (необязательно)</string>
+    <string name="ob_name_placeholder">Ваше имя…</string>
+
     <string name="ob_settings_replay_title">Показать обучение снова</string>
     <string name="ob_settings_replay_desc">Интерактивный тур по приложению</string>
 
@@ -305,6 +319,8 @@
     <string name="tour_step_calendar_desc">Весь месяц как на ладони: зелёные дни — всё принято вовремя.</string>
     <string name="tour_step_meds_title">Твои лекарства</string>
     <string name="tour_step_meds_desc">Каждое лекарство с дозой, остатком и графиком — редактируется в один тап.</string>
+    <string name="tour_step_settings_title">Настройки</string>
+    <string name="tour_step_settings_desc">Тема, язык, уведомления, проверка обновлений и это обучение — всё под рукой на последней странице.</string>
     <string name="tour_step_add_title">Добавить лекарство</string>
     <string name="tour_step_add_desc">Большой плюс — и добавим. Тапни его — заполним первое вместе.</string>
     <string name="tour_step_form_title">Заполни карточку</string>
@@ -320,6 +336,7 @@
     <string name="upd_check_desc">Новые версии приходят прямо в приложение</string>
     <string name="upd_checking">Проверяем обновления…</string>
     <string name="upd_uptodate">У вас последняя версия!</string>
+    <string name="upd_ok">Ок</string>
     <string name="upd_failed">Не удалось проверить обновления. Проверь соединение и попробуй ещё раз.</string>
     <string name="upd_retry">Попробовать снова</string>
     <string name="upd_close">Закрыть</string>

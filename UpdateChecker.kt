@@ -42,6 +42,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -51,6 +52,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +70,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -77,6 +81,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -427,17 +432,32 @@ object UpdateCenter {
     }
 
     /**
-     * Удаляем следы обновлений. Вызывается на каждом старте: первый запуск
-     * НОВОЙ версии подчищает APK, который скачала старая — «после обновления
-     * сразу удаляется всё ненужное». Заодно вычищаем наследие v2.3.0,
-     * когда DownloadManager клал файл в external files.
+     * Удаляем следы обновлений — и «мусор прошлых эпох». Вызывается на
+     * каждом старте: первый запуск НОВОЙ версии подчищает APK, который
+     * скачала старая, плюс наследие v2.3.0 (DownloadManager в external
+     * files) и любые потерянные .apk/.tmp в корне кеша — после обновления
+     * на диске не остаётся ничего лишнего.
      */
     fun cleanupDownloads(context: Context) {
         try {
             updatesDir(context).listFiles()?.forEach { it.delete() }
+            // наследие v2.3.0: DownloadManager писал в external files
             @Suppress("DEPRECATION")
             context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.let { ext ->
                 File(ext, APK_FILE_NAME).takeIf { it.exists() }?.delete()
+            }
+            // страховка: потерянные apk/tmp прямо в корне cacheDir
+            context.cacheDir.listFiles()?.forEach { f ->
+                val n = f.name.lowercase()
+                if (f.isFile && (n.endsWith(".apk") || n.endsWith(".tmp"))) {
+                    f.delete()
+                }
+            }
+            // и старый каталог «Download» в external files, если заводился
+            @Suppress("DEPRECATION")
+            context.getExternalFilesDir(null)?.let { ext ->
+                File(ext, "Download").takeIf { it.isDirectory }?.listFiles()
+                    ?.forEach { it.delete() }
             }
         } catch (_: Exception) {
         }
@@ -572,10 +592,12 @@ fun UpdateGate() {
         runCheck(manual = false)
     }
 
-    /* ── «Актуальная версия» сама закрывается через 2.5 с ── */
+    /* ── «Актуальная версия» сама закрывается через 2.2 с —
+       но теперь её можно закрыть и руками: крестик, ОК, «назад»,
+       тап по затемнению. Никаких «запертых» состояний. ── */
     LaunchedEffect(uiState) {
         if (uiState == UpdateUi.UP_TO_DATE) {
-            delay(2500)
+            delay(2200)
             uiState = null
         }
     }
@@ -627,6 +649,11 @@ fun UpdateGate() {
     }
 
     /* ── Рендер ── */
+    // Системная кнопка «назад» ЗАКРЫВАЕТ карточку обновления — диалог
+    // никогда не «запирает» пользователя (это был баг v2.3.2: «обновлений
+    // нет», а выйти из карточки нельзя — ни крестика, ни отклика на «назад»).
+    BackHandler(enabled = uiState != null) { uiState = null }
+
     val state = uiState ?: return
     UpdateDialog(
         state = state,
@@ -671,6 +698,11 @@ private fun UpdateDialog(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.62f))
+            // Тап по затемнению закрывает карточку (как системный «назад»)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onDismiss() }
             .systemBarsPadding(),
         contentAlignment = Alignment.Center
     ) {
@@ -679,10 +711,15 @@ private fun UpdateDialog(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
         ) {
-            // Тёмная карточка в стилистике приложения
+            // Тёмная карточка в стилистике приложения.
+            // Поглощает тапы по себе, чтобы не проваливаться в затемнение.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { /* карточка ест тапы мимо своих кнопок */ }
                     .clip(RoundedCornerShape(28.dp))
                     .background(
                         Brush.verticalGradient(
@@ -741,6 +778,22 @@ private fun UpdateDialog(
                             )
                         }
                     }
+
+                    // Крестик — всегда в правом верхнем углу: из карточки
+                    // можно выйти из ЛЮБОГО состояния (включая «проверяем…»
+                    // при зависшей сети).
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.upd_close),
+                            tint = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -766,7 +819,7 @@ private fun UpdateDialog(
                             UpdateUi.DOWNLOADING -> DownloadingBody(
                                 progress, onDismiss, onReleases
                             )
-                            UpdateUi.UP_TO_DATE -> UpToDateBody()
+                            UpdateUi.UP_TO_DATE -> UpToDateBody(onDismiss)
                             UpdateUi.FAILED -> FailedBody(onRetry, onReleases, onDismiss)
                         }
                     }
@@ -1101,22 +1154,41 @@ private fun DownloadingBody(
 }
 
 @Composable
-private fun UpToDateBody() {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Verified,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
-        Text(
-            text = stringResource(R.string.upd_uptodate),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.88f)
-        )
+private fun UpToDateBody(
+    onDismiss: () -> Unit
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Verified,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp)
+            )
+            Text(
+                text = stringResource(R.string.upd_uptodate),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.88f)
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        // Кнопка «ОК»: карточка закрывается и руками — не только таймером
+        Button(
+            onClick = onDismiss,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        ) {
+            Text(stringResource(R.string.upd_ok))
+        }
     }
 }
 

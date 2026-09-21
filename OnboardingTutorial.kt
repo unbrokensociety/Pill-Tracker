@@ -50,11 +50,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -64,11 +67,14 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwipeLeft
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -98,6 +104,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -114,6 +121,7 @@ import kotlinx.coroutines.flow.filter
 object OnboardingPrefs {
     private const val PREFS_NAME = "onboarding_prefs"
     private const val KEY_COMPLETED = "completed"
+    private const val KEY_USER_NAME = "user_name"
 
     fun isCompleted(context: android.content.Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
@@ -128,6 +136,23 @@ object OnboardingPrefs {
     fun reset(context: android.content.Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
         prefs.edit().putBoolean(KEY_COMPLETED, false).apply()
+    }
+
+    /** Имя для персонального приветствия (необязательно, только на устройстве). */
+    fun getUserName(context: android.content.Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        val name = prefs.getString(KEY_USER_NAME, null)?.trim()
+        return if (name.isNullOrEmpty()) null else name.take(24)
+    }
+
+    fun setUserName(context: android.content.Context, name: String?) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        val trimmed = name?.trim()?.take(24)
+        if (trimmed.isNullOrEmpty()) {
+            prefs.edit().remove(KEY_USER_NAME).apply()
+        } else {
+            prefs.edit().putString(KEY_USER_NAME, trimmed).apply()
+        }
     }
 }
 
@@ -238,6 +263,7 @@ private val TOUR_ICONS = listOf(
     Icons.Filled.SwipeLeft,
     Icons.Filled.CalendarMonth,
     Icons.AutoMirrored.Filled.List,
+    Icons.Filled.Settings,
     Icons.Filled.AddCircle,
     Icons.Filled.TouchApp
 )
@@ -274,6 +300,14 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         icon = Icons.AutoMirrored.Filled.List,
         titleRes = R.string.tour_step_meds_title,
         descRes = R.string.tour_step_meds_desc,
+        tap = TourTap.NEXT
+    ),
+    TourStep(
+        tag = "settings_content",
+        wantPage = 3,
+        icon = Icons.Filled.Settings,
+        titleRes = R.string.tour_step_settings_title,
+        descRes = R.string.tour_step_settings_desc,
         tap = TourTap.NEXT
     ),
     TourStep(
@@ -336,10 +370,14 @@ private fun WelcomeCard(
     onStart: () -> Unit,
     onSkip: () -> Unit
 ) {
+    val context = LocalContext.current
     val entrance = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         entrance.animateTo(1f, tween(360, easing = EaseOutCubic))
     }
+
+    // Необязательное имя — оно попадёт в приветствие на главном экране
+    var userName by remember { mutableStateOf(OnboardingPrefs.getUserName(context) ?: "") }
 
     // Живой фон: три медленно дрейфующих радиальных пятна
     val drift = rememberInfiniteTransition(label = "onboardingDrift")
@@ -355,7 +393,7 @@ private fun WelcomeCard(
         MaterialTheme.colorScheme.secondary
     )
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
@@ -403,6 +441,9 @@ private fun WelcomeCard(
                 indication = null
             ) { /* поглощаем тапы по затемнению */ }
     ) {
+        // Локальная копия ограничения по высоте — доступна во всех
+        // вложенных лямбдах без танцев с неявными ресиверами.
+        val screenMaxHeight = maxHeight
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -454,7 +495,10 @@ private fun WelcomeCard(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { onSkip() }
+                        ) {
+                            OnboardingPrefs.setUserName(context, userName)
+                            onSkip()
+                        }
                         .padding(horizontal = 16.dp, vertical = 9.dp)
                 ) {
                     Text(
@@ -468,16 +512,19 @@ private fun WelcomeCard(
 
             Spacer(modifier = Modifier.weight(0.55f))
 
-            // Карточка приветствия
+            // Карточка приветствия: на высоких экранах — как раньше,
+            // на низких (ландшафт) — ограничена по высоте и скроллится изнутри
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = screenMaxHeight - 96.dp)
                     .clip(RoundedCornerShape(30.dp))
                     .background(
                         Brush.verticalGradient(
                             listOf(Color(0xFF1D242F), Color(0xFF161B24))
                         )
                     )
+                    .verticalScroll(rememberScrollState())
                     .padding(26.dp)
             ) {
                 // Дышащая иконка
@@ -555,6 +602,39 @@ private fun WelcomeCard(
                     Spacer(modifier = Modifier.height(6.dp))
                 }
 
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Необязательное имя → персональное приветствие на главном
+                Text(
+                    text = stringResource(R.string.ob_name_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.65f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = userName,
+                    onValueChange = { if (it.length <= 24) userName = it },
+                    singleLine = true,
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.ob_name_placeholder),
+                            color = Color.White.copy(alpha = 0.38f)
+                        )
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.22f),
+                        focusedPlaceholderColor = Color.White.copy(alpha = 0.38f),
+                        unfocusedPlaceholderColor = Color.White.copy(alpha = 0.38f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 Spacer(modifier = Modifier.height(22.dp))
 
                 // Кнопка «Начать тур»
@@ -574,7 +654,10 @@ private fun WelcomeCard(
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
-                        ) { onStart() },
+                        ) {
+                            OnboardingPrefs.setUserName(context, userName)
+                            onStart()
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -620,11 +703,13 @@ private fun CoachTour(
     val step = steps[stepIndex]
     var nudge by remember { mutableStateOf(0) } // «пни» рамку, если тап мимо
 
-    // Системный «назад»: по шагам, с последнего — выход
+    // Системный «назад»: по шагам, с последнего — выход.
+    // ВАЖНО: если ТЕКУЩИЙ шаг живёт на экране добавления — сначала
+    // закрываем его (requestBack), иначе тур вернётся на шаг «+»,
+    // а экран добавления останется висеть поверх пейджера.
     BackHandler(enabled = true) {
         if (stepIndex > 0) {
-            val prev = steps[stepIndex - 1]
-            if (prev.wantAddScreen) OnboardingBus.requestBack()
+            if (step.wantAddScreen) OnboardingBus.requestBack()
             onStepChange(stepIndex - 1)
         } else {
             onFinish()

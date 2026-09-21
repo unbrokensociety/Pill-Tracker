@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -41,6 +43,7 @@ import java.util.Locale
 
 import com.example.ui.components.coachTag
 import com.example.ui.components.GlassCard
+import com.example.ui.components.OnboardingPrefs
 import com.example.ui.components.liquidGlass
 import com.example.ui.components.GlassCircleIcon
 import com.example.ui.components.GlassChip
@@ -63,6 +66,34 @@ fun HomeScreen(
     val context = LocalContext.current
     val alarmScheduler = remember { com.example.alarms.AlarmScheduler(context.applicationContext) }
     var snoozeScheduleToPrompt by remember { mutableStateOf<DailyScheduleView?>(null) }
+
+    // ── Живые часы: приветствие и дата обновляются на границе минут ──
+    // (приложение, оставшееся открытым на ночь, утром поздоровается
+    // по-новому, а не покажет вчерашнее «Доброго ранку» и дату).
+    // Тик выровнен по границе минуты — меньше пробуждений ЦП.
+    var now by remember { mutableStateOf(java.time.LocalDateTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val t = System.currentTimeMillis()
+            delay(60_000L - t % 60_000L)
+            now = java.time.LocalDateTime.now()
+        }
+    }
+
+    // ── Персональное приветствие: имя (необязательное, локально) ──
+    var userName by remember { mutableStateOf(OnboardingPrefs.getUserName(context)) }
+    var showNameDialog by remember { mutableStateOf(false) }
+
+    if (showNameDialog) {
+        NameEditDialog(
+            initial = userName,
+            onSave = { name ->
+                userName = name
+                OnboardingPrefs.setUserName(context, name)
+            },
+            onDismiss = { showNameDialog = false }
+        )
+    }
 
     if (snoozeScheduleToPrompt != null) {
         val sched = snoozeScheduleToPrompt!!
@@ -136,31 +167,61 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // Time-of-day greeting + fully localized date subtitle
-                    val greetingRes = remember {
-                        val hour = java.time.LocalTime.now().hour
-                        when {
-                            hour < 12 -> R.string.home_greeting_morning
-                            hour < 18 -> R.string.home_greeting_afternoon
-                            else -> R.string.home_greeting_evening
+                    // Приветствие по времени суток + дата.
+                    // Диапазоны — по человеческим ощущениям:
+                    //   04:00–09:59 ранок · 10:00–16:59 день
+                    //   17:00–21:59 вечір · 22:00–03:59 ніч
+                    // «now» живое — поэтому remember без ключа не годится.
+                    val greetingBase = stringResource(
+                        when (now.hour) {
+                            in 4..9 -> R.string.home_greeting_morning
+                            in 10..16 -> R.string.home_greeting_afternoon
+                            in 17..21 -> R.string.home_greeting_evening
+                            else -> R.string.home_greeting_night
                         }
-                    }
-                    val dateLine = remember {
-                        val today = java.time.LocalDate.now()
-                        today.format(
-                            java.time.format.DateTimeFormatter
-                                .ofPattern("EEEE, d MMMM")
-                                .withLocale(Locale.getDefault())
-                        ).replaceFirstChar {
-                            if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-                        }
+                    )
+                    val greetingText = greetingBase + (userName?.let { ", $it" } ?: "")
+                    val dateLine = now.toLocalDate().format(
+                        java.time.format.DateTimeFormatter
+                            .ofPattern("EEEE, d MMMM")
+                            .withLocale(Locale.getDefault())
+                    ).replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
                     }
                     Column(modifier = Modifier.coachTag("home_hero")) {
-                        Text(
-                            text = stringResource(greetingRes),
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleLarge
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = greetingText,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            // Карандашик: добавить/изменить имя в приветствии
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                            alpha = 0.14f
+                                        )
+                                    )
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { showNameDialog = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = stringResource(
+                                        R.string.cd_edit_name
+                                    ),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                        }
                         Text(
                             text = dateLine,
                             style = MaterialTheme.typography.bodySmall,
@@ -197,15 +258,9 @@ fun HomeScreen(
             }
 
             // Horizontal Date strip (recomputed live so it stays correct past midnight)
-            // BUG FIX: "today" is now a state that refreshes every minute — the old
-            // version captured LocalDate.now() once and went stale after midnight.
-            var today by remember { mutableStateOf(LocalDate.now()) }
-            LaunchedEffect(Unit) {
-                while (true) {
-                    delay(60_000L)
-                    today = LocalDate.now()
-                }
-            }
+            // «today» берётся из живых часов выше: после полуночи полоса
+            // дат переезжает на новый день сама.
+            val today = now.toLocalDate()
             val dateStrip = (-2..2).map { today.plusDays(it.toLong()) }
             Row(
                 modifier = Modifier
@@ -799,3 +854,87 @@ fun LowStockBanner(
     }
 }
 
+
+/* ────────────────────────────────────────────────────────────────
+ * Диалог «Как к вам обращаться?»: необязательное имя для
+ * персонального приветствия. Хранится локально (SharedPreferences),
+ * удаляется одной кнопкой. Вызывается карандашиком рядом с
+ * приветствием на главном экране.
+ * ──────────────────────────────────────────────────────────────── */
+@Composable
+private fun NameEditDialog(
+    initial: String?,
+    onSave: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var value by remember { mutableStateOf(initial ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        title = {
+            Text(
+                text = stringResource(R.string.name_dialog_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { if (it.length <= 24) value = it },
+                    singleLine = true,
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.name_dialog_hint),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.name_dialog_support),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val trimmed = value.trim()
+                    onSave(trimmed.ifEmpty { null })
+                    onDismiss()
+                }
+            ) {
+                Text(stringResource(R.string.name_dialog_save))
+            }
+        },
+        dismissButton = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!initial.isNullOrEmpty()) {
+                    TextButton(
+                        onClick = {
+                            onSave(null)
+                            onDismiss()
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.name_dialog_clear),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.name_dialog_cancel))
+                }
+            }
+        },
+        shape = RoundedCornerShape(20.dp)
+    )
+}

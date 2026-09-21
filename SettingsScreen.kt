@@ -47,6 +47,7 @@ import com.example.ui.components.OnboardingBus
 import com.example.ui.components.PrivacyPolicyDialog
 import com.example.ui.components.TermsOfServiceDialog
 import com.example.ui.components.UpdateBus
+import com.example.ui.components.coachTag
 import com.example.ui.locale.LocaleHelper
 import com.example.ui.locale.findActivity
 
@@ -113,7 +114,10 @@ fun SettingsScreen(
         LazyColumn(
             modifier = Modifier
                 .padding(top = padding.calculateTopPadding())
-                .fillMaxSize(),
+                .fillMaxSize()
+                // Зона для шага тура «Налаштування»: как в других экранах,
+                // подсвечивается содержимое страницы целиком.
+                .coachTag("settings_content"),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,

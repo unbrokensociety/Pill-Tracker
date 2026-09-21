@@ -7,8 +7,18 @@
     
     <string name="home_no_schedules">На цей день прийомів немає</string>
     <string name="home_greeting_morning">Доброго ранку</string>
-    <string name="home_greeting_afternoon">Доброго дня</string>
-    <string name="home_greeting_evening">Доброго вечора</string>
+    <string name="home_greeting_afternoon">Добрий день</string>
+    <string name="home_greeting_evening">Добрий вечір</string>
+    <string name="home_greeting_night">Доброї ночі</string>
+
+    <!-- Особисте звернення (ім’я користувача у привітанні) -->
+    <string name="name_dialog_title">Як до вас звертатися?</string>
+    <string name="name_dialog_hint">Наприклад: Богдан</string>
+    <string name="name_dialog_support">Ім’я зберігається лише на вашому пристрої й показується в привітанні.</string>
+    <string name="name_dialog_save">Зберегти</string>
+    <string name="name_dialog_clear">Прибрати ім’я</string>
+    <string name="name_dialog_cancel">Скасувати</string>
+    <string name="cd_edit_name">Змінити ім’я у привітанні</string>
     
     <string name="add_med_title">Додати ліки</string>
     <string name="add_med_name_label">Назва препарату</string>
@@ -57,7 +67,7 @@
     <string name="settings_stats_active_meds">Зареєстровано ліків: %1$d</string>
     <string name="settings_about">Про застосунок</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональний медичний помічник. Приймайте ліки вчасно та будьте здорові!</string>
-    <string name="settings_version">Версія 2.1.1</string>
+    <string name="settings_version">Версія 2.4.0</string>
     
     <string name="status_taken">Прийнято</string>
     
@@ -100,28 +110,28 @@
     <string name="streak_day_2_4">дні</string>
     <string name="streak_day_5">днів</string>
     <string name="streak_menu_title">Вогняна серія та досягнення 🔥</string>
-    <string name="streak_menu_level">Рівень полум\'я: %1$d</string>
+    <string name="streak_menu_level">Рівень полум’я: %1$d</string>
     <string name="streak_menu_keep_flame">Міні-гра: підтримуйте вогонь!</string>
-    <string name="streak_menu_tap_flame">Натискайте на полум\'я!</string>
+    <string name="streak_menu_tap_flame">Натискайте на полум’я!</string>
     <string name="streak_menu_sparks">Зібрано іскор: %1$d</string>
-    <string name="streak_menu_achievements">Досягнення полум\'я</string>
+    <string name="streak_menu_achievements">Досягнення полум’я</string>
     <string name="streak_achievement_1">Перша іскра (1 день)</string>
     <string name="streak_achievement_3">Розпалювач (3 дні)</string>
     <string name="streak_achievement_7">Тиждень сили (7 днів)</string>
-    <string name="streak_achievement_30">Незгасне полум\'я (30 днів)</string>
+    <string name="streak_achievement_30">Незгасне полум’я (30 днів)</string>
 
     <!-- Auth & Database Onboarding strings -->
     <string name="auth_welcome_title">Ласкаво просимо в PillTracker</string>
-    <string name="auth_welcome_subtitle">Контролюйте здоров\'я та прийом ліків безпечно</string>
+    <string name="auth_welcome_subtitle">Контролюйте здоров’я та прийом ліків безпечно</string>
     <string name="auth_tab_signin">Вхід</string>
     <string name="auth_tab_signup">Реєстрація</string>
-    <string name="auth_field_name">Ім\'я та прізвище</string>
+    <string name="auth_field_name">Ім’я та прізвище</string>
     <string name="auth_field_email">Електронна пошта</string>
     <string name="auth_field_password">Пароль</string>
     <string name="auth_btn_signin">Увійти та синхронізувати</string>
     <string name="auth_btn_signup">Створити акаунт</string>
     <string name="auth_btn_skip">Пропустити / Увійти як гість</string>
-    <string name="auth_skip_desc">Усі функції працюють локально без реєстрації. Створення акаунту необ\'язкове.</string>
+    <string name="auth_skip_desc">Усі функції працюють локально без реєстрації. Створення акаунту необ’язкове.</string>
     <string name="auth_guest_title">Гостьовий профіль</string>
     <string name="auth_guest_subtitle">Локальний режим бази даних (Офлайн)</string>
     <string name="auth_cloud_title">Хмарний акаунт</string>
@@ -158,7 +168,7 @@
 
     <string name="ai_advisor_title">Gemini AI Консультант</string>
     <string name="ai_advisor_desc">Поставити запитання про прийом ліків, сумісність та поради</string>
-    <string name="ai_advisor_prompt_hint">Спитайте про здоров\'я чи ліки…</string>
+    <string name="ai_advisor_prompt_hint">Спитайте про здоров’я чи ліки…</string>
 
     <string name="privacy_policy_title">Політика конфіденційності та HIPAA</string>
     <string name="privacy_policy_desc">Захист персональних даних, умови Firestore та скасування доступу</string>
@@ -202,7 +212,7 @@
     <string name="terms_of_service_title">Умови використання</string>
     <string name="terms_of_service_desc">Правила сервісу та умови надання послуг</string>
     <string name="edit_profile_title">Редагувати профіль</string>
-    <string name="edit_profile_nickname">Ім\'я / Нікнейм</string>
+    <string name="edit_profile_nickname">Ім’я / Нікнейм</string>
     <string name="edit_profile_change_photo">Натисніть на аватар, щоб змінити фото</string>
     <string name="edit_profile_camera">Зробити фото з камери</string>
     <string name="edit_profile_gallery">Обрати з галереї</string>
@@ -215,7 +225,7 @@
     <string name="profile_default_user">Користувач</string>
     <string name="profile_guest_mode_local">Гостьовий режим (Локальні дані)</string>
     <string name="profile_authorized_account">Авторизований акаунт</string>
-    <string name="profile_edit_name_photo">Редагувати ім\'я та фото</string>
+    <string name="profile_edit_name_photo">Редагувати ім’я та фото</string>
     <string name="profile_account_info">Інформація про акаунт</string>
     <string name="profile_account_status">Статус акаунту</string>
     <string name="profile_status_guest">ГІСТЬ</string>
@@ -250,7 +260,7 @@
     <string name="form_tablet">Таблетка</string>
     <string name="form_liquid">Сироп</string>
     <string name="form_drops">Краплі</string>
-    <string name="form_injection">Ін\'єкція</string>
+    <string name="form_injection">Ін’єкція</string>
     <string name="form_spray">Спрей</string>
     <string name="form_patch">Пластир</string>
 
@@ -287,6 +297,10 @@
     <string name="ob_welcome_b2">Працює повністю офлайн</string>
     <string name="ob_welcome_b3">Дані залишаються на пристрої</string>
 
+    <!-- Необов’язкове ім’я на екрані вітання -->
+    <string name="ob_name_label">Як до вас звертатися? (необов’язково)</string>
+    <string name="ob_name_placeholder">Ваше ім’я…</string>
+
     <string name="ob_settings_replay_title">Показати навчання знову</string>
     <string name="ob_settings_replay_desc">Інтерактивний тур застосунком</string>
 
@@ -300,13 +314,15 @@
     <string name="tour_step_today_title">Це екран «Сьогодні»</string>
     <string name="tour_step_today_desc">Прийоми на день живуть тут. Торкніться пігулки, коли випили — кільце заповнюється на ходу.</string>
     <string name="tour_step_nav_title">Екрани гортаються як сторінки</string>
-    <string name="tour_step_nav_desc">Свайпніть ліворуч або торкніться підсвіченої панелі — перейдемо в Календар.</string>
+    <string name="tour_step_nav_desc">Свайпніть ліворуч або торкніться підсвіченої панелі — і ми вже в Календарі.</string>
     <string name="tour_step_calendar_title">Календар</string>
     <string name="tour_step_calendar_desc">Весь місяць як на долоні: зелені дні — усе прийнято вчасно.</string>
-    <string name="tour_step_meds_title">Твої ліки</string>
-    <string name="tour_step_meds_desc">Кожні ліки з дозою, залишком і графіком — редагуються одним дотиком.</string>
+    <string name="tour_step_meds_title">Ваші ліки</string>
+    <string name="tour_step_meds_desc">Кожен препарат із дозою, залишком і графіком — редагується одним дотиком.</string>
+    <string name="tour_step_settings_title">Налаштування</string>
+    <string name="tour_step_settings_desc">Тема, мова, сповіщення, перевірка оновлень і це навчання — усе під рукою на останній сторінці.</string>
     <string name="tour_step_add_title">Додати ліки</string>
-    <string name="tour_step_add_desc">Великий плюс — і додамо. Торкніться його — заповнимо перші разом.</string>
+    <string name="tour_step_add_desc">Великий плюс — і нові ліки в додатку. Торкніться його, і заповнимо першу картку разом.</string>
     <string name="tour_step_form_title">Заповніть картку</string>
     <string name="tour_step_form_desc">Назва, доза, час — гнучко під будь-яку терапію. Спробуйте самі, це просто!</string>
 
@@ -320,14 +336,15 @@
     <string name="upd_check_desc">Нові версії приходять прямо в застосунок</string>
     <string name="upd_checking">Перевіряємо оновлення…</string>
     <string name="upd_uptodate">У вас найновіша версія!</string>
-    <string name="upd_failed">Не вдалося перевірити оновлення. Перевір з\'єднання й спробуй ще раз.</string>
+    <string name="upd_ok">Гаразд</string>
+    <string name="upd_failed">Не вдалося перевірити оновлення. Перевірте з’єднання та спробуйте ще раз.</string>
     <string name="upd_retry">Спробувати ще раз</string>
     <string name="upd_close">Закрити</string>
     <string name="upd_perm_title">Одноразовий дозвіл</string>
     <string name="upd_perm_body">Щоб оновлюватися прямо із застосунку, Android один раз попросить дозволити встановлення з цього джерела.</string>
     <string name="upd_perm_step1">Зараз відкриються Налаштування</string>
-    <string name="upd_perm_step2">Дозволь встановлення для Pill Tracker</string>
-    <string name="upd_perm_step3">Повернися — оновлення завантажиться само</string>
+    <string name="upd_perm_step2">Дозвольте встановлення для Pill Tracker</string>
+    <string name="upd_perm_step3">Поверніться — оновлення завантажиться саме</string>
     <string name="upd_open_settings">Відкрити налаштування</string>
     <string name="upd_waiting">Чекаємо дозволу в Налаштуваннях…</string>
     <string name="upd_downloading">Завантажуємо оновлення…</string>

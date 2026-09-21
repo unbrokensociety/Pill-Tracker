@@ -83,8 +83,8 @@ uniform float lightX;
 uniform float lightY;
 uniform float phase;
 uniform float saturation;
-uniform float veil;
-uniform float dim;
+uniform float tintA;
+uniform float hairA;
 
 float sdRoundBox(float2 p, float2 b, float r) {
     float2 q = abs(p) - b + float2(r);
@@ -98,9 +98,6 @@ half4 main(float2 fragCoord) {
     float inDist = max(-d, 0.0);
     float t = clamp(inDist / band, 0.0, 1.0);
     float rim = 1.0 - t;
-    float reach = max(min(c.x, c.y), 1.0);
-    float depth = clamp(inDist / reach, 0.0, 1.0);
-    float lens = 0.06 + 0.94 * pow(1.0 - depth, 1.7);
 
     float2 ex = float2(1.0, 0.0);
     float2 ey = float2(0.0, 1.0);
@@ -108,47 +105,36 @@ half4 main(float2 fragCoord) {
         sdRoundBox(p + ex, c, corner) - sdRoundBox(p - ex, c, corner),
         sdRoundBox(p + ey, c, corner) - sdRoundBox(p - ey, c, corner));
     float2 n = grad / max(length(grad), 0.0001);
-    float2 radial = p / max(length(p), 0.0001);
-    float2 md = mix(radial, n, rim * rim);
-    float2 dir = md / max(length(md), 0.0001);
 
-    float disp = lens * refraction * band;
-    float2 uv = clamp(fragCoord + dir * disp, float2(0.5), resolution - float2(0.5));
-
-    float soft = band * 0.30;
-    half4 s0 = content.eval(uv);
-    half4 sx1 = content.eval(uv + float2(soft, 0.0));
-    half4 sx2 = content.eval(uv - float2(soft, 0.0));
-    half4 sy1 = content.eval(uv + float2(0.0, soft));
-    half4 sy2 = content.eval(uv - float2(0.0, soft));
-    half4 col = (s0 + s0 + sx1 + sx2 + sy1 + sy2) / 6.0;
-
-    float ca = chroma * rim * max(band * 0.045, 0.75);
-    if (ca > 0.02) {
-        col.r = content.eval(clamp(uv + dir * ca, float2(0.5), resolution - float2(0.5))).r;
-        col.b = content.eval(clamp(uv - dir * ca, float2(0.5), resolution - float2(0.5))).b;
-    }
+    float lens = pow(rim, 2.0);
+    float2 uv = clamp(fragCoord + n * lens * refraction * band, float2(0.5), resolution - float2(0.5));
+    float ca = chroma * lens * max(band * 0.045, 0.75);
+    half4 col;
+    col.r = content.eval(clamp(uv + n * ca, float2(0.5), resolution - float2(0.5))).r;
+    col.g = content.eval(uv).g;
+    col.b = content.eval(clamp(uv - n * ca, float2(0.5), resolution - float2(0.5))).b;
+    col.a = 1.0;
 
     float3 rgb = float3(col.rgb);
     float l = dot(rgb, float3(0.2126, 0.7152, 0.0722));
-    rgb = clamp(mix(float3(l), rgb, 1.0 + saturation * (0.25 + 0.75 * rim)), float3(0.0), float3(1.0));
+    rgb = clamp(mix(float3(l), rgb, 1.0 + saturation * lens), float3(0.0), float3(1.0));
 
     float lambert = clamp(dot(n, float2(lightX, lightY)), 0.0, 1.0);
     float glint = 0.5 + 0.5 * sin(phase + (n.x * 1.2 + n.y * 0.8) * 1.7);
-    float edge = pow(rim, 2.2);
-    float hairline = pow(rim, 9.0) * 0.55;
-    float spec = (edge * (0.30 + 0.55 * pow(lambert, 2.0) + 0.22 * glint * (0.35 + 0.65 * lambert)) + hairline) * specular;
+    float spec = pow(rim, 2.5) *
+        (0.30 + 0.55 * pow(lambert, 2.0) + 0.25 * glint * (0.35 + 0.65 * lambert)) * specular;
+    float shade = pow(rim, 3.0) *
+        pow(clamp(-dot(n, float2(lightX, lightY)), 0.0, 1.0), 1.5) * 0.30;
+    rgb = rgb * (1.0 + spec * 1.1) + float3(spec * 0.30);
+    rgb = rgb * (1.0 - shade);
 
-    float halfDiag = length(resolution) * 0.5;
-    float sheenPos = (p.x + p.y) / max(halfDiag, 1.0);
-    float sheen = pow(max(0.0, 1.0 - abs(sheenPos - 0.30 - 0.25 * sin(phase * 0.7))), 3.0) * 0.10 * specular;
+    float mask = 1.0 - smoothstep(0.45, 1.0, t);
+    float hairline = pow(rim, 9.0) * hairA;
 
-    float dimAmt = dim * smoothstep(0.45, 0.95, l);
-    float cover = 0.58 * edge;
-    float specWhite = clamp(spec + sheen, 0.0, 1.0);
-    float a = clamp(veil + dimAmt + cover + specWhite, 0.0, 1.0);
-    float3 prem = rgb * cover + float3(veil + specWhite);
-    return half4(half3(prem), half(a));
+    float cover = clamp(mask + spec * 0.85, 0.0, 1.0);
+    float white = clamp(tintA + hairline, 0.0, 1.0);
+    float3 prem = rgb * cover + float3(white);
+    return half4(half3(prem), half(clamp(cover + white, 0.0, 1.0)));
 }
 """
 
@@ -666,13 +652,10 @@ private fun AgslLensPass(
                 shader.setFloatUniform("lightX", -0.55f)
                 shader.setFloatUniform("lightY", -0.83f)
                 shader.setFloatUniform(
-                    "veil",
-                    if (isDark) lerp(0.16f, 0.05f, curve) else lerp(0.40f, 0.15f, curve)
+                    "tintA",
+                    if (isDark) lerp(0.055f, 0.028f, curve) else lerp(0.11f, 0.055f, curve)
                 )
-                shader.setFloatUniform(
-                    "dim",
-                    if (isDark) lerp(0.03f, 0.01f, curve) else lerp(0.10f, 0.04f, curve)
-                )
+                shader.setFloatUniform("hairA", if (isDark) 0.18f else 0.35f)
                 val pos = panelOriginState.value
                 val phase = (pos?.x ?: 0f) * 0.006f + (pos?.y ?: 0f) * 0.010f
                 shader.setFloatUniform("phase", phase)

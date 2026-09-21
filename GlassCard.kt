@@ -2,7 +2,6 @@ package com.example.ui.components
 
 import android.graphics.Bitmap
 import android.os.Build
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
@@ -13,7 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -47,7 +45,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -628,13 +625,14 @@ fun BobbingIcon(
 
 /**
  * Tactile spring press modifier for buttons, cards, and nav items.
- * Scales down smoothly on press, rebounds with organic spring physics
- * and can optionally trigger light haptic feedback.
+ * Scales down smoothly on press and rebounds with organic spring physics.
+ * Deliberately NO haptic feedback: taps here lead to navigation/dialogs,
+ * and page transitions must stay silent — vibration is reserved for
+ * confirming real actions (logging a dose, saving a form).
  */
 @Composable
 fun Modifier.tactilePress(
     pressScale: Float = 0.94f,
-    haptic: Boolean = false,
     onClick: (() -> Unit)? = null
 ): Modifier {
     val interactionSource = remember { MutableInteractionSource() }
@@ -647,17 +645,6 @@ fun Modifier.tactilePress(
         ),
         label = "tactileScale"
     )
-
-    if (haptic) {
-        val view = LocalView.current
-        LaunchedEffect(interactionSource) {
-            interactionSource.interactions.collect { interaction ->
-                if (interaction is PressInteraction.Press) {
-                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                }
-            }
-        }
-    }
 
     return this
         .graphicsLayer {
@@ -817,7 +804,7 @@ fun GlassCard(
         )
 
     val finalModifier = if (onClick != null) {
-        baseModifier.tactilePress(pressScale = 0.96f, haptic = true, onClick = onClick)
+        baseModifier.tactilePress(pressScale = 0.96f, onClick = onClick)
     } else {
         baseModifier
     }
@@ -960,7 +947,7 @@ fun GlassFAB(
                 brush = Brush.linearGradient(listOf(specularTopLeft, specularBottomRight)),
                 shape = RoundedCornerShape(24.dp)
             )
-            .tactilePress(pressScale = 0.88f, haptic = true, onClick = onClick)
+            .tactilePress(pressScale = 0.88f, onClick = onClick)
             .padding(18.dp),
         contentAlignment = Alignment.Center
     ) {

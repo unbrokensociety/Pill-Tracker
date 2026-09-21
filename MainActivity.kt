@@ -66,9 +66,13 @@ import com.example.ui.components.UpdateGate
 import com.example.ui.components.coachTag
 import com.example.ui.theme.MyApplicationTheme
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.drop
 import com.example.data.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -260,23 +264,14 @@ fun MainPagerScreen(
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
-    val view = LocalView.current
 
     // Во время тура свайпы отключены: человек не «уезжает» с шага.
     val tourActive = OnboardingBus.tourActive
 
-    // Мягкий тактильный «тик», когда страница долетела до места.
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }
-            .drop(1)
-            .collect {
-                if (!OnboardingBus.tourActive) {
-                    view.performHapticFeedback(
-                        android.view.HapticFeedbackConstants.CLOCK_TICK
-                    )
-                }
-            }
-    }
+    // Переходы между вкладками БЕЗ вибрации: смена страницы ощущается
+    // только визуально — пружина страницы, растяжение пилюли, мягкий
+    // press-scale. Вибрация оставлена лишь подтверждениям действий
+    // (отметка приёма, сохранение формы), не навигации.
 
     // ── Тур просит переключить страницу пейджера (тап по подсвеченному) ──
     LaunchedEffect(Unit) {
@@ -684,7 +679,7 @@ fun RowScope.FloatingNavItem(
         modifier = Modifier
             .weight(1f)
             .clip(RoundedCornerShape(22.dp))
-            .tactilePress(pressScale = 0.90f, haptic = true, onClick = onClick)
+            .tactilePress(pressScale = 0.90f, onClick = onClick)
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -708,31 +703,56 @@ fun RowScope.FloatingNavItem(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Подпись вкладки не всегда влезает в её ширину («Налаштування»
-        // по-украински, системный масштаб шрифта и т.п.). Вместо
-        // уродливого «Налаштува…» текст плавно УЖИМАЕТСЯ, пока не
-        // встанет в ширину вкладки — и никогда не вылезает за пилюлю.
-        var labelScale by remember(label) { mutableFloatStateOf(1f) }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontSize = 10.sp * labelScale,
-            fontWeight = if (proximity > 0.5f) FontWeight.ExtraBold else FontWeight.Medium,
-            color = contentColor,
-            maxLines = 1,
-            softWrap = false,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Clip,
-            onTextLayout = { layout ->
-                if (layout.hasVisualOverflow && labelScale > 0.72f) {
-                    labelScale *= 0.92f
-                }
-            },
+        // Подпись вкладки не всегда влезает в свой слот («Налаштування»
+        // по-украински + системный масштаб шрифта). Прежний цикл
+        // «hasVisualOverflow → сжать → перемерить» не срабатывал:
+        // при softWrap=false измеренная ширина равна самой строке,
+        // переполнение не фиксируется — и текст выходил за пилюлю.
+        // Теперь замеряем ЕСТЕСТВЕННУЮ ширину подписи один раз
+        // (TextMeasurer, самый широкий вес — ExtraBold активной
+        // вкладки) и детерминированно масштабируем шрифт ровно
+        // настолько, чтобы влезть в слот. Работает для любого языка
+        // и ЛЮБОГО fontScale; overflow=Clip — страховка на экстремах.
+        val textMeasurer = rememberTextMeasurer()
+        val baseLabelStyle = MaterialTheme.typography.labelSmall
+        BoxWithConstraints(
             modifier = Modifier
                 .graphicsLayer {
                     translationY = (yOffset / 2.5f).toPx()
                 }
-                .padding(horizontal = 2.dp)
-        )
+        ) {
+            val naturalWidthPx = remember(label, baseLabelStyle) {
+                textMeasurer.measure(
+                    text = label,
+                    style = baseLabelStyle.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    ),
+                    maxLines = 1,
+                    constraints = Constraints(maxWidth = 100_000)
+                ).size.width
+            }
+            // 2.dp внутреннего паддинга с каждой стороны от подписи
+            val density = LocalDensity.current
+            val availableWidthPx = with(density) { constraints.maxWidth - 4.dp.roundToPx() }
+            val fitScale = if (naturalWidthPx > 0) {
+                (availableWidthPx.toFloat() / naturalWidthPx).coerceIn(0.5f, 1f)
+            } else 1f
+            Text(
+                text = label,
+                style = baseLabelStyle,
+                fontSize = 10.sp * fitScale,
+                fontWeight = if (proximity > 0.5f) FontWeight.ExtraBold else FontWeight.Medium,
+                color = contentColor,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp)
+            )
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-package com.example.ui
+package com.aistudio.meditracker.ui
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -35,10 +35,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
-import com.example.R
-import com.example.ui.components.coachTag
-import com.example.ui.components.GlassCard
-import com.example.ui.locale.findActivity
+import com.aistudio.meditracker.R
+import com.aistudio.meditracker.ui.components.coachTag
+import com.aistudio.meditracker.ui.components.GlassCard
+import com.aistudio.meditracker.ui.locale.findActivity
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -51,8 +51,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import com.example.ui.components.FormType
-import com.example.ui.components.FormTypeIcon
+import com.aistudio.meditracker.ui.components.FormType
+import com.aistudio.meditracker.ui.components.FormTypeIcon
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -157,7 +157,7 @@ fun AddMedicationScreen(
                                     .toInstant()
                                     .toEpochMilli()
 
-                                val medToSave = com.example.data.Medication(
+                                val medToSave = com.aistudio.meditracker.data.Medication(
                                     id = editingMedicationId ?: 0,
                                     name = name,
                                     dosage = dosage,
@@ -685,7 +685,7 @@ fun AddMedicationScreen(
                             fontWeight = FontWeight.Bold
                         )
 
-                        val predefinedColors = com.example.ui.theme.MedicationColors.predefinedColors
+                        val predefinedColors = com.aistudio.meditracker.ui.theme.MedicationColors.predefinedColors
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

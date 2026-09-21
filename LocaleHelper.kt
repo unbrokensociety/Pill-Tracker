@@ -1,4 +1,4 @@
-package com.example.ui.locale
+package com.aistudio.meditracker.ui.locale
 
 import android.content.Context
 import android.content.res.Configuration

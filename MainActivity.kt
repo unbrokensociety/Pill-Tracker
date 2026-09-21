@@ -1,4 +1,4 @@
-package com.example
+package com.aistudio.meditracker
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -46,26 +46,26 @@ import androidx.compose.animation.core.*
 import androidx.navigation.compose.*
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.example.ui.AddMedicationScreen
-import com.example.ui.CalendarScreen
-import com.example.ui.HomeScreen
-import com.example.ui.MedicationsListScreen
-import com.example.ui.SettingsScreen
-import com.example.ui.MainViewModel
-import com.example.ui.MainViewModelFactory
-import com.example.ui.components.LiquidGlassPanel
-import com.example.ui.components.GlassFAB
-import com.example.ui.components.GlassPerformanceGovernor
-import com.example.ui.components.auroraBackdrop
-import com.example.ui.components.glassSource
-import com.example.ui.components.rememberGlassBackdrop
-import com.example.ui.components.tactilePress
-import com.example.ui.components.OnboardingBus
-import com.example.ui.components.OnboardingOverlay
-import com.example.ui.components.OnboardingPrefs
-import com.example.ui.components.UpdateGate
-import com.example.ui.components.coachTag
-import com.example.ui.theme.MyApplicationTheme
+import com.aistudio.meditracker.ui.AddMedicationScreen
+import com.aistudio.meditracker.ui.CalendarScreen
+import com.aistudio.meditracker.ui.HomeScreen
+import com.aistudio.meditracker.ui.MedicationsListScreen
+import com.aistudio.meditracker.ui.SettingsScreen
+import com.aistudio.meditracker.ui.MainViewModel
+import com.aistudio.meditracker.ui.MainViewModelFactory
+import com.aistudio.meditracker.ui.components.LiquidGlassPanel
+import com.aistudio.meditracker.ui.components.GlassFAB
+import com.aistudio.meditracker.ui.components.GlassPerformanceGovernor
+import com.aistudio.meditracker.ui.components.auroraBackdrop
+import com.aistudio.meditracker.ui.components.glassSource
+import com.aistudio.meditracker.ui.components.rememberGlassBackdrop
+import com.aistudio.meditracker.ui.components.tactilePress
+import com.aistudio.meditracker.ui.components.OnboardingBus
+import com.aistudio.meditracker.ui.components.OnboardingOverlay
+import com.aistudio.meditracker.ui.components.OnboardingPrefs
+import com.aistudio.meditracker.ui.components.UpdateGate
+import com.aistudio.meditracker.ui.components.coachTag
+import com.aistudio.meditracker.ui.theme.MyApplicationTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -74,7 +74,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import kotlinx.coroutines.flow.filter
-import com.example.data.ThemeMode
+import com.aistudio.meditracker.data.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -114,8 +114,8 @@ class MainActivity : ComponentActivity() {
         }
 
     override fun attachBaseContext(newBase: android.content.Context) {
-        val lang = com.example.ui.locale.LocaleHelper.getLanguage(newBase)
-        val contextWithLocale = com.example.ui.locale.LocaleHelper.updateResources(newBase, lang)
+        val lang = com.aistudio.meditracker.ui.locale.LocaleHelper.getLanguage(newBase)
+        val contextWithLocale = com.aistudio.meditracker.ui.locale.LocaleHelper.updateResources(newBase, lang)
         super.attachBaseContext(contextWithLocale)
     }
 

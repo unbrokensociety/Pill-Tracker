@@ -1,4 +1,4 @@
-package com.example.ui
+package com.aistudio.meditracker.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -25,13 +25,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.R
-import com.example.data.Medication
+import com.aistudio.meditracker.R
+import com.aistudio.meditracker.data.Medication
 
-import com.example.ui.components.coachTag
-import com.example.ui.components.GlassCard
-import com.example.ui.components.BobbingIcon
-import com.example.ui.components.StaggeredAppear
+import com.aistudio.meditracker.ui.components.coachTag
+import com.aistudio.meditracker.ui.components.GlassCard
+import com.aistudio.meditracker.ui.components.BobbingIcon
+import com.aistudio.meditracker.ui.components.StaggeredAppear
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -194,10 +194,10 @@ fun MedicationInfoCard(
         ) {
             // High fidelity beautifully color-coded pill capsule
             val medColor = remember(medication.color, medication.name) {
-                com.example.ui.theme.MedicationColors.getColor(medication.color, medication.name)
+                com.aistudio.meditracker.ui.theme.MedicationColors.getColor(medication.color, medication.name)
             }
 
-            com.example.ui.components.FormTypeIcon(
+            com.aistudio.meditracker.ui.components.FormTypeIcon(
                 formKey = medication.formType,
                 tint = medColor,
                 backgroundColor = medColor.copy(alpha = 0.18f),

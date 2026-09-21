@@ -1,4 +1,4 @@
-package com.example.data
+package com.aistudio.meditracker.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

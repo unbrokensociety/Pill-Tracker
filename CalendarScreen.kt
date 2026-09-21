@@ -1,4 +1,4 @@
-package com.example.ui
+package com.aistudio.meditracker.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -25,7 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.R
+import com.aistudio.meditracker.R
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -33,9 +33,9 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 
-import com.example.ui.components.coachTag
-import com.example.ui.components.GlassCard
-import com.example.ui.components.tactilePress
+import com.aistudio.meditracker.ui.components.coachTag
+import com.aistudio.meditracker.ui.components.GlassCard
+import com.aistudio.meditracker.ui.components.tactilePress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,4 +1,4 @@
-package com.example.ui
+package com.aistudio.meditracker.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -45,23 +45,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.R
-import com.example.data.ThemeMode
-import com.example.ui.components.GlassCard
-import com.example.ui.components.GlassModeStore
-import com.example.ui.components.LiquidGlassQuality
-import com.example.ui.components.LiquidGlassState
+import com.aistudio.meditracker.R
+import com.aistudio.meditracker.data.ThemeMode
+import com.aistudio.meditracker.ui.components.GlassCard
+import com.aistudio.meditracker.ui.components.GlassModeStore
+import com.aistudio.meditracker.ui.components.LiquidGlassQuality
+import com.aistudio.meditracker.ui.components.LiquidGlassState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import com.example.ui.components.OnboardingBus
-import com.example.ui.components.OnboardingPrefs
-import com.example.ui.components.PrivacyPolicyDialog
-import com.example.ui.components.TermsOfServiceDialog
-import com.example.ui.components.UpdateBus
-import com.example.ui.components.coachTag
-import com.example.ui.locale.LocaleHelper
-import com.example.ui.locale.findActivity
+import com.aistudio.meditracker.ui.components.OnboardingBus
+import com.aistudio.meditracker.ui.components.OnboardingPrefs
+import com.aistudio.meditracker.ui.components.PrivacyPolicyDialog
+import com.aistudio.meditracker.ui.components.TermsOfServiceDialog
+import com.aistudio.meditracker.ui.components.UpdateBus
+import com.aistudio.meditracker.ui.components.coachTag
+import com.aistudio.meditracker.ui.locale.LocaleHelper
+import com.aistudio.meditracker.ui.locale.findActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

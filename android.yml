@@ -8,8 +8,8 @@
 #   • versionCode = 2311 + GITHUB_RUN_NUMBER — задаётся самим
 #     app_build.gradle.kts (env-переменную подставывает CI), поэтому
 #     каждый билд строго больше предыдущего и всегда ставится поверх.
-#   • versionName = «2.4.6» — там же; ОБЯЗАН совпадать с маркером
-#     «> app-version: 2.4.6» в начале RELEASE_NOTES.md: APK-шный
+#   • versionName = «2.4.7» — там же; ОБЯЗАН совпадать с маркером
+#     «> app-version: 2.4.7» в начале RELEASE_NOTES.md: APK-шный
 #     апдейтер сравнивает именно эти два имени версий.
 #   • Тело GitHub-релиза = RELEASE_NOTES.md как есть, поэтому маркер
 #     app-version автоматически попадает в релиз — так приложение
@@ -76,15 +76,28 @@ jobs:
             echo "Decoding release.keystore from secret..."
             python3 -c "import base64, re; text='''${{ secrets.KEYSTORE_BASE64 }}'''; open('release.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
             echo "KEYSTORE_PATH=release.keystore" >> $GITHUB_ENV
+          else
+            echo "::warning::No KEYSTORE_BASE64 secret — the APK will be signed with the debug key (explicit opt-in, -PallowDebugSigning=true). Fine for GitHub Releases + in-app updates, NOT for a store."
           fi
 
       - name: Build Release APK
-        run: gradle assembleRelease --no-daemon --stacktrace
+        # -PallowDebugSigning=true: the deliberate, LOUD opt-in for the
+        # debug-key signature (see app_build.gradle.kts — without it the
+        # build fails). With a real KEYSTORE_PATH the flag is ignored.
+        run: gradle assembleRelease --no-daemon --stacktrace -PallowDebugSigning=true
         env:
           KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Report Signing Mode
+        run: |
+          if [ -z "${{ env.KEYSTORE_PATH }}" ]; then
+            echo "⚠️  This release artifact is signed with the DEBUG key (no KEYSTORE_BASE64 secret / explicit opt-in). Updates still install over previous debug-signed builds — the in-app update chain stays intact."
+          else
+            echo "✅ Release artifact signed with the REAL release key."
+          fi
 
       - name: Locate Built APK
         run: |

@@ -1,4 +1,4 @@
-package com.example.ui.components
+package com.aistudio.meditracker.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.R
+import com.aistudio.meditracker.R
 
 enum class FormType(val key: String, val stringRes: Int) {
     CAPSULE("capsule", R.string.form_capsule),

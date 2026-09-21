@@ -1,4 +1,4 @@
-package com.example.data
+package com.aistudio.meditracker.data
 
 import android.content.Context
 import androidx.room.Database

@@ -1,4 +1,4 @@
-package com.example.ui
+package com.aistudio.meditracker.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -32,22 +32,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
-import com.example.R
-import com.example.data.DailyScheduleView
-import com.example.data.IntakeLog
+import com.aistudio.meditracker.R
+import com.aistudio.meditracker.data.DailyScheduleView
+import com.aistudio.meditracker.data.IntakeLog
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 
-import com.example.ui.components.coachTag
-import com.example.ui.components.GlassCard
-import com.example.ui.components.OnboardingPrefs
-import com.example.ui.components.liquidGlass
-import com.example.ui.components.GlassCircleIcon
-import com.example.ui.components.GlassChip
-import com.example.ui.components.BobbingIcon
-import com.example.ui.components.StaggeredAppear
-import com.example.ui.components.tactilePress
+import com.aistudio.meditracker.ui.components.coachTag
+import com.aistudio.meditracker.ui.components.GlassCard
+import com.aistudio.meditracker.ui.components.OnboardingPrefs
+import com.aistudio.meditracker.ui.components.liquidGlass
+import com.aistudio.meditracker.ui.components.GlassCircleIcon
+import com.aistudio.meditracker.ui.components.GlassChip
+import com.aistudio.meditracker.ui.components.BobbingIcon
+import com.aistudio.meditracker.ui.components.StaggeredAppear
+import com.aistudio.meditracker.ui.components.tactilePress
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -62,7 +62,7 @@ fun HomeScreen(
     val streakDays by viewModel.streakDays.collectAsState()
 
     val context = LocalContext.current
-    val alarmScheduler = remember { com.example.alarms.AlarmScheduler(context.applicationContext) }
+    val alarmScheduler = remember { com.aistudio.meditracker.alarms.AlarmScheduler(context.applicationContext) }
     var snoozeScheduleToPrompt by remember { mutableStateOf<DailyScheduleView?>(null) }
 
     // ── Живые часы: приветствие и дата обновляются на границе минут ──
@@ -480,7 +480,7 @@ fun MedicationCard(
     }
 
     val medColor = remember(schedule.color, schedule.name) {
-        com.example.ui.theme.MedicationColors.getColor(schedule.color, schedule.name)
+        com.aistudio.meditracker.ui.theme.MedicationColors.getColor(schedule.color, schedule.name)
     }
 
     val checkBgColor by animateColorAsState(
@@ -513,7 +513,7 @@ fun MedicationCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // FormType icon inside circle badge
-            com.example.ui.components.FormTypeIcon(
+            com.aistudio.meditracker.ui.components.FormTypeIcon(
                 formKey = schedule.formType,
                 tint = medColor,
                 backgroundColor = medColor.copy(alpha = 0.18f),
@@ -733,7 +733,7 @@ fun StreakBanner(streakDays: Int) {
 
 @Composable
 fun LowStockBanner(
-    lowStockMeds: List<com.example.data.Medication>,
+    lowStockMeds: List<com.aistudio.meditracker.data.Medication>,
     onRefill: (Int) -> Unit
 ) {
     GlassCard(

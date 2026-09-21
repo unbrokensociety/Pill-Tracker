@@ -1,4 +1,4 @@
-package com.example.ui.components
+package com.aistudio.meditracker.ui.components
 
 /*
  * OnboardingTutorial v2 — ИНТЕРАКТИВНЫЙ тур по приложению.
@@ -115,7 +115,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
+import com.aistudio.meditracker.R
 import kotlinx.coroutines.flow.filter
 
 /* ────────────────────────────────────────────────────────────────

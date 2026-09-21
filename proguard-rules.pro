@@ -10,14 +10,14 @@
 
 # Enum values are persisted BY NAME (GlassModeStore stores
 # LiquidGlassQuality.name and reads it back via valueOf).
--keepclassmembers enum com.example.** {
+-keepclassmembers enum com.aistudio.meditracker.** {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
 
 # Room entities/DAOs are consumed by KSP-generated code; keep the data
 # layer's shape so schema + converters can never drift.
--keep class com.example.data.** { *; }
+-keep class com.aistudio.meditracker.data.** { *; }
 
 # Compose compiler metadata and the entry points are handled by AGP itself.
 # Nothing else in this app touches reflection at runtime.

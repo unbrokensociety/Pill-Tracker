@@ -1,4 +1,4 @@
-package com.example.ui.components
+package com.aistudio.meditracker.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

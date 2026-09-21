@@ -1,0 +1,171 @@
+package com.aistudio.meditracker.alarms
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import com.aistudio.meditracker.MainActivity
+import com.aistudio.meditracker.R
+import com.aistudio.meditracker.ui.locale.LocaleHelper
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
+
+class AlarmReceiver : BroadcastReceiver() {
+
+    companion object {
+        const val ACTION_SNOOZE = "com.aistudio.meditracker.meditracker.ACTION_SNOOZE"
+        const val EXTRA_SNOOZE_MINUTES = "EXTRA_SNOOZE_MINUTES"
+    }
+
+    override fun onReceive(context: Context, intent: Intent?) {
+        val localizedContext = LocaleHelper.getLocalizedContext(context)
+        val medicationName = intent?.getStringExtra("EXTRA_MEDICATION_NAME") ?: localizedContext.getString(R.string.alarm_default_med)
+        val scheduleId = intent?.getIntExtra("EXTRA_SCHEDULE_ID", -1) ?: -1
+
+        if (intent?.action == ACTION_SNOOZE) {
+            val snoozeMinutes = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, 15)
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (scheduleId != -1) {
+                notificationManager.cancel(scheduleId)
+            }
+
+            val scheduler = AlarmScheduler(context.applicationContext)
+            scheduler.scheduleSnooze(scheduleId, medicationName, snoozeMinutes)
+            return
+        }
+
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val settingsRepo = com.aistudio.meditracker.data.SettingsRepository(context.applicationContext)
+                val isNotifEnabled = settingsRepo.notificationsFlow.first()
+                
+                if (isNotifEnabled) {
+                    showNotification(context, medicationName, scheduleId)
+
+                    if (scheduleId != -1) {
+                        val db = com.aistudio.meditracker.data.AppDatabase.getDatabase(context.applicationContext)
+                        val dao = db.medicationDao()
+                        val view = dao.getActiveScheduleViewByScheduleId(scheduleId)
+                        if (view != null) {
+                            val med = dao.getMedicationById(view.medicationId)
+                            val now = java.time.LocalDateTime.now()
+                            var nextTime = now.withHour(view.timeHour).withMinute(view.timeMinute).withSecond(0).withNano(0)
+                            if (nextTime.isBefore(now.minusSeconds(5))) {
+                                nextTime = nextTime.plusDays(1)
+                            }
+                            val nextTimeMillis = nextTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+                            // Check if medication has expired end date
+                            if (med == null || (med.endDate != null && med.endDate > 0L && nextTimeMillis > med.endDate)) {
+                                // Medication expired or removed, do not reschedule
+                            } else {
+                                val schedule = com.aistudio.meditracker.data.Schedule(
+                                    id = view.scheduleId,
+                                    medicationId = view.medicationId,
+                                    timeHour = view.timeHour,
+                                    timeMinute = view.timeMinute
+                                )
+                                val scheduler = AlarmScheduler(context.applicationContext)
+                                scheduler.scheduleAlarm(schedule, view.name)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
+            }
+        }
+    }
+
+    private fun showNotification(context: Context, medicationName: String, scheduleId: Int) {
+        val localizedContext = LocaleHelper.getLocalizedContext(context)
+        val notificationManager = localizedContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "medication_channel"
+
+        val alarmUri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM)
+            ?: android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val audioAttributes = android.media.AudioAttributes.Builder()
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .build()
+
+            val channel = NotificationChannel(
+                channelId,
+                localizedContext.getString(R.string.alarm_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = localizedContext.getString(R.string.alarm_channel_desc)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 500)
+                setSound(alarmUri, audioAttributes)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val mainIntent = Intent(localizedContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            localizedContext,
+            scheduleId,
+            mainIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val defaultMedName = localizedContext.getString(R.string.alarm_default_med)
+        val finalMedName = if (medicationName.isBlank()) defaultMedName else medicationName
+
+        // Snooze 15 min intent
+        val snooze15Intent = Intent(localizedContext, AlarmReceiver::class.java).apply {
+            action = ACTION_SNOOZE
+            putExtra("EXTRA_SCHEDULE_ID", scheduleId)
+            putExtra("EXTRA_MEDICATION_NAME", finalMedName)
+            putExtra(EXTRA_SNOOZE_MINUTES, 15)
+        }
+        val snooze15PendingIntent = PendingIntent.getBroadcast(
+            localizedContext,
+            scheduleId * 100 + 15,
+            snooze15Intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Snooze 30 min intent
+        val snooze30Intent = Intent(localizedContext, AlarmReceiver::class.java).apply {
+            action = ACTION_SNOOZE
+            putExtra("EXTRA_SCHEDULE_ID", scheduleId)
+            putExtra("EXTRA_MEDICATION_NAME", finalMedName)
+            putExtra(EXTRA_SNOOZE_MINUTES, 30)
+        }
+        val snooze30PendingIntent = PendingIntent.getBroadcast(
+            localizedContext,
+            scheduleId * 100 + 30,
+            snooze30Intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(localizedContext, channelId)
+            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setContentTitle(localizedContext.getString(R.string.alarm_title, finalMedName))
+            .setContentText(localizedContext.getString(R.string.alarm_text))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setSound(alarmUri)
+            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(0, localizedContext.getString(R.string.snooze_15m), snooze15PendingIntent)
+            .addAction(0, localizedContext.getString(R.string.snooze_30m), snooze30PendingIntent)
+
+        notificationManager.notify(scheduleId, builder.build())
+    }
+}
+

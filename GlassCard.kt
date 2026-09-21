@@ -1,10 +1,13 @@
-package com.example.ui.components
+package com.aistudio.meditracker.ui.components
 
 import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.RenderEffect
+import android.graphics.RuntimeShader
 import android.os.Build
 import android.os.PowerManager
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
@@ -33,9 +36,11 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
@@ -50,11 +55,13 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.runtime.withFrameNanos
@@ -62,7 +69,13 @@ import kotlin.math.pow
 import kotlinx.coroutines.delay
 
 /* ------------------------------------------------------------------------- */
-/*  LIQUID GLASS ENGINE v5 — matte↔ultra-liquid slider, adaptive, never laggy  */
+/*  LIQUID GLASS ENGINE v6 — AGSL edge refraction + intensity slider          */
+/*                                                                           */
+/*  v6 «iOS-style liquid glass»: on Android 13+ a per-pixel AGSL              */
+/*  RuntimeShader pass bends the backdrop around the panel rim — real         */
+/*  refraction streaks, chromatic aberration, a specular bevel that           */
+/*  follows the light and glints as the panel moves. Older devices keep       */
+/*  the v5 look (blur + zoom bleed).                                          */
 /*                                                                           */
 /*  One shared technique: a live snapshot of the content behind the panel     */
 /*  is blurred and drawn back under the glass.                                */
@@ -90,6 +103,112 @@ import kotlinx.coroutines.delay
 /** True when the device supports hardware backdrop blur (Android 12+). */
 val BackdropBlurSupported: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+/* ------------------------------------------------------------------------- */
+/*  Liquid Glass v6 — the AGSL edge shader (Android 13+)                      */
+/* ------------------------------------------------------------------------- */
+
+/** True when per-pixel AGSL edge refraction is available (Android 13+). */
+private val AgslEdgeRefractionSupported: Boolean
+    get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+
+/**
+ * AGSL source of the «thick glass» bevel — the pass that reads as REAL
+ * liquid glass (the iOS look) instead of flat frost. Applied to a layer
+ * holding a copy of the backdrop behind the panel:
+ *
+ *  • rounded-rect SDF → distance to the rim and the outward normal;
+ *  • refraction: pixels near the rim sample the backdrop displaced
+ *    OUTWARD along the normal — light bends through the thick bevel
+ *    edge, streaking colours around the border (per-pixel, unlike the
+ *    v5 global-zoom bleed);
+ *  • chromatic aberration: R and B split along the normal at the rim;
+ *  • specular bevel: the rim lights up on the side facing the (fixed)
+ *    top-left light, shades on the opposite side, and a glint slides
+ *    around the border as the panel moves (phase uniform);
+ *  • saturation boost in the band — glass makes the backdrop pop;
+ *  • the CENTER of the output is transparent, so the blurred frost
+ *    layer below shows through: frosted middle + liquid clear bevel.
+ *
+ * Uniforms are driven live by the Settings intensity slider.
+ */
+private const val LIQUID_EDGE_AGSL = """
+uniform shader content;
+uniform float2 resolution;   // layer size, px
+uniform float corner;        // corner radius, px
+uniform float band;          // refractive edge band width, px
+uniform float refraction;    // lens strength 0..1
+uniform float chroma;        // chromatic aberration 0..1
+uniform float specular;      // rim brightness 0..1
+uniform float lightX;        // direction TO the light (normalized)
+uniform float lightY;
+uniform float phase;         // glint phase — driven by panel position
+uniform float saturation;    // backdrop colour boost inside the band
+
+float sdRoundBox(float2 p, float2 b, float r) {
+    float2 q = abs(p) - b + float2(r);
+    return length(max(q, float2(0.0))) + min(max(q.x, q.y), 0.0) - r;
+}
+
+half4 main(float2 fragCoord) {
+    float2 c = resolution * 0.5;
+    float2 p = fragCoord - c;
+    float d = sdRoundBox(p, c, corner);          // < 0 inside the shape
+    float inDist = max(-d, 0.0);                 // distance from the rim in
+    float t = clamp(inDist / band, 0.0, 1.0);    // 0 at rim -> 1 inner
+
+    // outward normal = numeric SDF gradient
+    float2 ex = float2(1.0, 0.0);
+    float2 ey = float2(0.0, 1.0);
+    float2 grad = float2(
+        sdRoundBox(p + ex, c, corner) - sdRoundBox(p - ex, c, corner),
+        sdRoundBox(p + ey, c, corner) - sdRoundBox(p - ey, c, corner));
+    float2 n = grad / max(length(grad), 0.0001);
+
+    // refraction: near the rim, sample the backdrop displaced outward
+    float lens = pow(1.0 - t, 2.0);
+    float2 uv = clamp(
+        fragCoord + n * lens * refraction * band,
+        float2(0.5), resolution - float2(0.5));
+    float ca = chroma * lens * max(band * 0.045, 0.75);
+    half4 col;
+    col.r = content.eval(uv + n * ca).r;
+    col.g = content.eval(uv).g;
+    col.b = content.eval(uv - n * ca).b;
+    col.a = 1.0;
+
+    // saturation boost — glass makes the backdrop pop
+    float3 rgb = float3(col.rgb);
+    float l = dot(rgb, float3(0.2126, 0.7152, 0.0722));
+    rgb = clamp(mix(float3(l), rgb, 1.0 + saturation * lens),
+                float3(0.0), float3(1.0));
+
+    // band mask: only the edge band is visible; the frosted blur below
+    // keeps the centre
+    float mask = 1.0 - smoothstep(0.45, 1.0, t);
+
+    // specular bevel: lit side + moving glint + soft opposite shading
+    float lambert = clamp(dot(n, float2(lightX, lightY)), 0.0, 1.0);
+    float glint = 0.5 + 0.5 * sin(phase + (n.x * 1.2 + n.y * 0.8) * 1.7);
+    float spec = pow(1.0 - t, 2.5) *
+        (0.30 + 0.55 * pow(lambert, 2.0) +
+         0.25 * glint * (0.35 + 0.65 * lambert)) * specular;
+    float shade = pow(1.0 - t, 3.0) *
+        pow(clamp(-dot(n, float2(lightX, lightY)), 0.0, 1.0), 1.5) * 0.30;
+
+    rgb = rgb * (1.0 + spec * 1.1) + float3(spec * 0.30);
+    rgb = rgb * (1.0 - shade);
+
+    float a = clamp(mask + spec * 0.85, 0.0, 1.0);
+    return half4(half3(rgb * a), half(a));   // premultiplied
+}
+"""
+
+/** Creates (and remembers) the edge shader — Android 13+ only. */
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+private fun rememberLiquidEdgeShader(): RuntimeShader =
+    remember { RuntimeShader(LIQUID_EDGE_AGSL) }
 
 /* ------------------------------------------------------------------------- */
 /*  Adaptive quality — measured, not guessed                                  */
@@ -597,7 +716,16 @@ fun LiquidGlassPanel(
     val ambientShadowColor = if (isDark) Color(0x59000000) else Color(0x14000000)
     val spotShadowColor = if (isDark) Color(0x7A000000) else Color(0x29000000)
 
-    var panelOrigin by remember { mutableStateOf<Offset?>(null) }
+    // v6: the AGSL edge shader (Android 13+) — per-pixel refractive bevel.
+    // Null everywhere else; the old zoom-bleed path keeps the look there.
+    val edgeShader = if (AgslEdgeRefractionSupported) rememberLiquidEdgeShader() else null
+    val layoutDir = LocalLayoutDirection.current
+
+    // Panel origin exposed as a State object so the AGSL pass can read it
+    // inside its graphicsLayer block (deferred read — the glint uniform
+    // updates while the island moves without recomposition).
+    val panelOriginState = remember { mutableStateOf<Offset?>(null) }
+    var panelOrigin by panelOriginState
     var panelSize by remember { mutableStateOf(IntSize.Zero) }
 
     // Software path: live-blurred snapshot of the content behind the panel.
@@ -647,35 +775,52 @@ fun LiquidGlassPanel(
                     }
             )
             if (quality == LiquidGlassQuality.FULL) {
-                // Refractive edge bleed: the same backdrop copy, slightly
-                // zoomed and blurred much wider, blended over the blur.
-                // Near the rim the zoomed copy samples content from further
-                // out — light bends outward like real thick glass, and the
-                // interior gains a second soft wash of depth. The slider
-                // scales the effect: nearly still at the matte end, a real
-                // refractive halo at the ultra-liquid end.
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .graphicsLayer {
-                            val bleedRadius = effectiveBlur * lerp(1.30f, 1.75f, curve)
-                            val bleedScale = lerp(1.03f, 1.09f, curve)
-                            scaleX = bleedScale
-                            scaleY = bleedScale
-                            alpha = lerp(0.28f, 0.65f, curve)
-                            renderEffect = BlurEffect(bleedRadius.toPx(), bleedRadius.toPx())
-                        }
-                        .drawBehind {
-                            backdrop.version.value
-                            val srcOrigin = backdrop.origin ?: return@drawBehind
-                            val pos = panelOrigin ?: return@drawBehind
-                            val dx = pos.x - srcOrigin.x
-                            val dy = pos.y - srcOrigin.y
-                            translate(-dx, -dy) {
-                                drawLayer(backdrop.layer)
+                if (edgeShader != null) {
+                    // v6: per-pixel AGSL refraction — the real «thick glass»
+                    // bevel (refracted streaks, chroma split, specular rim,
+                    // moving glint). The slider drives it live: from a calm
+                    // hint at the matte end to a full liquid bevel at 100%.
+                    AgslEdgePass(
+                        backdrop = backdrop,
+                        shader = edgeShader,
+                        shape = shape,
+                        layoutDirection = layoutDir,
+                        curve = curve,
+                        panelOriginState = panelOriginState,
+                        modifier = Modifier.matchParentSize()
+                    )
+                } else {
+                    // Refractive edge bleed (Android 12/12L fallback): the same
+                    // backdrop copy, slightly zoomed and blurred much wider,
+                    // blended over the blur. Near the rim the zoomed copy
+                    // samples content from further out — light bends outward
+                    // like real thick glass, and the interior gains a second
+                    // soft wash of depth. The slider scales the effect: nearly
+                    // still at the matte end, a real refractive halo at the
+                    // ultra-liquid end.
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .graphicsLayer {
+                                val bleedRadius = effectiveBlur * lerp(1.30f, 1.75f, curve)
+                                val bleedScale = lerp(1.03f, 1.09f, curve)
+                                scaleX = bleedScale
+                                scaleY = bleedScale
+                                alpha = lerp(0.28f, 0.65f, curve)
+                                renderEffect = BlurEffect(bleedRadius.toPx(), bleedRadius.toPx())
                             }
-                        }
-                )
+                            .drawBehind {
+                                backdrop.version.value
+                                val srcOrigin = backdrop.origin ?: return@drawBehind
+                                val pos = panelOrigin ?: return@drawBehind
+                                val dx = pos.x - srcOrigin.x
+                                val dy = pos.y - srcOrigin.y
+                                translate(-dx, -dy) {
+                                    drawLayer(backdrop.layer)
+                                }
+                            }
+                    )
+                }
             }
         } else if (!hardwareBlur && quality != LiquidGlassQuality.FROST) {
             Box(
@@ -725,6 +870,70 @@ fun LiquidGlassPanel(
         // ---- Layer 4: crisp glass UI on top ----
         content()
     }
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Liquid Glass v6 — the AGSL edge pass (Android 13+)                       */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * Draws a copy of the recorded backdrop into a layer and runs the
+ * [LIQUID_EDGE_AGSL] shader on it: only the rim band survives (the center
+ * stays transparent for the frosted blur below), and inside that band the
+ * backdrop is refracted outward along the rim normal, chromatically split,
+ * saturation-boosted and crowned with a specular bevel whose glint slides
+ * as the panel moves. Uniforms follow the Settings intensity slider live.
+ */
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+private fun AgslEdgePass(
+    backdrop: GlassBackdrop,
+    shader: RuntimeShader,
+    shape: Shape,
+    layoutDirection: LayoutDirection,
+    curve: Float,
+    panelOriginState: State<Offset?>,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                // Corner radius of the panel shape, resolved in px (works for
+                // RoundedCornerShape and CircleShape; flat shapes → 0).
+                val cornerPx = (shape.createOutline(size, layoutDirection, this)
+                    as? Outline.Rounded)?.roundRect?.topLeftCornerRadius?.x ?: 0f
+                // Edge band: 12dp (calm matte end) .. 26dp (ultra liquid).
+                val bandPx = (12.dp + (26.dp - 12.dp) * curve).toPx()
+                shader.setFloatUniform("resolution", size.width, size.height)
+                shader.setFloatUniform("corner", cornerPx)
+                shader.setFloatUniform("band", bandPx)
+                shader.setFloatUniform("refraction", lerp(0.30f, 0.95f, curve))
+                shader.setFloatUniform("chroma", lerp(0.20f, 0.85f, curve))
+                shader.setFloatUniform("specular", lerp(0.30f, 1.0f, curve))
+                shader.setFloatUniform("saturation", lerp(0.08f, 0.30f, curve))
+                // Fixed top-left light (matches the rim gradient above).
+                shader.setFloatUniform("lightX", -0.55f)
+                shader.setFloatUniform("lightY", -0.83f)
+                // The glint slides around the rim as the panel itself moves —
+                // dynamic light for free, zero cost while the panel is idle.
+                val pos = panelOriginState.value
+                val phase = (pos?.x ?: 0f) * 0.006f + (pos?.y ?: 0f) * 0.010f
+                shader.setFloatUniform("phase", phase)
+                renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content")
+                    .asComposeRenderEffect()
+            }
+            .drawBehind {
+                // observe live re-records of the backdrop
+                backdrop.version.value
+                val srcOrigin = backdrop.origin ?: return@drawBehind
+                val pos = panelOriginState.value ?: return@drawBehind
+                val dx = pos.x - srcOrigin.x
+                val dy = pos.y - srcOrigin.y
+                translate(-dx, -dy) {
+                    drawLayer(backdrop.layer)
+                }
+            }
+    )
 }
 
 /* ------------------------------------------------------------------------- */

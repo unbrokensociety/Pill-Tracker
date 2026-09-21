@@ -277,11 +277,8 @@
 
     <string name="dialog_cancel">Отмена</string>
     <string name="adherence_discipline">Дисциплина</string>
-    <!-- ═══ Onboarding tutorial (первый вход + повтор из Настроек) ═══ -->
+    <!-- ═══ Onboarding: интерактивный тур (первый вход + повтор из Настроек) ═══ -->
     <string name="ob_skip">Пропустить</string>
-    <string name="ob_next">Далее</string>
-    <string name="ob_back">Назад</string>
-    <string name="ob_start">Начать</string>
     <string name="ob_step_of">Шаг %1$d из %2$d</string>
 
     <string name="ob_welcome_title">Добро пожаловать в Pill Tracker!</string>
@@ -290,36 +287,53 @@
     <string name="ob_welcome_b2">Работает полностью офлайн</string>
     <string name="ob_welcome_b3">Данные остаются на устройстве</string>
 
-    <string name="ob_home_title">Расписание на сегодня</string>
-    <string name="ob_home_desc">Каждый приём лекарств как на ладони. Нажмите на кружок, чтобы отметить приём — кольцо прогресса заполнится, а серия дней вырастет.</string>
-    <string name="ob_home_b1">Один тап — приём отмечен</string>
-    <string name="ob_home_b2">Счётчик серии мотивирует не пропускать</string>
-    <string name="ob_home_b3">Умные предупреждения о запасах</string>
-
-    <string name="ob_calendar_title">Календарь и история</string>
-    <string name="ob_calendar_desc">Откройте любую дату и посмотрите, что и когда вы принимали. Дни подсвечены цветом — ни один приём не потеряется.</string>
-    <string name="ob_calendar_b1">Полная история приёмов</string>
-    <string name="ob_calendar_b2">Быстрая лента дат</string>
-    <string name="ob_calendar_b3">Дни с цветовой кодировкой</string>
-
-    <string name="ob_meds_title">Ваши лекарства</string>
-    <string name="ob_meds_desc">Дозировка, форма, запасы и расписание для каждого лекарства. Изменение и удаление — в один тап.</string>
-    <string name="ob_meds_b1">Отслеживание запасов</string>
-    <string name="ob_meds_b2">Любые формы: таблетки, капли, сиропы…</string>
-    <string name="ob_meds_b3">Простое редактирование</string>
-
-    <string name="ob_add_title">Добавление за секунды</string>
-    <string name="ob_add_desc">Название, доза, время приёма — гибкие расписания для любой терапии, с заметками и подсказками про еду.</string>
-    <string name="ob_add_b1">Несколько приёмов в день</string>
-    <string name="ob_add_b2">Свои интервалы и приём по необходимости</string>
-    <string name="ob_add_b3">Заметки: до еды, после еды…</string>
-
-    <string name="ob_reminders_title">Напоминания и настройки</string>
-    <string name="ob_reminders_desc">Точные напоминания, три языка, тёмная тема и экспорт данных. Этот тур всегда доступен в Настройках.</string>
-    <string name="ob_reminders_b1">Точные напоминания о приёме</string>
-    <string name="ob_reminders_b2">English, українська, русский</string>
-    <string name="ob_reminders_b3">Повторить тур можно в Настройках</string>
-
     <string name="ob_settings_replay_title">Показать обучение снова</string>
-    <string name="ob_settings_replay_desc">Короткий тур по всем важным функциям</string>
+    <string name="ob_settings_replay_desc">Интерактивный тур по приложению</string>
+
+    <!-- ═══ Интерактивный тур v2 (подсветка реальных кнопок) ═══ -->
+    <string name="tour_start">Начать тур</string>
+    <string name="tour_interactive_hint">Короткая прогулка по приложению — потапаем настоящие кнопки вместе</string>
+    <string name="tour_next">Дальше</string>
+    <string name="tour_finish">Понятно, попробую сам</string>
+    <string name="tour_tap_hint">Тапни по подсвеченному, чтобы продолжить</string>
+
+    <string name="tour_step_today_title">Это экран «Сегодня»</string>
+    <string name="tour_step_today_desc">Приёмы на день живут здесь. Тапни по пилюле, когда выпил — кольцо заполнится по ходу дела.</string>
+    <string name="tour_step_nav_title">Экраны листаются как страницы</string>
+    <string name="tour_step_nav_desc">Свайпни влево или тапни по подсвеченной панели — перейдём в Календарь.</string>
+    <string name="tour_step_calendar_title">Календарь</string>
+    <string name="tour_step_calendar_desc">Весь месяц как на ладони: зелёные дни — всё принято вовремя.</string>
+    <string name="tour_step_meds_title">Твои лекарства</string>
+    <string name="tour_step_meds_desc">Каждое лекарство с дозой, остатком и графиком — редактируется в один тап.</string>
+    <string name="tour_step_add_title">Добавить лекарство</string>
+    <string name="tour_step_add_desc">Большой плюс — и добавим. Тапни его — заполним первое вместе.</string>
+    <string name="tour_step_form_title">Заполни карточку</string>
+    <string name="tour_step_form_desc">Название, доза, время — гибко под любую терапию. Попробуй сам, это просто!</string>
+
+    <!-- ═══ Обновления прямо из приложения (GitHub Releases) ═══ -->
+    <string name="upd_title">Доступно обновление</string>
+    <string name="upd_body">Вышла новая версия Pill Tracker — %1$s.</string>
+    <string name="upd_whats_new">Что нового:</string>
+    <string name="upd_later">Позже</string>
+    <string name="upd_now">Обновить сейчас</string>
+    <string name="upd_check_title">Проверить обновления</string>
+    <string name="upd_check_desc">Новые версии приходят прямо в приложение</string>
+    <string name="upd_checking">Проверяем обновления…</string>
+    <string name="upd_uptodate">У вас последняя версия!</string>
+    <string name="upd_failed">Не удалось проверить обновления. Проверь соединение и попробуй ещё раз.</string>
+    <string name="upd_retry">Попробовать снова</string>
+    <string name="upd_close">Закрыть</string>
+    <string name="upd_perm_title">Разовое разрешение</string>
+    <string name="upd_perm_body">Чтобы обновляться прямо из приложения, Android один раз попросит разрешить установку из этого источника.</string>
+    <string name="upd_perm_step1">Сейчас откроются Настройки</string>
+    <string name="upd_perm_step2">Разреши установку для Pill Tracker</string>
+    <string name="upd_perm_step3">Вернись — обновление скачается само</string>
+    <string name="upd_open_settings">Открыть настройки</string>
+    <string name="upd_waiting">Ждём разрешения в Настройках…</string>
+    <string name="upd_downloading">Скачиваем обновление…</string>
+    <string name="upd_browser">Скачать через браузер</string>
+    <string name="upd_minimize">Свернуть</string>
+    <string name="upd_releases">Страница релизов</string>
+    <string name="upd_notif_desc">Обновление Pill Tracker</string>
+    <string name="upd_notif_hint">Прогресс виден и в системном уведомлении. Когда скачается — установщик откроется автоматически.</string>
 </resources>

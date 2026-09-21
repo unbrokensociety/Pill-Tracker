@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="reports" path="." />
+    <files-path name="files" path="." />
+    <!-- In-app updater: DownloadManager качает APK в
+         getExternalFilesDir(DIRECTORY_DOWNLOADS) — этот путь должен
+         быть виден FileProvider, чтобы открыть пакетный установщик. -->
+    <external-files-path name="downloads" path="Download" />
+    <external-files-path name="external_files" path="." />
+</paths>

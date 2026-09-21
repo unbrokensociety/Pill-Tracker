@@ -277,11 +277,8 @@
 
     <string name="dialog_cancel">Cancel</string>
     <string name="adherence_discipline">Discipline</string>
-    <!-- ═══ Onboarding tutorial (первый вход + повтор из Настроек) ═══ -->
+    <!-- ═══ Onboarding: interactive tour (first launch + replay from Settings) ═══ -->
     <string name="ob_skip">Skip</string>
-    <string name="ob_next">Next</string>
-    <string name="ob_back">Back</string>
-    <string name="ob_start">Get started</string>
     <string name="ob_step_of">Step %1$d of %2$d</string>
 
     <string name="ob_welcome_title">Welcome to Pill Tracker!</string>
@@ -290,36 +287,53 @@
     <string name="ob_welcome_b2">Works fully offline</string>
     <string name="ob_welcome_b3">Your data stays on your device</string>
 
-    <string name="ob_home_title">Today\'s schedule</string>
-    <string name="ob_home_desc">Every intake of the day at a glance. Tap the circle to log a dose — the progress ring fills up and your streak grows.</string>
-    <string name="ob_home_b1">One tap to mark a dose as taken</string>
-    <string name="ob_home_b2">Streak counter keeps you motivated</string>
-    <string name="ob_home_b3">Smart low-stock warnings</string>
-
-    <string name="ob_calendar_title">Calendar and history</string>
-    <string name="ob_calendar_desc">Open any date and see what you took and when. Days are color-coded, so no dose ever gets lost.</string>
-    <string name="ob_calendar_b1">Full intake history</string>
-    <string name="ob_calendar_b2">Quick date strip navigation</string>
-    <string name="ob_calendar_b3">Color-coded days</string>
-
-    <string name="ob_meds_title">Your medications</string>
-    <string name="ob_meds_desc">Dosage, form, stock and schedule for every medication. Editing and deleting — in one tap.</string>
-    <string name="ob_meds_b1">Stock tracking</string>
-    <string name="ob_meds_b2">Any form: pills, drops, syrups…</string>
-    <string name="ob_meds_b3">Easy editing</string>
-
-    <string name="ob_add_title">Add in seconds</string>
-    <string name="ob_add_desc">Name, dosage, intake times — flexible schedules for any therapy, with notes and food hints.</string>
-    <string name="ob_add_b1">Multiple intakes per day</string>
-    <string name="ob_add_b2">Custom intervals and as-needed meds</string>
-    <string name="ob_add_b3">Notes: before meals, with food…</string>
-
-    <string name="ob_reminders_title">Reminders and settings</string>
-    <string name="ob_reminders_desc">Exact-time notifications, three languages, dark theme and data export. This guide is always available in Settings.</string>
-    <string name="ob_reminders_b1">Precise medication reminders</string>
-    <string name="ob_reminders_b2">English, Ukrainian, Russian</string>
-    <string name="ob_reminders_b3">Replay this guide from Settings</string>
-
     <string name="ob_settings_replay_title">Show the guide again</string>
-    <string name="ob_settings_replay_desc">A quick tour of all the important features</string>
+    <string name="ob_settings_replay_desc">An interactive tour of the app</string>
+
+    <!-- ═══ Interactive tour v2 (coach-marks over the real UI) ═══ -->
+    <string name="tour_start">Start the tour</string>
+    <string name="tour_interactive_hint">A short interactive walk — we\'ll tap real buttons together</string>
+    <string name="tour_next">Next</string>
+    <string name="tour_finish">Got it — I\'ll try it myself</string>
+    <string name="tour_tap_hint">Tap the highlighted area to continue</string>
+
+    <string name="tour_step_today_title">This is Today</string>
+    <string name="tour_step_today_desc">Your intakes for the day live here. Tap a pill when you take it — the ring fills as you go.</string>
+    <string name="tour_step_nav_title">Screens swipe like pages</string>
+    <string name="tour_step_nav_desc">Swipe left or tap the highlighted bar — let\'s hop over to the Calendar.</string>
+    <string name="tour_step_calendar_title">Calendar</string>
+    <string name="tour_step_calendar_desc">The whole month at a glance: green days mean everything was taken on time.</string>
+    <string name="tour_step_meds_title">Your medications</string>
+    <string name="tour_step_meds_desc">Every med with its dosage, stock and schedule — edit in one tap.</string>
+    <string name="tour_step_add_title">Add a medication</string>
+    <string name="tour_step_add_desc">The big + is all you need. Tap it — we\'ll fill in the first one together.</string>
+    <string name="tour_step_form_title">Fill in the card</string>
+    <string name="tour_step_form_desc">Name, dosage, times — flexible for any therapy. Try it yourself, it\'s simple!</string>
+
+    <!-- ═══ In-app updater (GitHub Releases) ═══ -->
+    <string name="upd_title">Update available</string>
+    <string name="upd_body">A new version of Pill Tracker — %1$s — is out.</string>
+    <string name="upd_whats_new">What\'s new:</string>
+    <string name="upd_later">Later</string>
+    <string name="upd_now">Update now</string>
+    <string name="upd_check_title">Check for updates</string>
+    <string name="upd_check_desc">New versions arrive straight in the app</string>
+    <string name="upd_checking">Checking for updates…</string>
+    <string name="upd_uptodate">You\'re on the latest version!</string>
+    <string name="upd_failed">Couldn\'t check for updates. Check your connection and try again.</string>
+    <string name="upd_retry">Try again</string>
+    <string name="upd_close">Close</string>
+    <string name="upd_perm_title">One-time permission</string>
+    <string name="upd_perm_body">To update right from the app, Android will ask you once to allow installs from this source.</string>
+    <string name="upd_perm_step1">Android will open Settings</string>
+    <string name="upd_perm_step2">Allow installs for Pill Tracker</string>
+    <string name="upd_perm_step3">Come back — the update downloads on its own</string>
+    <string name="upd_open_settings">Open settings</string>
+    <string name="upd_waiting">Waiting for you to allow it in Settings…</string>
+    <string name="upd_downloading">Downloading the update…</string>
+    <string name="upd_browser">Download in browser</string>
+    <string name="upd_minimize">Hide</string>
+    <string name="upd_releases">Releases page</string>
+    <string name="upd_notif_desc">Pill Tracker update</string>
+    <string name="upd_notif_hint">You can also follow the progress in the system notification. When it finishes, the installer opens automatically.</string>
 </resources>

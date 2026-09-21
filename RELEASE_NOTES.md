@@ -1,3 +1,24 @@
+# 🚀 PillTracker v2.3.0 — Release Notes
+
+### 🔄 New: update straight from the app (in-app updater)
+* **The app now watches GitHub Releases by itself.** On every launch (at most once every 3 hours, so it never pesters you) it quietly checks the latest release. If a newer version is out — a glass card appears: version, what's new, and two buttons: **«Update now»** / **«Later»**.
+* **Updates download right inside the app** via the system DownloadManager: a progress bar in the dialog, a system notification with the progress, and when the download finishes **the package installer opens automatically** — one tap on "Update" and you're on the new version. No browser, no manual downloads.
+* **First-time permission, explained.** Android asks *once* to allow installing from this source. When that moment comes, the app shows a friendly 3-step instruction (Settings open → allow for Pill Tracker → come back), takes you there, and **the moment you return with the permission granted, the download starts by itself**.
+* Not in the mood for permissions? One tap — **«Download in browser»** opens the direct APK link instead.
+* «Later» remembers your choice for that particular version; a **«Check for updates»** card in Settings triggers a manual check anytime and tells you when you're already on the latest.
+
+### 🧭 Onboarding v2 — now truly interactive
+* The first-launch guide is no longer a stack of slides: after the welcome page it **highlights the real interface with coach-marks** — a dark scrim with a glowing "hole" cut exactly around the actual button or area being explained.
+* **Tap the highlight and the app really does the thing**: the step about swiping hops you to the Calendar page when you tap the navigation bar; the «add a medication» step taps the real + button and opens the actual form, where the tour points at the card to fill in.
+* Steps: Today screen → navigation & swiping → Calendar → medication list → the + button → the fill-in card. «Skip» is always on top, «Next» always available, and the pager is swipe-locked during the tour so nobody gets lost.
+* The replay card in Settings runs the same interactive tour again.
+
+### 🔁 Updates — still guaranteed
+* CI pins `versionCode = 3000 + build number` (this build's base: 2300) — always above every previously shipped build, so **every future release installs right on top**, data kept, same permanent signing key.
+* Manifest additions for the updater: `INTERNET` + `REQUEST_INSTALL_PACKAGES` (the one-time permission above) + a FileProvider path for the downloaded APK.
+
+---
+
 # 🚀 PillTracker v2.2.0 — Release Notes
 
 ### 🧭 New: detailed first-launch guide (onboarding)

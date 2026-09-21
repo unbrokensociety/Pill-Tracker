@@ -57,7 +57,6 @@ import com.aistudio.meditracker.ui.components.LiquidGlassPanel
 import com.aistudio.meditracker.ui.components.GlassFAB
 import com.aistudio.meditracker.ui.components.GlassPerformanceGovernor
 import com.aistudio.meditracker.ui.components.auroraBackdrop
-import com.aistudio.meditracker.ui.components.glassSource
 import com.aistudio.meditracker.ui.components.rememberGlassBackdrop
 import com.aistudio.meditracker.ui.components.tactilePress
 import com.aistudio.meditracker.ui.components.OnboardingBus
@@ -334,22 +333,14 @@ fun MainPagerScreen(
         sx to sy
     }
 
-    // --- REAL LIQUID GLASS: shared backdrop recording the app content ---
     val backdrop = rememberGlassBackdrop()
-
-    // Adaptive quality governor: measures the device once (cores / RAM /
-    // low-RAM flag / Android version), then watches real frame times and
-
-    // mid-range, a solid OPAQUE matte panel on weak ones (nothing shows
 
     GlassPerformanceGovernor(backdrop)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Content that gets blurred behind the liquid glass navigation island
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .glassSource(backdrop)
                 .background(MaterialTheme.colorScheme.background)
                 .auroraBackdrop()
 
@@ -425,14 +416,6 @@ fun MainPagerScreen(
             }
         }
 
-        // Floating REAL Liquid Glass Navigation Island:
-        // live backdrop blur (hardware gaussian on Android 12+, CPU-blurred
-        // snapshot on older versions) + whisper-light scrim + specular rim
-        // + fluid dragging. Content scrolls under it and reads through the
-
-        // opaque matte: a constant, unchanging solid bar. How liquid the
-        // glass is comes from the Settings slider (LiquidGlassState.
-
         LiquidGlassPanel(
             backdrop = backdrop,
             modifier = Modifier
@@ -443,7 +426,8 @@ fun MainPagerScreen(
                 .coachTag("nav_island"),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            blurRadius = 26.dp
+            blurRadius = 26.dp,
+            solid = true
         ) {
             BoxWithConstraints(
                 modifier = Modifier

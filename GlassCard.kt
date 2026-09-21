@@ -424,12 +424,14 @@ fun LiquidGlassPanel(
     blurRadius: Dp = 28.dp,
     tint: Color? = null,
     borderWidth: Dp = 1.dp,
+    solid: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     val hardwareBlur = BackdropBlurSupported
-    val quality by LiquidGlassState.quality
+    val glassQuality by LiquidGlassState.quality
+    val quality = if (solid) LiquidGlassQuality.FROST else glassQuality
 
     val rawIntensity by LiquidGlassState.intensity
     val iEff = rawIntensity.coerceIn(0f, 1f)

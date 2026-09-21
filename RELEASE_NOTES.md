@@ -1,5 +1,5 @@
-> app-version: 2.4.10
+> app-version: 2.4.11
 
-* Стекло: белёсая плёнка убрана — центр снова чистый сквозь фрост
-* Кромка как в iOS: рефракция, хроматика и блик — по ободку
-* Тон стекла шёпотный (6-11%), диагональный sheen убран
+* Bottom navigation bar is back to the classic solid look, no liquid glass
+* Bar appearance is now constant and does not react to content behind it
+* Backdrop recording disabled: lighter frames, calmer battery use

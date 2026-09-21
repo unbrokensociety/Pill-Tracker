@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -75,7 +76,8 @@ import kotlinx.coroutines.delay
 /*  refract, wider blur. And an ADAPTIVE QUALITY system:                      */
 /*    FULL    → the whole effect,                                             */
 /*    REDUCED → lighter blur, no bleed — for mid-range hardware,              */
-/*    FROST   → recording & blur off — clean frosted translucent panel.       */
+/*    FROST   → recording & blur off — solid OPAQUE matte panel (zero       */
+/*              see-through — the look never changes, ever).                  */
 /*  The tier is measured from real device power (CPU cores, RAM, low-RAM      */
 /*  flag, Android version), then guarded live: a frame-time monitor steps     */
 /*  down on sustained jank, and battery saver gates to FROST instantly.       */
@@ -97,8 +99,10 @@ val BackdropBlurSupported: Boolean
  *                bleed, whisper-thin tint.
  *  * [REDUCED] — lighter blur, no bleed, slightly milkier tint. Chosen for
  *                mid-range hardware or after the runtime governor sees jank.
- *  * [FROST]   — no recording, no blur: a clean frosted translucent panel.
- *                For weak devices, battery saver, or persistent stutter.
+ *  * [FROST]   — no recording, no blur: a solid OPAQUE matte panel —
+ *                nothing shows through, so it never changes while content
+ *                scrolls behind it. For weak devices, battery saver, or
+ *                persistent stutter.
  */
 enum class LiquidGlassQuality { FULL, REDUCED, FROST }
 
@@ -410,8 +414,8 @@ fun Modifier.auroraBackdrop(): Modifier {
  *  Content composables are laid out on top.
  *
  *  The panel follows the adaptive quality from [GlassPerformanceGovernor]:
- *  FROST skips the backdrop copy entirely and leans on a proper frosted
- *  translucent surface — zero recording, zero blur, zero lag.
+ *  FROST skips the backdrop copy entirely and leans on a fully opaque matte
+ *  surface — zero recording, zero blur, zero see-through, zero lag.
  *
  * @param backdrop shared backdrop recorded via [glassSource] on the background content.
  * @param blurRadius gaussian blur radius in dp (28–34.dp reads best for bars/panels).
@@ -444,12 +448,13 @@ fun LiquidGlassPanel(
 
     // Glass body tint per quality ladder. FULL is whisper-thin — the blur
     // and the colours behind the panel do the talking (that IS the liquid
-    // look the user asked for). FROST carries no blur at all, so it leans
-    // on a proper frosted translucent surface instead.
+    // look the user asked for). FROST is a REAL matte panel: a fully opaque
+    // surface (alpha 1) — nothing shows through, so the bar looks exactly
+    // the same no matter what scrolls behind it. No shifts, no changes.
     val glassTint = tint
         ?: when {
             quality == LiquidGlassQuality.FROST ->
-                MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.78f else 0.86f)
+                MaterialTheme.colorScheme.surface.copy(alpha = 1f)
             !hardwareBlur ->
                 // milkier over the low-fidelity CPU blur so text stays legible
                 MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.42f else 0.34f)
@@ -460,27 +465,37 @@ fun LiquidGlassPanel(
         }
 
     // Scrim: slightly heavier at the top edge (light comes from above).
+    // FROST needs none — an opaque matte body has nothing to deepen.
     val scrimTop = when {
-        quality == LiquidGlassQuality.FROST -> if (isDark) Color(0x24000000) else Color(0x12000000)
+        quality == LiquidGlassQuality.FROST -> Color.Transparent
         quality == LiquidGlassQuality.REDUCED -> if (isDark) Color(0x2C000000) else Color(0x16000000)
         else -> if (isDark) Color(0x20000000) else Color(0x0E000000)
     }
     val scrimBottom = when {
-        quality == LiquidGlassQuality.FROST -> if (isDark) Color(0x10000000) else Color(0x06000000)
+        quality == LiquidGlassQuality.FROST -> Color.Transparent
         quality == LiquidGlassQuality.REDUCED -> if (isDark) Color(0x12000000) else Color(0x08000000)
         else -> if (isDark) Color(0x0C000000) else Color(0x05000000)
     }
 
     // Specular rim: bright at the top, softly lit at the bottom — slightly
     // stronger in FULL so the glass edge still reads through the thin tint.
-    val rimTop = if (isDark) {
-        Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.38f else 0.30f)
+    // FROST swaps the glossy gradient for a flat matte hairline — a solid
+    // panel should read matte, not shiny.
+    val rimBrush = if (quality == LiquidGlassQuality.FROST) {
+        val hairline = MaterialTheme.colorScheme.outlineVariant.copy(
+            alpha = if (isDark) 0.45f else 0.65f
+        )
+        SolidColor(hairline)
     } else {
-        Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.85f else 0.80f)
+        val rimTop = if (isDark) {
+            Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.38f else 0.30f)
+        } else {
+            Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.85f else 0.80f)
+        }
+        val rimMid = if (isDark) Color(1f, 1f, 1f, 0.07f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
+        val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.16f) else Color(1f, 1f, 1f, 0.50f)
+        Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
     }
-    val rimMid = if (isDark) Color(1f, 1f, 1f, 0.07f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
-    val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.16f) else Color(1f, 1f, 1f, 0.50f)
-    val rimBrush = Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
 
     val ambientShadowColor = if (isDark) Color(0x59000000) else Color(0x14000000)
     val spotShadowColor = if (isDark) Color(0x7A000000) else Color(0x29000000)
@@ -580,8 +595,8 @@ fun LiquidGlassPanel(
                     }
             )
         }
-        // FROST: no backdrop copy at all — the frosted surface below is the
-        // whole look, at the cost of a plain opaque-ish panel.
+        // FROST: no backdrop copy at all — the solid matte surface below IS
+        // the whole look: fully opaque, nothing ever reads through.
 
         // ---- Layer 2: scrim + tint, drawn in one cached pass above the blur ----
         Box(

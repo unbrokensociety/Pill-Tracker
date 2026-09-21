@@ -336,7 +336,8 @@ fun MainPagerScreen(
     // Adaptive quality governor: measures the device once (cores / RAM /
     // low-RAM flag / Android version), then watches real frame times and
     // battery saver — full liquid glass on strong phones, a lighter blur on
-    // mid-range, a clean frosted panel on weak ones. Never lags anywhere.
+    // mid-range, a solid OPAQUE matte panel on weak ones (nothing shows
+    // through — the bar never changes as content scrolls). Never lags.
     GlassPerformanceGovernor(backdrop)
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -431,7 +432,9 @@ fun MainPagerScreen(
         // Floating REAL Liquid Glass Navigation Island:
         // live backdrop blur (hardware gaussian on Android 12+, CPU-blurred
         // snapshot on older versions) + whisper-light scrim + specular rim
-        // + fluid dragging. Content scrolls under it and reads through the frost.
+        // + fluid dragging. Content scrolls under it and reads through the
+        // frost — EXCEPT in the economy tier, where the panel goes fully
+        // opaque matte: a constant, unchanging solid bar.
         LiquidGlassPanel(
             backdrop = backdrop,
             modifier = Modifier

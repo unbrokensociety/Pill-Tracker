@@ -69,7 +69,7 @@
     <string name="settings_stats_active_meds">Зарегистрировано лекарств: %1$d</string>
     <string name="settings_about">О приложении</string>
     <string name="settings_about_desc">Pill Tracker — ваш персональный медицинский помощник. Принимайте лекарства вовремя и будьте здоровы!</string>
-    <string name="settings_version">Версия 2.4.3</string>
+    <string name="settings_version">Версия 2.4.4</string>
     <string name="settings_glass_title">Эффект жидкого стекла</string>
     <string name="settings_glass_full">Полный — живое размытие</string>
     <string name="settings_glass_reduced">Адаптивный — облегчённый</string>

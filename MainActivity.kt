@@ -55,6 +55,7 @@ import com.example.ui.MainViewModel
 import com.example.ui.MainViewModelFactory
 import com.example.ui.components.LiquidGlassPanel
 import com.example.ui.components.GlassFAB
+import com.example.ui.components.GlassPerformanceGovernor
 import com.example.ui.components.auroraBackdrop
 import com.example.ui.components.glassSource
 import com.example.ui.components.rememberGlassBackdrop
@@ -332,6 +333,12 @@ fun MainPagerScreen(
     // --- REAL LIQUID GLASS: shared backdrop recording the app content ---
     val backdrop = rememberGlassBackdrop()
 
+    // Adaptive quality governor: measures the device once (cores / RAM /
+    // low-RAM flag / Android version), then watches real frame times and
+    // battery saver — full liquid glass on strong phones, a lighter blur on
+    // mid-range, a clean frosted panel on weak ones. Never lags anywhere.
+    GlassPerformanceGovernor(backdrop)
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Content that gets blurred behind the liquid glass navigation island
         Box(
@@ -435,7 +442,7 @@ fun MainPagerScreen(
                 .coachTag("nav_island"),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            blurRadius = 28.dp
+            blurRadius = 32.dp
         ) {
             BoxWithConstraints(
                 modifier = Modifier

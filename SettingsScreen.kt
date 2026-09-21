@@ -45,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.ThemeMode
 import com.example.ui.components.GlassCard
+import com.example.ui.components.GlassQualityReason
+import com.example.ui.components.LiquidGlassQuality
+import com.example.ui.components.LiquidGlassState
 import com.example.ui.components.OnboardingBus
 import com.example.ui.components.OnboardingPrefs
 import com.example.ui.components.PrivacyPolicyDialog
@@ -760,6 +763,53 @@ fun SettingsScreen(
                         Text(
                             text = stringResource(R.string.settings_about_desc),
                             style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        // Adaptive Liquid Glass readout: shows which tier the
+                        // governor picked for THIS phone right now (live — it
+                        // reacts to battery saver and runtime jank), so the
+                        // adaptive behaviour is visible and honest.
+                        val glassQuality by LiquidGlassState.quality
+                        val glassReason by LiquidGlassState.reason
+                        val glassLabel = stringResource(
+                            when (glassQuality) {
+                                LiquidGlassQuality.FULL -> R.string.settings_glass_full
+                                LiquidGlassQuality.REDUCED -> R.string.settings_glass_reduced
+                                LiquidGlassQuality.FROST -> R.string.settings_glass_frost
+                            }
+                        )
+                        val glassReasonLabel = stringResource(
+                            when (glassReason) {
+                                GlassQualityReason.DEVICE -> R.string.settings_glass_reason_device
+                                GlassQualityReason.JANK -> R.string.settings_glass_reason_jank
+                                GlassQualityReason.SAVER -> R.string.settings_glass_reason_saver
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 2.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_glass_title),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = glassLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = glassReasonLabel,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

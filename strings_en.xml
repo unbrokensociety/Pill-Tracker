@@ -69,7 +69,14 @@
     <string name="settings_stats_active_meds">Registered medications: %1$d</string>
     <string name="settings_about">About app</string>
     <string name="settings_about_desc">Pill Tracker is your personal healthcare assistant. Take your medications on time and stay healthy!</string>
-    <string name="settings_version">Version 2.4.2</string>
+    <string name="settings_version">Version 2.4.3</string>
+    <string name="settings_glass_title">Liquid Glass effect</string>
+    <string name="settings_glass_full">Full — live blur</string>
+    <string name="settings_glass_reduced">Adaptive — lighter</string>
+    <string name="settings_glass_frost">Frosted — power saving</string>
+    <string name="settings_glass_reason_device">picked by device power</string>
+    <string name="settings_glass_reason_jank">lowered automatically for smoothness</string>
+    <string name="settings_glass_reason_saver">battery saver is on</string>
     
     <string name="status_taken">Taken</string>
     

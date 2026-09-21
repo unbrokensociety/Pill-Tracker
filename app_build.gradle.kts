@@ -16,13 +16,13 @@ android {
     minSdk = 26
     targetSdk = 36
     // Versioning — the proven scheme from the old builds, restored:
-    //   versionCode = 2300 + GITHUB_RUN_NUMBER, so every CI build grows
-    //   and can NEVER regress. Base 2300 stays above every shipped build
+    //   versionCode = 2310 + GITHUB_RUN_NUMBER, so every CI build grows
+    //   and can NEVER regress. Base 2310 stays above every shipped build
     //   (v1.86 had 2286). NOTE: CI additionally re-pins versionCode to
     //   3000 + run_number (see android.yml) — both formulas only grow.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
-    versionCode = 2300 + runNumber
-    versionName = "2.3.0"
+    versionCode = 2310 + runNumber
+    versionName = "2.3.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

@@ -334,6 +334,5 @@
     <string name="upd_browser">Download in browser</string>
     <string name="upd_minimize">Hide</string>
     <string name="upd_releases">Releases page</string>
-    <string name="upd_notif_desc">Pill Tracker update</string>
-    <string name="upd_notif_hint">You can also follow the progress in the system notification. When it finishes, the installer opens automatically.</string>
+    <string name="upd_installer_hint">When the download finishes, the installer opens by itself — just tap “Install”. The update file lives inside the app (nothing appears in your file manager) and is deleted right after the update.</string>
 </resources>

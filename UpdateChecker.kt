@@ -1,31 +1,42 @@
 package com.example.ui.components
 
 /*
- * UpdateChecker — обновление приложения прямо из приложения.
+ * UpdateChecker v2 — самообновление целиком внутри приложения.
+ *
+ * Что изменилось против v2.3.0:
+ *  • APK качает НЕ DownloadManager, а HttpURLConnection прямо в
+ *    cacheDir/updates/ — файл невидим: его нет в проводнике, нет
+ *    в системных «Загрузках», нет уведомления. «Скачивает в себя».
+ *  • Баг Android 14+: broadcast ACTION_DOWNLOAD_COMPLETE больше не нужен
+ *    (NOT_EXPORTED-приёмник его не получал от системного DownloadManager —
+ *    из-за этого установщик никогда не открывался). Теперь по завершении
+ *    скачивания установщик запускается прямо из корутины; если приложение
+ *    было в фоне — откроется по ON_RESUME.
+ *  • Сравнение версий — по ИМЕНИ версии (semver, «2.3.1 (#89)» в названии
+ *    релиза). CI-пересборка ТОЙ ЖЕ версии с выросшим versionCode больше
+ *    не считается обновлением: у последней версии всегда показывает
+ *    «у вас последняя версия». versionCode — запасной критерий, если имя
+ *    не спарсилось.
+ *  • После установки новой версии первый же её запуск удаляет оставшийся
+ *    APK (cleanupDownloads при старте) — «мусор» не накапливается.
  *
  * Поток:
- *  1. При запуске (не чаще, чем раз в 3 часа) и по кнопке в Настройках
- *     спрашиваем GitHub API: /releases/latest.
- *  2. CI пишет в тело релиза строку «versionCode NNNN» — по ней мы
- *     железно сравниваем: свежее ли это, чем установлено.
- *  3. Если свежее — карточка «Доступно обновление» с заметками.
- *  4. «Обновить»: если Android ещё не разрешал установку из приложения —
- *     показываем инструкцию (3 шага) и открываем системные настройки
- *     (ACTION_MANAGE_UNKNOWN_APP_SOURCES). Разрешил и вернулся —
- *     скачивание продолжается само (lifecycle ON_RESUME).
- *  5. APK качает системный DownloadManager (с прогрессом и уведомлением),
- *     по завершении автоматически открывается пакетный установщик.
- *  6. Fallback: «Скачать через браузер» — открываем ссылку APK.
+ *  1. Автопроверка при старте (не чаще 3 ч) / кнопка в Настройках →
+ *     GitHub API /releases/latest.
+ *  2. Есть новая версия → карточка «Доступно обновление» с заметками.
+ *  3. «Обновить»: если нет разрешения на установку из приложения —
+ *     инструкция (3 шага) + ACTION_MANAGE_UNKNOWN_APP_SOURCES; вернулся —
+ *     всё продолжается само.
+ *  4. Скачивание в cacheDir с процентами → установщик открывается сам,
+ *     остаётся нажать «Установить» (этого требует Android — молча ставить
+ *     поверх себя нельзя никому, кроме Play Store).
+ *  5. Fallback: «Скачать через браузер» / страница релизов.
  *
- * Никаких сторонних библиотек: HttpURLConnection + org.json (встроен в
- * Android) + DownloadManager + FileProvider (уже объявлен в манифесте).
+ * Никаких сторонних библиотек: HttpURLConnection + org.json + FileProvider.
  */
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -54,6 +65,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.InstallMobile
@@ -88,13 +100,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.isActive
@@ -141,60 +153,101 @@ object UpdateCenter {
     /** Проверяем автоматически не чаще, чем раз в 3 часа. */
     private const val AUTO_CHECK_INTERVAL_MS = 3L * 60 * 60 * 1000
 
+    /* APK живёт в cacheDir — невидим снаружи, чистится сам. */
+    private const val UPDATES_DIR = "updates"
     private const val APK_FILE_NAME = "pill-tracker-update.apk"
+    private const val TMP_FILE_NAME = "pill-tracker-update.tmp"
 
     data class Release(
-        val tag: String,            // «v1.87» — для показа пользователю
-        val versionCode: Long,      // из тела релиза (пишет CI); 0 = нет маркера
-        val apkUrl: String,         // прямой URL .apk из assets
-        val pageUrl: String,        // страница релиза
-        val noteLines: List<String> // короткий список «что нового»
+        val tag: String,             // «v1.89»
+        val versionCode: Long,       // из тела релиза (пишет CI); 0 = маркера нет
+        val versionName: String?,    // «2.3.1» — из названия релиза «2.3.1 (#89)»
+        val apkUrl: String,          // прямой URL .apk из assets
+        val pageUrl: String,         // страница релиза
+        val noteLines: List<String>  // короткий список «что нового»
     )
-
-    data class DownloadStatus(val status: Int, val soFar: Long, val total: Long)
 
     /* ── версия установленного приложения ── */
 
-    fun installedVersionCode(context: android.content.Context): Long {
+    fun installedVersionCode(context: Context): Long {
         val pm = context.packageManager
         val info = pm.getPackageInfo(context.packageName, 0)
         return PackageInfoCompat.getLongVersionCode(info)
     }
 
+    @Suppress("DEPRECATION")
+    fun installedVersionName(context: Context): String? = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+    } catch (e: Exception) {
+        null
+    }
+
     /* ── SharedPreferences: троттлинг и «позже» ── */
 
-    private fun prefs(context: android.content.Context) =
+    private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun shouldAutoCheck(context: android.content.Context): Boolean {
+    fun shouldAutoCheck(context: Context): Boolean {
         val last = prefs(context).getLong(KEY_LAST_CHECK, 0L)
         return System.currentTimeMillis() - last > AUTO_CHECK_INTERVAL_MS
     }
 
-    fun markChecked(context: android.content.Context) {
+    fun markChecked(context: Context) {
         prefs(context).edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis()).apply()
     }
 
     /** Эту версию уже откладывали «Позже»? */
-    fun isSkipped(context: android.content.Context, release: Release): Boolean {
+    fun isSkipped(context: Context, release: Release): Boolean {
         if (release.versionCode <= 0) return false
         return prefs(context).getLong(KEY_SKIPPED_CODE, -1L) >= release.versionCode
     }
 
-    fun skip(context: android.content.Context, release: Release) {
+    fun skip(context: Context, release: Release) {
         if (release.versionCode > 0) {
             prefs(context).edit().putLong(KEY_SKIPPED_CODE, release.versionCode).apply()
         }
     }
 
+    /* ── сравнение версий: semver по ИМЕНИ ── */
+
+    /** «2.3.1», «2.3.1 (#89)», «Pill Tracker 2.3.1» → [2, 3, 1]. */
+    private fun parseSemver(source: String?): IntArray? {
+        if (source.isNullOrBlank()) return null
+        val m = Regex("\\d+\\.\\d+\\.\\d+").find(source) ?: return null
+        return try {
+            intArrayOf(
+                m.groupValues[1].toInt(),
+                m.groupValues[2].toInt(),
+                m.groupValues[3].toInt()
+            )
+        } catch (e: NumberFormatException) {
+            null
+        }
+    }
+
     /**
-     * Релиз свежее установленного? Если CI-маркер versionCode не найден
-     * (старый формат тела релиза) — считаем «возможно свежее» и показываем
-     * карточку: решение всё равно принимает пользователь.
+     * Релиз свежее установленного?
+     *
+     * ГЛАВНЫЙ критерий — имя версии (semver). Пересборка той же версии
+     * CI-ем с бо́льшим versionCode (например, после правки README) —
+     * НЕ обновление: показываем «у вас последняя версия», а не дёргаем
+     * человека карточкой «доступно обновление» до той же версии.
+     * Если имя не спарсилось ни у нас, ни у них — запасной критерий:
+     * строго versionCode.
      */
-    fun isNewerThanInstalled(context: android.content.Context, release: Release): Boolean {
-        if (release.versionCode <= 0) return true
-        return release.versionCode > installedVersionCode(context)
+    fun isNewerThanInstalled(context: Context, release: Release): Boolean {
+        val remote = parseSemver(release.versionName ?: release.tag)
+        val local = parseSemver(installedVersionName(context))
+        if (remote != null && local != null) {
+            for (i in 0 until 3) {
+                if (remote[i] != local[i]) return remote[i] > local[i]
+            }
+            return false // та же версия → обновления нет
+        }
+        if (release.versionCode > 0) {
+            return release.versionCode > installedVersionCode(context)
+        }
+        return false // ничего не спарсили → не пугаем ложной карточкой
     }
 
     /* ── GitHub API ── */
@@ -226,7 +279,11 @@ object UpdateCenter {
         val rawNotes = json.optString("body", "")
         val pageUrl = json.optString("html_url", "").ifBlank { RELEASES_PAGE }
 
-        // CI пишет в тело: «🔧 Build info: versionCode 3087 · cert …»
+        // Название релиза CI даёт как «2.3.1 (#89)» — отсюда имя версии.
+        val releaseName = json.optString("name", "").trim()
+        val versionName = Regex("\\d+\\.\\d+\\.\\d+").find(releaseName)?.value
+
+        // CI пишет в тело: «🔧 Build info: versionCode 3089 · cert …»
         val code = Regex("versionCode\\D{0,12}(\\d{1,9})")
             .find(rawNotes)?.groupValues?.getOrNull(1)?.toLongOrNull() ?: 0L
 
@@ -254,12 +311,12 @@ object UpdateCenter {
             .take(4)
             .toList()
 
-        return Release(tag, code, apkUrl, pageUrl, notes)
+        return Release(tag, code, versionName, apkUrl, pageUrl, notes)
     }
 
     /* ── разрешение на установку (один раз, Android 8+) ── */
 
-    fun canInstallFromApp(context: android.content.Context): Boolean {
+    fun canInstallFromApp(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.packageManager.canRequestPackageInstalls()
         } else {
@@ -267,7 +324,7 @@ object UpdateCenter {
         }
     }
 
-    fun openInstallPermissionSettings(context: android.content.Context) {
+    fun openInstallPermissionSettings(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         try {
             val intent = Intent(
@@ -280,44 +337,101 @@ object UpdateCenter {
         }
     }
 
-    /* ── скачивание через системный DownloadManager ── */
+    /* ── скачивание: скрытое, в cacheDir ── */
 
-    fun downloadApk(context: android.content.Context, release: Release): Long {
-        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val request = DownloadManager.Request(Uri.parse(release.apkUrl))
-            .setTitle("Pill Tracker ${release.tag}")
-            .setDescription(context.getString(R.string.upd_notif_desc))
-            .setMimeType("application/vnd.android.package-archive")
-            .setDestinationInExternalFilesDir(
-                context, Environment.DIRECTORY_DOWNLOADS, APK_FILE_NAME
-            )
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
-        return dm.enqueue(request)
+    private fun updatesDir(context: Context): File = File(context.cacheDir, UPDATES_DIR)
+
+    /**
+     * Качает APK обычным HTTP в cacheDir/updates/ — без DownloadManager,
+     * без уведомления, файл не виден в проводнике и системных «Загрузках».
+     * onProgress: 0..1 или -1, если сервер не отдал размер.
+     */
+    suspend fun downloadApk(
+        context: Context,
+        release: Release,
+        onProgress: (Float) -> Unit
+    ): File? = withContext(Dispatchers.IO) {
+        var tmp: File? = null
+        try {
+            val dir = updatesDir(context).apply { mkdirs() }
+            val target = File(dir, APK_FILE_NAME)
+            tmp = File(dir, TMP_FILE_NAME)
+            if (tmp.exists()) tmp.delete()
+
+            val conn = URL(release.apkUrl).openConnection() as HttpURLConnection
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 60_000
+            conn.instanceFollowRedirects = true
+            conn.setRequestProperty("User-Agent", "PillTracker-UpdateChecker")
+            try {
+                if (conn.responseCode !in 200..299) return@withContext null
+                val total = conn.contentLengthLong
+                conn.inputStream.use { input ->
+                    tmp.outputStream().use { out ->
+                        val buf = ByteArray(64 * 1024)
+                        var done = 0L
+                        var lastPct = -1
+                        while (isActive) {
+                            val n = input.read(buf)
+                            if (n <= 0) break
+                            out.write(buf, 0, n)
+                            done += n
+                            if (total > 0) {
+                                val pct = ((done * 100) / total).toInt()
+                                if (pct != lastPct) {
+                                    lastPct = pct
+                                    val f = (done.toFloat() / total).coerceIn(0f, 1f)
+                                    withContext(Dispatchers.Main) { onProgress(f) }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (tmp.length() < 10_000) return@withContext null
+                if (target.exists()) target.delete()
+                if (!tmp.renameTo(target)) {
+                    tmp.copyTo(target, overwrite = true)
+                    tmp.delete()
+                }
+                withContext(Dispatchers.Main) { onProgress(1f) }
+                target
+            } finally {
+                conn.disconnect()
+            }
+        } catch (e: Exception) {
+            tmp?.delete()
+            null
+        }
     }
 
-    fun downloadStatus(context: android.content.Context, id: Long): DownloadStatus? {
-        val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val query = DownloadManager.Query().setFilterById(id)
-        dm.query(query)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                val soFar = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                val total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-                return DownloadStatus(status, soFar, total)
+    /** Уже скачанный и целый APK (если есть). */
+    fun downloadedApk(context: Context): File? {
+        val f = File(updatesDir(context), APK_FILE_NAME)
+        return if (f.exists() && f.length() > 10_000) f else null
+    }
+
+    /**
+     * Удаляем следы обновлений. Вызывается на каждом старте: первый запуск
+     * НОВОЙ версии подчищает APK, который скачала старая — «после обновления
+     * сразу удаляется всё ненужное». Заодно вычищаем наследие v2.3.0,
+     * когда DownloadManager клал файл в external files.
+     */
+    fun cleanupDownloads(context: Context) {
+        try {
+            updatesDir(context).listFiles()?.forEach { it.delete() }
+            @Suppress("DEPRECATION")
+            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.let { ext ->
+                File(ext, APK_FILE_NAME).takeIf { it.exists() }?.delete()
             }
+        } catch (_: Exception) {
         }
-        return null
     }
 
     /* ── установка ── */
 
-    fun installApk(context: android.content.Context): Boolean {
+    fun installApk(context: Context, apk: File): Boolean {
+        if (!apk.exists() || apk.length() < 10_000) return false
         return try {
-            val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return false
-            val apk = File(dir, APK_FILE_NAME)
-            if (!apk.exists() || apk.length() < 10_000) return false
             val uri = FileProvider.getUriForFile(
                 context, "${context.packageName}.fileprovider", apk
             )
@@ -332,7 +446,7 @@ object UpdateCenter {
         }
     }
 
-    fun openReleasesPage(context: android.content.Context) {
+    fun openReleasesPage(context: Context) {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(RELEASES_PAGE))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -341,7 +455,7 @@ object UpdateCenter {
         }
     }
 
-    fun openInBrowser(context: android.content.Context, url: String) {
+    fun openInBrowser(context: Context, url: String) {
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -377,8 +491,48 @@ fun UpdateGate() {
 
     var uiState by remember { mutableStateOf<UpdateUi?>(null) }
     var release by remember { mutableStateOf<UpdateCenter.Release?>(null) }
-    var downloadId by remember { mutableStateOf<Long?>(null) }
-    var progress by remember { mutableStateOf(-1f) } // -1 = неизвестно
+    var progress by remember { mutableStateOf(-1f) } // -1 = размер неизвестен
+    var apkFile by remember { mutableStateOf<File?>(null) }
+    var pendingInstall by remember { mutableStateOf(false) }
+
+    /* ── Первым делом подчищаем следы прошлых обновлений ── */
+    LaunchedEffect(Unit) {
+        UpdateCenter.cleanupDownloads(context)
+    }
+
+    /* ── Открыть установщик (с повтором, если приложение было в фоне) ── */
+    fun tryInstall() {
+        val f = apkFile ?: return
+        if (UpdateCenter.installApk(context, f)) {
+            pendingInstall = false
+            uiState = null // установщик открыт
+        } else {
+            // Приложение в фоне (Android не даёт стартовать активити из фона) —
+            // попробуем снова, когда пользователь вернётся (ON_RESUME).
+            pendingInstall = true
+        }
+    }
+
+    /* ── Проверка (общая для авто и ручной) ── */
+    fun runCheck(manual: Boolean) {
+        if (manual) uiState = UpdateUi.CHECKING
+        scope.launch {
+            val r = UpdateCenter.fetchLatest()
+            UpdateCenter.markChecked(context)
+            if (r == null) {
+                uiState = UpdateUi.FAILED
+            } else if (UpdateCenter.isNewerThanInstalled(context, r) &&
+                !UpdateCenter.isSkipped(context, r)
+            ) {
+                release = r
+                uiState = UpdateUi.ASKING
+            } else if (manual) {
+                uiState = UpdateUi.UP_TO_DATE
+            } else {
+                uiState = null // авто-проверка молчит, когда всё актуально
+            }
+        }
+    }
 
     /* ── Ручная проверка из Настроек ── */
     LaunchedEffect(Unit) {
@@ -386,19 +540,7 @@ fun UpdateGate() {
             .filter { it }
             .collect {
                 UpdateBus.consumeCheck()
-                uiState = UpdateUi.CHECKING
-                UpdateCenter.markChecked(context)
-                val r = UpdateCenter.fetchLatest()
-                if (r == null) {
-                    uiState = UpdateUi.FAILED
-                } else if (UpdateCenter.isNewerThanInstalled(context, r) &&
-                    !UpdateCenter.isSkipped(context, r)
-                ) {
-                    release = r
-                    uiState = UpdateUi.ASKING
-                } else {
-                    uiState = UpdateUi.UP_TO_DATE
-                }
+                runCheck(manual = true)
             }
     }
 
@@ -406,89 +548,7 @@ fun UpdateGate() {
     LaunchedEffect(Unit) {
         if (!UpdateCenter.shouldAutoCheck(context)) return@LaunchedEffect
         kotlinx.coroutines.delay(1500) // даём приложению подняться
-        val r = UpdateCenter.fetchLatest()
-        UpdateCenter.markChecked(context)
-        if (r != null &&
-            UpdateCenter.isNewerThanInstalled(context, r) &&
-            !UpdateCenter.isSkipped(context, r)
-        ) {
-            release = r
-            uiState = UpdateUi.ASKING
-        }
-    }
-
-    /* ── Прогресс скачивания (поллинг DownloadManager) ── */
-    LaunchedEffect(downloadId) {
-        val id = downloadId ?: return@LaunchedEffect
-        progress = -1f
-        while (isActive) {
-            val s = UpdateCenter.downloadStatus(context, id)
-            if (s != null) {
-                when {
-                    s.status == DownloadManager.STATUS_SUCCESSFUL -> {
-                        progress = 1f
-                        return@LaunchedEffect
-                    }
-                    s.status == DownloadManager.STATUS_FAILED -> {
-                        downloadId = null
-                        uiState = UpdateUi.FAILED
-                        return@LaunchedEffect
-                    }
-                    else -> if (s.total > 0) {
-                        progress = s.soFar.toFloat() / s.total
-                    }
-                }
-            }
-            delay(700)
-        }
-    }
-
-    /* ── Скачивание завершилось → открываем установщик ── */
-    fun onDownloadComplete(id: Long) {
-        if (downloadId != null && id == downloadId) {
-            progress = 1f
-            if (UpdateCenter.installApk(context)) {
-                uiState = null // установщик открыт
-            } else {
-                uiState = UpdateUi.FAILED
-            }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context?, intent: Intent?) {
-                val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
-                if (id >= 0) onDownloadComplete(id)
-            }
-        }
-        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        onDispose {
-            try {
-                context.unregisterReceiver(receiver)
-            } catch (_: Exception) {
-            }
-        }
-    }
-
-    /* ── Вернулся из системных настроек с разрешением → качаем сами ── */
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, uiState) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME &&
-                uiState == UpdateUi.AWAITING_PERMISSION &&
-                UpdateCenter.canInstallFromApp(context)
-            ) {
-                val r = release
-                if (r != null) {
-                    downloadId = UpdateCenter.downloadApk(context, r)
-                    uiState = UpdateUi.DOWNLOADING
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        runCheck(manual = false)
     }
 
     /* ── «Актуальная версия» сама закрывается через 2.5 с ── */
@@ -499,14 +559,27 @@ fun UpdateGate() {
         }
     }
 
-    /* ── Действия ── */
+    /* ── Скачивание → авто-установка ── */
     fun startUpdate() {
         val r = release ?: return
-        if (UpdateCenter.canInstallFromApp(context)) {
-            downloadId = UpdateCenter.downloadApk(context, r)
-            uiState = UpdateUi.DOWNLOADING
-        } else {
+        if (!UpdateCenter.canInstallFromApp(context)) {
             uiState = UpdateUi.NEED_PERMISSION
+            return
+        }
+        uiState = UpdateUi.DOWNLOADING
+        progress = -1f
+        apkFile = null
+        pendingInstall = false
+        scope.launch {
+            val f = UpdateCenter.downloadApk(context, r) { p -> progress = p }
+            if (f == null) {
+                apkFile = null
+                uiState = UpdateUi.FAILED
+            } else {
+                apkFile = f
+                progress = 1f
+                tryInstall() // установщик открывается сам
+            }
         }
     }
 
@@ -515,22 +588,21 @@ fun UpdateGate() {
         uiState = UpdateUi.AWAITING_PERMISSION
     }
 
-    fun checkAgain() {
-        uiState = UpdateUi.CHECKING
-        scope.launch {
-            UpdateCenter.markChecked(context)
-            val r = UpdateCenter.fetchLatest()
-            if (r == null) {
-                uiState = UpdateUi.FAILED
-            } else if (UpdateCenter.isNewerThanInstalled(context, r) &&
-                !UpdateCenter.isSkipped(context, r)
-            ) {
-                release = r
-                uiState = UpdateUi.ASKING
-            } else {
-                uiState = UpdateUi.UP_TO_DATE
+    /* ── ON_RESUME: вернулись из настроек с разрешением / из фона ── */
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, uiState, pendingInstall) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                when (uiState) {
+                    UpdateUi.AWAITING_PERMISSION ->
+                        if (UpdateCenter.canInstallFromApp(context)) startUpdate()
+                    else ->
+                        if (pendingInstall) tryInstall()
+                }
             }
         }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     /* ── Рендер ── */
@@ -545,7 +617,7 @@ fun UpdateGate() {
             uiState = null
         },
         onConfirmPermission = ::confirmPermission,
-        onRetry = ::checkAgain,
+        onRetry = { runCheck(manual = true) },
         onBrowser = {
             release?.let { UpdateCenter.openInBrowser(context, it.apkUrl) }
             uiState = null
@@ -641,7 +713,7 @@ private fun UpdateDialog(
                         )
                         if (release != null && state != UpdateUi.UP_TO_DATE && state != UpdateUi.FAILED) {
                             Text(
-                                text = "Pill Tracker ${release.tag}",
+                                text = "Pill Tracker ${release.versionName ?: release.tag}",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = primary
@@ -712,7 +784,7 @@ private fun AskingBody(
 ) {
     Column {
         Text(
-            text = stringResource(R.string.upd_body, release?.tag ?: ""),
+            text = stringResource(R.string.upd_body, release?.versionName ?: release?.tag ?: ""),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.88f)
         )
@@ -936,21 +1008,18 @@ private fun DownloadingBody(
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        val animated by animateFloatAsState(
-            targetValue = if (progress < 0) 0f else progress,
-            animationSpec = spring(dampingRatio = 1f, stiffness = 380f),
-            label = "downloadProgress"
-        )
-        LinearProgressIndicator(
-            progress = {
-                if (progress < 0) return@LinearProgressIndicator 0f
-                animated
-            },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = Color.White.copy(alpha = 0.12f)
-        )
         if (progress >= 0) {
+            val animated by animateFloatAsState(
+                targetValue = progress,
+                animationSpec = spring(dampingRatio = 1f, stiffness = 380f),
+                label = "downloadProgress"
+            )
+            LinearProgressIndicator(
+                progress = { animated },
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = Color.White.copy(alpha = 0.12f)
+            )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "${(progress * 100).roundToInt()}%",
@@ -958,13 +1027,32 @@ private fun DownloadingBody(
                 fontWeight = FontWeight.Bold,
                 color = Color.White.copy(alpha = 0.7f)
             )
+        } else {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = Color.White.copy(alpha = 0.12f)
+            )
         }
-        Spacer(modifier = Modifier.height(18.dp))
-        Text(
-            text = stringResource(R.string.upd_notif_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.65f)
-        )
+        Spacer(modifier = Modifier.height(16.dp))
+        // Как это устроено: скрыто, внутри приложения, само ставится
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.45f),
+                modifier = Modifier.size(14.dp).padding(top = 2.dp)
+            )
+            Text(
+                text = stringResource(R.string.upd_installer_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.65f),
+                modifier = Modifier.weight(1f)
+            )
+        }
         Spacer(modifier = Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(

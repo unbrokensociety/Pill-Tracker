@@ -2,9 +2,13 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="reports" path="." />
     <files-path name="files" path="." />
-    <!-- In-app updater: DownloadManager качает APK в
-         getExternalFilesDir(DIRECTORY_DOWNLOADS) — этот путь должен
-         быть виден FileProvider, чтобы открыть пакетный установщик. -->
+    <!-- In-app updater v2: APK качается СКРЫТО в cacheDir/updates/
+         (не виден в проводнике и системных «Загрузках») — этот путь
+         нужен FileProvider, чтобы открыть пакетный установщик.
+         cache-path path="." покрывает и его, запись оставлена для ясности. -->
+    <cache-path name="updates" path="updates" />
+    <!-- Наследие v2.3.0: DownloadManager качал сюда; путь оставлен,
+         чтобы чистильщик мог удалить старые файлы. -->
     <external-files-path name="downloads" path="Download" />
     <external-files-path name="external_files" path="." />
 </paths>

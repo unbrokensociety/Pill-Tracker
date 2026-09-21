@@ -24,6 +24,7 @@ import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -309,6 +310,8 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
         OnboardingBus.tourActive = phase == 1
     }
     if (phase == 0) {
+        // Системный «назад» на приветствии = выйти из обучения
+        BackHandler { onFinished() }
         WelcomeCard(
             onStart = {
                 phase = 1
@@ -360,7 +363,9 @@ private fun WelcomeCard(
                 scaleX = 0.94f + 0.06f * entrance.value
                 scaleY = 0.94f + 0.06f * entrance.value
             }
-            .background(Color.Black.copy(alpha = 0.58f))
+            // Почти непрозрачный фон: приложение за ним не просвечивает,
+            // читается только карточка приветствия.
+            .background(Color.Black.copy(alpha = 0.92f))
             .drawBehind {
                 val t = phase * 2f * Math.PI.toFloat()
                 fun blob(color: Color, cx: Float, cy: Float, radius: Float) {

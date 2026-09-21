@@ -21,16 +21,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,13 +66,15 @@ import com.example.ui.components.UpdateGate
 import com.example.ui.components.coachTag
 import com.example.ui.theme.MyApplicationTheme
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.drop
 import com.example.data.ThemeMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
-
-import androidx.compose.ui.platform.LocalView
 
 @Composable
 fun MyAppThemeWrapper(viewModel: MainViewModel, content: @Composable () -> Unit) {
@@ -253,6 +260,23 @@ fun MainPagerScreen(
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
+    val view = LocalView.current
+
+    // Во время тура свайпы отключены: человек не «уезжает» с шага.
+    val tourActive = OnboardingBus.tourActive
+
+    // Мягкий тактильный «тик», когда страница долетела до места.
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }
+            .drop(1)
+            .collect {
+                if (!OnboardingBus.tourActive) {
+                    view.performHapticFeedback(
+                        android.view.HapticFeedbackConstants.CLOCK_TICK
+                    )
+                }
+            }
+    }
 
     // ── Тур просит переключить страницу пейджера (тап по подсвеченному) ──
     LaunchedEffect(Unit) {
@@ -321,6 +345,16 @@ fun MainPagerScreen(
                 .glassSource(backdrop)
                 .background(MaterialTheme.colorScheme.background)
                 .auroraBackdrop()
+                // Осевой замок: страница переворачивается ТОЛЬКО уверенным
+                // горизонтальным свайпом; вертикальные/диагональные жесты
+                // полностью уходят спискам — вверх-вниз листается чисто.
+                .pointerInput(tourActive) {
+                    if (tourActive) return@pointerInput
+                    axisLockedPagerGestures(
+                        state = pagerState,
+                        scope = coroutineScope
+                    )
+                }
         ) {
             Scaffold(
                 containerColor = Color.Transparent,
@@ -346,16 +380,12 @@ fun MainPagerScreen(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
                     beyondViewportPageCount = 1,
-                    // Пока туториал активен — свайпы пейджера заблокированы,
-                    // чтобы человек не «уезжал» с подсвеченного шага.
-                    userScrollEnabled = !OnboardingBus.tourActive,
-                    flingBehavior = PagerDefaults.flingBehavior(
-                        state = pagerState,
-                        snapAnimationSpec = spring(
-                            dampingRatio = 0.86f,
-                            stiffness = 320f
-                        )
-                    )
+                    // Жесты обрабатывает ось-замок выше: свайп должен быть
+                    // уверенно горизонтальным (|dx| > 1.6·|dy|), иначе жест
+                    // уходит вертикальному списку. Поэтому встроенный скролл
+                    // выключен — так конфликта «листать вниз или перевернуть
+                    // страницу» не существует.
+                    userScrollEnabled = false
                 ) { page ->
                     val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                     val pageAlpha = 1f - (abs(pageOffset) * 0.12f).coerceIn(0f, 0.25f)
@@ -690,5 +720,96 @@ fun RowScope.FloatingNavItem(
                 }
                 .padding(horizontal = 2.dp)
         )
+    }
+}
+
+/* ────────────────────────────────────────────────────────────────
+ * Осевой замок жестов пейджера.
+ *
+ * Проблема «пагинация мешает скроллу»: стандартный HorizontalPager
+ * перехватывает ANY почти-горизонтальный свайп, из-за этого при
+ * листании списков вниз-вверх иногда «переворачивается» страница.
+ *
+ * Решение: встроенный скролл пейджера выключен (userScrollEnabled =
+ * false), а этот фильтр решает, чей это жест:
+ *   • страница переворачивается только если |dx| > 1.6·|dy| после
+ *     touch slop — то есть свайп УВЕРЕННО горизонтальный;
+ *   • вертикальные и диагональные жесты не потребляются вовсе и
+ *     целиком уходят спискам;
+ *   • если жест уже забрал дочерний скролл (позиция isConsumed) —
+ *     пейджер не вмешивается;
+ *   • флинг < 560dp/s не доверстывает страницу: медленный отпуск
+ *     просто snap'ится к ближайшей, «случайных» перелистываний нет.
+ * ──────────────────────────────────────────────────────────────── */
+
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope
+        .axisLockedPagerGestures(
+    state: PagerState,
+    scope: CoroutineScope
+) {
+    val slop = viewConfiguration.touchSlop * 1.35f
+    val flingPx = 560.dp.toPx()
+    val axisRatio = 1.6f
+    var settleJob: Job? = null
+
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false)
+        settleJob?.cancel() // новый жест прерывает дозагон предыдущей страницы
+
+        val tracker = VelocityTracker()
+        tracker.resetTracking()
+        tracker.addPosition(down.uptimeMillis, down.position)
+
+        var locked = 0        // 0 — не решено, 1 — горизонталь (наш), 2 — вертикаль/чужой
+        var dx = 0f
+        var dy = 0f
+
+        while (true) {
+            val event = awaitPointerEvent()
+            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+            if (!change.pressed) break
+
+            if (change.isConsumed) {
+                // Жест уже забрал дочерний элемент (список и т.п.) — не мешаем.
+                if (locked == 0) locked = 2
+                continue
+            }
+
+            val delta = change.positionChange()
+            if (delta.x == 0f && delta.y == 0f) continue
+
+            tracker.addPosition(change.uptimeMillis, change.position)
+            dx += delta.x
+            dy += delta.y
+
+            if (locked == 0 && (abs(dx) > slop || abs(dy) > slop)) {
+                locked = if (abs(dx) > axisRatio * abs(dy)) 1 else 2
+            }
+
+            if (locked == 1) {
+                change.consume()
+                // dispatchRawDelta — синхронный путь (как у родного scrollable):
+                // внутри restricted-скопа awaitEachGesture нельзя звать
+                // посторонние suspend-функции, а это — не suspend.
+                state.dispatchRawDelta(-delta.x)
+            }
+        }
+
+        if (locked == 1) {
+            val velocity = tracker.calculateVelocity().x
+            val base = state.currentPage + state.currentPageOffsetFraction
+            val target = when {
+                velocity < -flingPx -> kotlin.math.ceil(base)
+                velocity > flingPx -> kotlin.math.floor(base)
+                else -> kotlin.math.round(base)
+            }.toInt().coerceIn(0, state.pageCount - 1)
+
+            settleJob = scope.launch {
+                state.animateScrollToPage(
+                    target,
+                    animationSpec = spring(dampingRatio = 0.84f, stiffness = 320f)
+                )
+            }
+        }
     }
 }

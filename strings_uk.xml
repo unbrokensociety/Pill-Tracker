@@ -334,6 +334,5 @@
     <string name="upd_browser">Завантажити через браузер</string>
     <string name="upd_minimize">Згорнути</string>
     <string name="upd_releases">Сторінка релізів</string>
-    <string name="upd_notif_desc">Оновлення Pill Tracker</string>
-    <string name="upd_notif_hint">Прогрес видно і в системному сповіщенні. Коли завантажиться — інсталятор відкриється автоматично.</string>
+    <string name="upd_installer_hint">Коли завантаження завершиться, інсталятор відкриється сам — залишиться натиснути «Встановити». Файл оновлення живе всередині застосунку (у провіднику нічого не з’явиться) і видаляється одразу після оновлення.</string>
 </resources>

@@ -1,3 +1,25 @@
+# 🚀 PillTracker v2.3.1 — Release Notes
+
+### 🔧 Updater fixed: downloads to itself, installs by itself, cleans up after itself
+* **No more «downloaded to the file manager».** The APK is now fetched by the app itself into its private cache (`cacheDir/updates/`) — nothing appears in the Downloads folder, no system notification, no file-manager clutter. The update literally downloads "into the app".
+* **The installer now really opens by itself.** The v2.3.0 updater listened for the system download-complete broadcast, which Android 14+ silently blocks for private receivers — so the download finished and… nothing happened. The broadcast is gone from the code entirely: the moment the download completes, the package installer opens straight from the app (and if you happened to background the app, it opens the moment you come back). One tap on «Install» — Android itself requires that confirmation, no app can skip it.
+* **Self-cleanup after updating.** The first launch of the new version immediately deletes the leftover update file (plus any old ones from v2.3.0) — no junk accumulating.
+* **No more false "update available" on the latest version.** Versions are now compared by the version *name* (2.3.1 vs 2.3.0), not just the build number. A CI rebuild of the *same* version (bigger build number, same name) is correctly treated as "you're on the latest version" — the card only appears for a genuinely new version. Auto-check stays quiet; the manual «Check for updates» card in Settings confirms you're current.
+
+### 🧭 Onboarding: readable, not "half-transparent mush"
+* The tour scrim is now properly dark (88% instead of 60%) — the app no longer visually bleeds through the overlay; the highlighted button is the single bright thing on screen.
+* **Tooltips got geometry brains:** the card now measures its real height, never overlaps the highlighted zone, never runs off-screen, and a small arrow points exactly at the highlighted button. Position glides with a spring when the step changes.
+* A pulsing "tap here" ring now breathes in the center of every highlight, plus progress dots for the 6 steps; the welcome screen is equally opaque.
+* System «Back» on the welcome page now exits the tour (it used to do nothing).
+
+### 👆 Paging no longer fights vertical scrolling
+* The page-flip gesture is axis-locked: a page turns **only** on a confidently horizontal swipe (horizontal movement must dominate vertical by 1.6×) and a slow release simply snaps back. Diagonal and vertical swipes always belong to the lists — scrolling up/down never flips a page by accident. A gentle haptic tick confirms when a page settles.
+
+### 🔁 Updates — still guaranteed
+* CI pins `versionCode = 3000 + build number` (this build's base: 2310) — always above every shipped build, same permanent signing key, data kept.
+
+---
+
 # 🚀 PillTracker v2.3.0 — Release Notes
 
 ### 🔄 New: update straight from the app (in-app updater)

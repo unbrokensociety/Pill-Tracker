@@ -57,6 +57,7 @@ import com.aistudio.meditracker.ui.components.LiquidGlassPanel
 import com.aistudio.meditracker.ui.components.GlassFAB
 import com.aistudio.meditracker.ui.components.GlassPerformanceGovernor
 import com.aistudio.meditracker.ui.components.auroraBackdrop
+import com.aistudio.meditracker.ui.components.glassSource
 import com.aistudio.meditracker.ui.components.rememberGlassBackdrop
 import com.aistudio.meditracker.ui.components.tactilePress
 import com.aistudio.meditracker.ui.components.OnboardingBus
@@ -343,6 +344,11 @@ fun MainPagerScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .auroraBackdrop()
+                // v2.4.13: backdrop recording is back — the nav bar blurs the
+                // real content behind it (Telegram-style glass), so the layer
+                // must be captured again. Skipped automatically when the glass
+                // quality is FROST (low RAM / battery saver).
+                .glassSource(backdrop)
 
                 .pointerInput(tourActive) {
                     if (tourActive) return@pointerInput
@@ -426,8 +432,10 @@ fun MainPagerScreen(
                 .coachTag("nav_island"),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            blurRadius = 26.dp,
-            solid = true
+            // Telegram-grade radius (the v2.0–v2.1 bar value) — real visible
+            // blur, whisper tint, no lens.
+            blurRadius = 30.dp,
+            classic = true
         ) {
             BoxWithConstraints(
                 modifier = Modifier

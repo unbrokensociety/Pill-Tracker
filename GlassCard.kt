@@ -424,37 +424,56 @@ fun LiquidGlassPanel(
     blurRadius: Dp = 28.dp,
     tint: Color? = null,
     borderWidth: Dp = 1.dp,
-    solid: Boolean = false,
+    // v2.4.13 "classic": the Telegram-style glass the app shipped in v2.0–v2.1 —
+    // a real backdrop blur (RenderEffect, ~30dp) with a light scrim and a
+    // whisper-low tint. No AGSL lens, no zoom-bleed, no refraction tricks:
+    // the blur itself is the look, exactly like the messenger panels.
+    classic: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     val hardwareBlur = BackdropBlurSupported
     val glassQuality by LiquidGlassState.quality
-    val quality = if (solid) LiquidGlassQuality.FROST else glassQuality
+    val quality = glassQuality
 
     val rawIntensity by LiquidGlassState.intensity
     val iEff = rawIntensity.coerceIn(0f, 1f)
     val curve = iEff.pow(1.15f)
 
-    val effectiveBlur = when (quality) {
-        LiquidGlassQuality.FULL -> blurRadius * lerp(0.55f, 1.30f, curve)
-        LiquidGlassQuality.REDUCED -> blurRadius * 0.62f * lerp(0.70f, 1.15f, curve)
-        LiquidGlassQuality.FROST -> 0.dp
+    val effectiveBlur = when {
+        // Classic bar: fixed Telegram-grade radius, untouched by the intensity
+        // curve — the look stays constant (that is how the v2.0 bar behaved).
+        classic && quality != LiquidGlassQuality.FROST -> blurRadius
+        quality == LiquidGlassQuality.FULL -> blurRadius * lerp(0.55f, 1.30f, curve)
+        quality == LiquidGlassQuality.REDUCED -> blurRadius * 0.62f * lerp(0.70f, 1.15f, curve)
+        else -> 0.dp
     }
 
     val useLens = hardwareBlur &&
             quality == LiquidGlassQuality.FULL &&
-            AgslLensSupported
+            AgslLensSupported &&
+            !classic
 
     val glassTint = tint
         ?: when {
-            // v2.4.12: the classic (solid-mode) bar is translucent again —
-            // content softly shows through the calm surface fill. No blur,
-            // no lens, no backdrop recording: the look is constant and cheap.
+            // No-blur fallback (low RAM / saver / old API with FROST quality):
+            // calm translucent fill, content softly shows through.
             quality == LiquidGlassQuality.FROST ->
                 MaterialTheme.colorScheme.surface.copy(
                     alpha = if (isDark) 0.72f else 0.82f
+                )
+            // v2.4.13 classic Telegram glass: tint stays whisper-low so the
+            // backdrop blur itself is clearly visible through the panel.
+            classic && hardwareBlur ->
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) 0.10f else 0.18f
+                )
+            // Classic on Android 8–11: the CPU snapshot blur is softer and
+            // blockier, so it gets a milkier veil to keep the panel readable.
+            classic ->
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) 0.40f else 0.50f
                 )
             !hardwareBlur ->
                 MaterialTheme.colorScheme.surface.copy(
@@ -474,18 +493,22 @@ fun LiquidGlassPanel(
     val scrimScale = lerp(1.30f, 0.70f, curve)
     val scrimTop = when {
         quality == LiquidGlassQuality.FROST -> Color.Transparent
+        // Telegram-style scrim: a light top-weighted darkening that keeps the
+        // blurred content legible without turning the panel into a film.
+        classic -> Color.Black.copy(alpha = if (isDark) 0.14f else 0.075f)
         quality == LiquidGlassQuality.REDUCED ->
             Color.Black.copy(alpha = (if (isDark) 0.17f else 0.085f) * scrimScale)
         else -> Color.Black.copy(alpha = (if (isDark) 0.125f else 0.055f) * scrimScale)
     }
     val scrimBottom = when {
         quality == LiquidGlassQuality.FROST -> Color.Transparent
+        classic -> Color.Black.copy(alpha = if (isDark) 0.06f else 0.03f)
         quality == LiquidGlassQuality.REDUCED ->
             Color.Black.copy(alpha = (if (isDark) 0.07f else 0.03f) * scrimScale)
         else -> Color.Black.copy(alpha = (if (isDark) 0.047f else 0.02f) * scrimScale)
     }
 
-    val rimBrush = if (quality == LiquidGlassQuality.FROST) {
+    val rimBrush = if (classic || quality == LiquidGlassQuality.FROST) {
         val hairline = MaterialTheme.colorScheme.outlineVariant.copy(
             alpha = if (isDark) 0.45f else 0.65f
         )
@@ -546,7 +569,7 @@ fun LiquidGlassPanel(
                         }
                     }
             )
-            if (quality == LiquidGlassQuality.FULL) {
+            if (quality == LiquidGlassQuality.FULL && !classic) {
                 if (lensShader != null) {
                     AgslLensPass(
                         backdrop = backdrop,

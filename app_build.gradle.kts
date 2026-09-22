@@ -39,7 +39,7 @@ android {
     // versionName must match the app-version marker in RELEASE_NOTES.md.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
     versionCode = 2311 + runNumber
-    versionName = "2.4.12"
+    versionName = "2.4.13"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

@@ -345,15 +345,15 @@ fun Modifier.glassSource(backdrop: GlassBackdrop): Modifier =
     }.drawWithCache {
         val layer = backdrop.layer
         onDrawWithContent {
-            if (LiquidGlassState.quality.value == LiquidGlassQuality.FROST) {
-                drawContent()
-            } else {
-                layer.record {
-                    this@onDrawWithContent.drawContent()
-                }
-                drawLayer(layer)
-                backdrop.version.value += 1L
+            // v2.4.14: always record, exactly like the v2.0–v2.1 engine.
+            // The only consumer is the classic nav bar, and its Telegram-style
+            // blur must stay live under every condition — battery saver and
+            // low-RAM devices included. The quality tiers still govern cards.
+            layer.record {
+                this@onDrawWithContent.drawContent()
             }
+            drawLayer(layer)
+            backdrop.version.value += 1L
         }
     }
 
@@ -424,10 +424,10 @@ fun LiquidGlassPanel(
     blurRadius: Dp = 28.dp,
     tint: Color? = null,
     borderWidth: Dp = 1.dp,
-    // v2.4.13 "classic": the Telegram-style glass the app shipped in v2.0–v2.1 —
-    // a real backdrop blur (RenderEffect, ~30dp) with a light scrim and a
-    // whisper-low tint. No AGSL lens, no zoom-bleed, no refraction tricks:
-    // the blur itself is the look, exactly like the messenger panels.
+    // v2.4.14 "classic": pixel-faithful restoration of the v2.0–v2.1 Telegram
+    // glass — the exact tint / scrim / specular-rim recipe of that era,
+    // immune to the quality tiers and the intensity curve. No AGSL lens, no
+    // zoom-bleed, no refraction tricks: the blur itself is the look.
     classic: Boolean = false,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -442,9 +442,10 @@ fun LiquidGlassPanel(
     val curve = iEff.pow(1.15f)
 
     val effectiveBlur = when {
-        // Classic bar: fixed Telegram-grade radius, untouched by the intensity
-        // curve — the look stays constant (that is how the v2.0 bar behaved).
-        classic && quality != LiquidGlassQuality.FROST -> blurRadius
+        // Classic bar: the fixed Telegram-grade radius of v2.0–v2.1, untouched
+        // by the intensity curve and by every quality tier (FROST included —
+        // the classic bar never loses its blur, exactly like back then).
+        classic -> blurRadius
         quality == LiquidGlassQuality.FULL -> blurRadius * lerp(0.55f, 1.30f, curve)
         quality == LiquidGlassQuality.REDUCED -> blurRadius * 0.62f * lerp(0.70f, 1.15f, curve)
         else -> 0.dp
@@ -457,23 +458,23 @@ fun LiquidGlassPanel(
 
     val glassTint = tint
         ?: when {
-            // No-blur fallback (low RAM / saver / old API with FROST quality):
+            // v2.4.14 classic Telegram glass — the EXACT v2.1 values:
+            // whisper-low tint so the backdrop blur itself reads through.
+            classic && hardwareBlur ->
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) 0.16f else 0.11f
+                )
+            // Classic on Android 8–11: the v2.1 milky veil over the softer
+            // CPU snapshot blur, keeping the panel readable.
+            classic ->
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) 0.42f else 0.34f
+                )
+            // No-blur fallback (low RAM / saver with FROST quality):
             // calm translucent fill, content softly shows through.
             quality == LiquidGlassQuality.FROST ->
                 MaterialTheme.colorScheme.surface.copy(
                     alpha = if (isDark) 0.72f else 0.82f
-                )
-            // v2.4.13 classic Telegram glass: tint stays whisper-low so the
-            // backdrop blur itself is clearly visible through the panel.
-            classic && hardwareBlur ->
-                MaterialTheme.colorScheme.surface.copy(
-                    alpha = if (isDark) 0.10f else 0.18f
-                )
-            // Classic on Android 8–11: the CPU snapshot blur is softer and
-            // blockier, so it gets a milkier veil to keep the panel readable.
-            classic ->
-                MaterialTheme.colorScheme.surface.copy(
-                    alpha = if (isDark) 0.40f else 0.50f
                 )
             !hardwareBlur ->
                 MaterialTheme.colorScheme.surface.copy(
@@ -492,36 +493,48 @@ fun LiquidGlassPanel(
 
     val scrimScale = lerp(1.30f, 0.70f, curve)
     val scrimTop = when {
+        // v2.4.14 classic: the exact v2.1 hex scrims (top-weighted, light).
+        classic -> if (isDark) Color(0x38000000) else Color(0x18000000)
         quality == LiquidGlassQuality.FROST -> Color.Transparent
-        // Telegram-style scrim: a light top-weighted darkening that keeps the
-        // blurred content legible without turning the panel into a film.
-        classic -> Color.Black.copy(alpha = if (isDark) 0.14f else 0.075f)
         quality == LiquidGlassQuality.REDUCED ->
             Color.Black.copy(alpha = (if (isDark) 0.17f else 0.085f) * scrimScale)
         else -> Color.Black.copy(alpha = (if (isDark) 0.125f else 0.055f) * scrimScale)
     }
     val scrimBottom = when {
+        classic -> if (isDark) Color(0x16000000) else Color(0x08000000)
         quality == LiquidGlassQuality.FROST -> Color.Transparent
-        classic -> Color.Black.copy(alpha = if (isDark) 0.06f else 0.03f)
         quality == LiquidGlassQuality.REDUCED ->
             Color.Black.copy(alpha = (if (isDark) 0.07f else 0.03f) * scrimScale)
         else -> Color.Black.copy(alpha = (if (isDark) 0.047f else 0.02f) * scrimScale)
     }
 
-    val rimBrush = if (classic || quality == LiquidGlassQuality.FROST) {
-        val hairline = MaterialTheme.colorScheme.outlineVariant.copy(
-            alpha = if (isDark) 0.45f else 0.65f
-        )
-        SolidColor(hairline)
-    } else {
-        val rimTop = if (isDark) {
-            Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.38f else 0.30f)
-        } else {
-            Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.85f else 0.80f)
+    val rimBrush = when {
+        // v2.4.14 classic: the exact v2.1 three-stop specular rim — bright
+        // at the top, quiet in the middle, softly lit at the bottom. This
+        // glassy edge highlight IS part of the Telegram-era look.
+        classic -> {
+            val rimTop = if (isDark) Color(1f, 1f, 1f, 0.30f) else Color(1f, 1f, 1f, 0.80f)
+            val rimMid = if (isDark) Color(1f, 1f, 1f, 0.06f)
+            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
+            val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.14f) else Color(1f, 1f, 1f, 0.45f)
+            Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
         }
-        val rimMid = if (isDark) Color(1f, 1f, 1f, 0.07f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
-        val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.16f) else Color(1f, 1f, 1f, 0.50f)
-        Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
+        quality == LiquidGlassQuality.FROST -> {
+            val hairline = MaterialTheme.colorScheme.outlineVariant.copy(
+                alpha = if (isDark) 0.45f else 0.65f
+            )
+            SolidColor(hairline)
+        }
+        else -> {
+            val rimTop = if (isDark) {
+                Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.38f else 0.30f)
+            } else {
+                Color(1f, 1f, 1f, if (quality == LiquidGlassQuality.FULL) 0.85f else 0.80f)
+            }
+            val rimMid = if (isDark) Color(1f, 1f, 1f, 0.07f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.28f)
+            val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.16f) else Color(1f, 1f, 1f, 0.50f)
+            Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
+        }
     }
 
     val ambientShadowColor = if (isDark) Color(0x59000000) else Color(0x14000000)
@@ -534,8 +547,16 @@ fun LiquidGlassPanel(
     var panelOrigin by panelOriginState
     var panelSize by remember { mutableStateOf(IntSize.Zero) }
 
-    val softBlur = if (!hardwareBlur && quality != LiquidGlassQuality.FROST) {
-        rememberSoftBackdropBitmap(backdrop, { panelOrigin }, { panelSize }, effectiveBlur, quality)
+    // v2.4.14: the classic bar keeps its blur under every quality tier —
+    // the software path runs even in FROST (exactly the v2.1 behaviour).
+    val softBlur = if (!hardwareBlur && (classic || quality != LiquidGlassQuality.FROST)) {
+        rememberSoftBackdropBitmap(
+            backdrop = backdrop,
+            panelOriginProvider = { panelOrigin },
+            panelSizeProvider = { panelSize },
+            blurRadius = effectiveBlur,
+            quality = if (classic) LiquidGlassQuality.FULL else quality
+        )
     } else null
 
     Box(
@@ -553,7 +574,7 @@ fun LiquidGlassPanel(
             )
             .clip(shape)
     ) {
-        if (hardwareBlur && quality != LiquidGlassQuality.FROST) {
+        if (hardwareBlur && (classic || quality != LiquidGlassQuality.FROST)) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -604,7 +625,7 @@ fun LiquidGlassPanel(
                     )
                 }
             }
-        } else if (!hardwareBlur && quality != LiquidGlassQuality.FROST) {
+        } else if (!hardwareBlur && (classic || quality != LiquidGlassQuality.FROST)) {
             Box(
                 modifier = Modifier
                     .matchParentSize()

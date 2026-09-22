@@ -38,8 +38,8 @@ android {
     // versionCode = 2311 + GITHUB_RUN_NUMBER so CI builds never regress;
     // versionName must match the app-version marker in RELEASE_NOTES.md.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
-    versionCode = 2311 + runNumber
-    versionName = "2.4.13"
+    versionCode = 2312 + runNumber
+    versionName = "2.4.14"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

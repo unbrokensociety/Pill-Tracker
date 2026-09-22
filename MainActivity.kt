@@ -342,14 +342,14 @@ fun MainPagerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                // v2.4.14: glassSource MUST come first in the chain — exactly
+                // like the v2.0–v2.1 engine. It records everything drawn after
+                // it: the background, the aurora wash and the full content.
+                // (In v2.4.13 it sat last, so the bar blurred a backgroundless
+                // content layer — the cause of the strange look.)
+                .glassSource(backdrop)
                 .background(MaterialTheme.colorScheme.background)
                 .auroraBackdrop()
-                // v2.4.13: backdrop recording is back — the nav bar blurs the
-                // real content behind it (Telegram-style glass), so the layer
-                // must be captured again. Skipped automatically when the glass
-                // quality is FROST (low RAM / battery saver).
-                .glassSource(backdrop)
-
                 .pointerInput(tourActive) {
                     if (tourActive) return@pointerInput
                     axisLockedPagerGestures(
@@ -432,9 +432,9 @@ fun MainPagerScreen(
                 .coachTag("nav_island"),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            // Telegram-grade radius (the v2.0–v2.1 bar value) — real visible
-            // blur, whisper tint, no lens.
-            blurRadius = 30.dp,
+            // The exact v2.0–v2.1 bar values: 28dp live backdrop blur, the
+            // original tint / scrim / specular-rim recipe, no lens.
+            blurRadius = 28.dp,
             classic = true
         ) {
             BoxWithConstraints(

@@ -1,5 +1,5 @@
-> app-version: 2.4.11
+> app-version: 2.4.12
 
-* Bottom navigation bar is back to the classic solid look, no liquid glass
-* Bar appearance is now constant and does not react to content behind it
-* Backdrop recording disabled: lighter frames, calmer battery use
+* The bottom bar is translucent again — content softly shows through it
+* Still the calm classic bar: no blur, no lens, no backdrop recording
+* Cards, 60 Hz preference, signature and the update flow are untouched

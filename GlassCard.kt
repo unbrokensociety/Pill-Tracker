@@ -449,8 +449,13 @@ fun LiquidGlassPanel(
 
     val glassTint = tint
         ?: when {
+            // v2.4.12: the classic (solid-mode) bar is translucent again —
+            // content softly shows through the calm surface fill. No blur,
+            // no lens, no backdrop recording: the look is constant and cheap.
             quality == LiquidGlassQuality.FROST ->
-                MaterialTheme.colorScheme.surface.copy(alpha = 1f)
+                MaterialTheme.colorScheme.surface.copy(
+                    alpha = if (isDark) 0.72f else 0.82f
+                )
             !hardwareBlur ->
                 MaterialTheme.colorScheme.surface.copy(
                     alpha = if (isDark) lerp(0.48f, 0.30f, curve) else lerp(0.40f, 0.24f, curve)

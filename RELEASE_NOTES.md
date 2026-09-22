@@ -1,18 +1,12 @@
-> app-version: 2.5.0
+> app-version: 2.5.1
 
-* Persistent island reminders: a reminder now also stays pinned in the
-  status-bar island with "Taken" and "Snooze" buttons and only clears
-  once the dose is actually taken — a normal heads-up banner still pops
-  up first. Switchable ("Keep in the island")
-* Optional critical alerts: reminders can ring through silent mode and
-  Do Not Disturb like a real alarm. Uses a DND-bypassing channel on the
-  alarm sound stream; the app asks for Do-Not-Disturb access when the
-  toggle is switched on. Off by default
-* New alarm-clock mode: a full-screen alarm screen turns the display on
-  over the lock screen and keeps ringing until you press "Taken" or
-  snooze (15/30 min). The critical sound and the alarm mode are separate
-  switches, each can be turned off
-* The "Taken" action (island, alarm screen or in-app) now logs the
-  intake, decrements stock and also cancels any pending snooze
-* If the dose is already logged for today, the fired reminder stays
-  silent instead of re-appearing
+* Alarm-grade reminders: a pinned island reminder with "Taken" and
+  "Snooze" buttons that only clears once the dose is actually taken,
+  optional critical sound that rings through silent mode and Do Not
+  Disturb, and a full-screen alarm-clock mode — all separate switches
+* The pinned reminder now carries a live elapsed-time chronometer and
+  only alerts once — the recipe vendor islands pick up. Xiaomi HyperOS
+  shows it in the top focus island (turn on "Focus notifications" for
+  the Medication Notifications channel in system notification
+  settings) and Samsung One UI 6.1.1+ renders it as a Live
+  Notification while the dose is pending

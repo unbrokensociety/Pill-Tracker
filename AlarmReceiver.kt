@@ -262,8 +262,15 @@ class AlarmReceiver : BroadcastReceiver() {
         if (persistent) {
             // Pinned "island" reminder: it survives in the shade until the
             // dose is taken (the Taken action or an in-app log clears it).
+            // The live chronometer plus only-alert-once is the recipe vendor
+            // islands pick up: HyperOS focus notifications (Xiaomi) and
+            // One UI 6.1.1+ Live Notifications (Samsung) render it in the
+            // top island while the dose is pending.
             builder.setOngoing(true)
             builder.setAutoCancel(false)
+            builder.setOnlyAlertOnce(true)
+            builder.setWhen(System.currentTimeMillis())
+            builder.setUsesChronometer(true)
         } else {
             builder.setAutoCancel(true)
         }

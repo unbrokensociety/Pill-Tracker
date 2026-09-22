@@ -35,7 +35,7 @@ android {
     applicationId = "com.aistudio.meditracker.zqxpr"
     minSdk = 26
     targetSdk = 36
-    // versionCode = 2311 + GITHUB_RUN_NUMBER so CI builds never regress;
+    // versionCode = 2312 + GITHUB_RUN_NUMBER so CI builds never regress;
     // versionName must match the app-version marker in RELEASE_NOTES.md.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
     versionCode = 2312 + runNumber
@@ -132,10 +132,8 @@ android {
     release {
       isCrunchPngs = false
       // R8 shrinking keeps the icon/material libraries from bloating the
-      // dex. Before this the APK shipped ~44 MB of uncompressed dex — which
-      // Android then also extracted to /data (vdex), so the installed app
-      // weighed ~68 MB on the phone. Minified, the dex drops ~4× — the
-      // download AND the installed footprint shrink together.
+      // dex — minified it is roughly 4x smaller, so the download and the
+      // installed footprint stay small.
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

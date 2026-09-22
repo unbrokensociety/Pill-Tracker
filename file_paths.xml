@@ -2,13 +2,11 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="reports" path="." />
     <files-path name="files" path="." />
-    <!-- In-app updater v2: APK качается СКРЫТО в cacheDir/updates/
-         (не виден в проводнике и системных «Загрузках») — этот путь
-         нужен FileProvider, чтобы открыть пакетный установщик.
-         cache-path path="." покрывает и его, запись оставлена для ясности. -->
+    <!-- Updater APKs are kept in cacheDir/updates; FileProvider needs this
+         path to hand the file to the package installer. -->
     <cache-path name="updates" path="updates" />
-    <!-- Наследие v2.3.0: DownloadManager качал сюда; путь оставлен,
-         чтобы чистильщик мог удалить старые файлы. -->
+    <!-- Legacy downloads directory, kept so files left by older builds
+         can still be cleaned up. -->
     <external-files-path name="downloads" path="Download" />
     <external-files-path name="external_files" path="." />
 </paths>

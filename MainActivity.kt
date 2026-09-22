@@ -342,11 +342,9 @@ fun MainPagerScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // v2.4.14: glassSource MUST come first in the chain — exactly
-                // like the v2.0–v2.1 engine. It records everything drawn after
-                // it: the background, the aurora wash and the full content.
-                // (In v2.4.13 it sat last, so the bar blurred a backgroundless
-                // content layer — the cause of the strange look.)
+                // glassSource must stay first in the chain: it records
+                // everything drawn after it — the background, the aurora
+                // wash and the full content.
                 .glassSource(backdrop)
                 .background(MaterialTheme.colorScheme.background)
                 .auroraBackdrop()
@@ -432,8 +430,8 @@ fun MainPagerScreen(
                 .coachTag("nav_island"),
             shape = RoundedCornerShape(32.dp),
             elevation = 18.dp,
-            // The exact v2.0–v2.1 bar values: 28dp live backdrop blur, the
-            // original tint / scrim / specular-rim recipe, no lens.
+            // Classic bar values: 28dp live backdrop blur, classic
+            // tint / scrim / specular rim, no lens.
             blurRadius = 28.dp,
             classic = true
         ) {

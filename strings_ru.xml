@@ -38,6 +38,17 @@
     <string name="alarm_text">Не забудьте принять лекарство!</string>
     <string name="alarm_channel_name">Уведомления о лекарствах</string>
     <string name="alarm_channel_desc">Напоминания о приеме препаратов</string>
+    <string name="alarm_channel_critical_name">Критические уведомления о лекарствах</string>
+    <string name="alarm_channel_critical_desc">Звук, который доносится даже в режиме «Не беспокоить»</string>
+    <string name="notif_taken">Принято</string>
+    <string name="settings_island">Держать в островке</string>
+    <string name="settings_island_desc">Напоминание держится в островке сверху с кнопками «Принято» и «Отложить», пока вы не примете препарат</string>
+    <string name="settings_critical">Звук в беззвучном и «Не беспокоить»</string>
+    <string name="settings_critical_desc">Звонит, как будильник, даже когда телефон без звука или в режиме «Не беспокоить»</string>
+    <string name="settings_critical_blocked">Нажмите здесь, чтобы предоставить доступ «Не беспокоить» в настройках системы</string>
+    <string name="settings_alarm_mode">Режим будильника</string>
+    <string name="settings_alarm_mode_desc">Будильник на весь экран: будит дисплей и звонит, пока вы не примете или не отложите</string>
+    <string name="settings_alarm_blocked">Нажмите здесь, чтобы разрешить показ на весь экран в настройках системы</string>
     <string name="settings_title">Настройки</string>
     <string name="settings_theme">Тема</string>
     <string name="settings_theme_system">Системная</string>

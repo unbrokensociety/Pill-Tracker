@@ -1,14 +1,18 @@
-> app-version: 2.4.14
+> app-version: 2.5.0
 
-* Fixed the v2.4.13 bottom bar: the glass layer was recorded in the wrong
-  order, so the bar blurred a backgroundless copy of the screen — that is
-  why it looked strange. The recorder now captures the full backdrop
-  (background + color wash + content), exactly like the v2.0-v2.1 engine
-* The bar is now a pixel-faithful restoration of the original Telegram
-  glass: the exact 28dp live backdrop blur, the exact tint, the exact
-  top-weighted scrim and the bright three-stop specular rim of that era
-* The classic bar no longer loses its blur in battery saver / low-RAM
-  (FROST) mode — it always frosts, on Android 12+ (hardware) and on
-  Android 8-11 (soft CPU snapshot), just like back then
-* No iOS lens, no refraction, no zoom-bleed on the bar; cards and
-  everything else are untouched
+* Persistent island reminders: a reminder now also stays pinned in the
+  status-bar island with "Taken" and "Snooze" buttons and only clears
+  once the dose is actually taken — a normal heads-up banner still pops
+  up first. Switchable ("Keep in the island")
+* Optional critical alerts: reminders can ring through silent mode and
+  Do Not Disturb like a real alarm. Uses a DND-bypassing channel on the
+  alarm sound stream; the app asks for Do-Not-Disturb access when the
+  toggle is switched on. Off by default
+* New alarm-clock mode: a full-screen alarm screen turns the display on
+  over the lock screen and keeps ringing until you press "Taken" or
+  snooze (15/30 min). The critical sound and the alarm mode are separate
+  switches, each can be turned off
+* The "Taken" action (island, alarm screen or in-app) now logs the
+  intake, decrements stock and also cancels any pending snooze
+* If the dose is already logged for today, the fired reminder stays
+  silent instead of re-appearing

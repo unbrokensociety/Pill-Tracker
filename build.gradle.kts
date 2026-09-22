@@ -41,6 +41,7 @@ val flatSources: Map<String, String> = mapOf(
     "SettingsRepository.kt" to "app/src/main/java/com/aistudio/meditracker/data/SettingsRepository.kt",
     "AlarmScheduler.kt" to "app/src/main/java/com/aistudio/meditracker/alarms/AlarmScheduler.kt",
     "AlarmReceiver.kt" to "app/src/main/java/com/aistudio/meditracker/alarms/AlarmReceiver.kt",
+    "AlarmFullScreenActivity.kt" to "app/src/main/java/com/aistudio/meditracker/alarms/AlarmFullScreenActivity.kt",
     "BootReceiver.kt" to "app/src/main/java/com/aistudio/meditracker/alarms/BootReceiver.kt",
     "Theme.kt" to "app/src/main/java/com/aistudio/meditracker/ui/theme/Theme.kt",
     "Color.kt" to "app/src/main/java/com/aistudio/meditracker/ui/theme/Color.kt",

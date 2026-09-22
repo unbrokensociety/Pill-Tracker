@@ -1,5 +1,11 @@
 package com.aistudio.meditracker.ui
 
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -9,8 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.DarkMode
@@ -19,6 +27,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Texture
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -45,6 +54,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aistudio.meditracker.R
 import com.aistudio.meditracker.data.ThemeMode
 import com.aistudio.meditracker.ui.components.GlassCard
@@ -71,6 +83,9 @@ fun SettingsScreen(
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    val persistentReminder by viewModel.persistentReminderEnabled.collectAsState()
+    val criticalAlerts by viewModel.criticalAlertsEnabled.collectAsState()
+    val alarmMode by viewModel.alarmModeEnabled.collectAsState()
 
     val medications by viewModel.allMedications.collectAsState()
     val schedules by viewModel.dailySchedules.collectAsState()
@@ -78,6 +93,32 @@ fun SettingsScreen(
     val streakDays by viewModel.streakDays.collectAsState()
 
     val context = LocalContext.current
+
+    val notificationManager = remember {
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+    }
+    var dndAccessGranted by remember {
+        mutableStateOf(notificationManager?.isNotificationPolicyAccessGranted ?: false)
+    }
+    var fullScreenIntentGranted by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+                (notificationManager?.canUseFullScreenIntent() ?: true)
+        )
+    }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(Unit) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                dndAccessGranted = notificationManager?.isNotificationPolicyAccessGranted ?: false
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    fullScreenIntentGranted = notificationManager?.canUseFullScreenIntent() ?: true
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     var showPrivacyPolicy by remember { mutableStateOf(false) }
     var showTermsOfService by remember { mutableStateOf(false) }
@@ -500,6 +541,69 @@ fun SettingsScreen(
                                 onCheckedChange = { viewModel.setNotifications(it) }
                             )
                         }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                        // Persistent island reminder toggle
+                        ReminderToggleRow(
+                            icon = Icons.Filled.PushPin,
+                            title = stringResource(R.string.settings_island),
+                            subtitle = stringResource(R.string.settings_island_desc),
+                            checked = persistentReminder,
+                            onToggle = { viewModel.setPersistentReminder(!persistentReminder) }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                        // Critical alerts: ring even in silent mode / Do Not Disturb
+                        val criticalSubtitle = if (criticalAlerts && !dndAccessGranted) {
+                            stringResource(R.string.settings_critical_blocked)
+                        } else {
+                            stringResource(R.string.settings_critical_desc)
+                        }
+                        ReminderToggleRow(
+                            icon = Icons.Filled.Campaign,
+                            title = stringResource(R.string.settings_critical),
+                            subtitle = criticalSubtitle,
+                            checked = criticalAlerts,
+                            onToggle = {
+                                when {
+                                    !criticalAlerts -> {
+                                        viewModel.setCriticalAlerts(true)
+                                        openDndAccessSettings(context)
+                                    }
+                                    dndAccessGranted -> viewModel.setCriticalAlerts(false)
+                                    else -> openDndAccessSettings(context)
+                                }
+                            }
+                        )
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                        // Alarm-clock mode: full-screen ringing presentation
+                        val alarmSubtitle = if (alarmMode && !fullScreenIntentGranted) {
+                            stringResource(R.string.settings_alarm_blocked)
+                        } else {
+                            stringResource(R.string.settings_alarm_mode_desc)
+                        }
+                        ReminderToggleRow(
+                            icon = Icons.Filled.Alarm,
+                            title = stringResource(R.string.settings_alarm_mode),
+                            subtitle = alarmSubtitle,
+                            checked = alarmMode,
+                            onToggle = {
+                                when {
+                                    !alarmMode -> {
+                                        viewModel.setAlarmMode(true)
+                                        if (!fullScreenIntentGranted) {
+                                            openFullScreenIntentSettings(context)
+                                        }
+                                    }
+                                    fullScreenIntentGranted -> viewModel.setAlarmMode(false)
+                                    else -> openFullScreenIntentSettings(context)
+                                }
+                            }
+                        )
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
@@ -1314,4 +1418,85 @@ private fun NameEditDialog(
         },
         shape = RoundedCornerShape(20.dp)
     )
+}
+
+@Composable
+private fun ReminderToggleRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onToggle: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onToggle() }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = { onToggle() }
+        )
+    }
+}
+
+// Opens the screen where the user grants Do-Not-Disturb access for the app;
+// the critical channel only bypasses DND while this access is granted.
+private fun openDndAccessSettings(context: Context) {
+    try {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    } catch (_: Exception) {
+    }
+}
+
+// Opens the screen where the user allows the full-screen alarm presentation.
+private fun openFullScreenIntentSettings(context: Context) {
+    try {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+            Uri.parse("package:" + context.packageName)
+        )
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    } catch (_: Exception) {
+    }
 }

@@ -1,5 +1,6 @@
 package com.aistudio.meditracker.ui
 
+import android.app.NotificationManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -28,7 +29,8 @@ import java.time.ZoneId
 class MainViewModel(
     private val repository: MedicationRepository,
     private val alarmScheduler: AlarmScheduler,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val appContext: Context
 ) : ViewModel() {
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeModeFlow.stateIn(
         scope = viewModelScope,
@@ -37,6 +39,24 @@ class MainViewModel(
     )
 
     val notificationsEnabled: StateFlow<Boolean> = settingsRepository.notificationsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val persistentReminderEnabled: StateFlow<Boolean> = settingsRepository.persistentReminderFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val criticalAlertsEnabled: StateFlow<Boolean> = settingsRepository.criticalAlertsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val alarmModeEnabled: StateFlow<Boolean> = settingsRepository.alarmModeFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = true
@@ -121,6 +141,18 @@ class MainViewModel(
         }
     }
 
+    fun setPersistentReminder(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setPersistentReminder(enabled) }
+    }
+
+    fun setCriticalAlerts(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setCriticalAlerts(enabled) }
+    }
+
+    fun setAlarmMode(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setAlarmMode(enabled) }
+    }
+
     val lowStockMedications: StateFlow<List<Medication>> = repository.lowStockMedications
         .stateIn(
             scope = viewModelScope,
@@ -131,6 +163,16 @@ class MainViewModel(
     fun toggleLog(schedule: DailyScheduleView, isTaken: Boolean, sideEffectNote: String = "") {
         viewModelScope.launch {
             repository.toggleIntake(schedule, _selectedDate.value, isTaken, sideEffectNote)
+            if (isTaken) {
+                // The pinned reminder (island) and any pending snooze for this
+                // dose are no longer relevant once it is logged as taken.
+                try {
+                    (appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                        .cancel(schedule.scheduleId)
+                } catch (_: Exception) {
+                }
+                alarmScheduler.cancelSnoozeAlarms(schedule.scheduleId)
+            }
         }
     }
 
@@ -190,7 +232,7 @@ class MainViewModelFactory(
             val alarmScheduler = AlarmScheduler(context)
             val settingsRepository = SettingsRepository(context)
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(repository, alarmScheduler, settingsRepository) as T
+            return MainViewModel(repository, alarmScheduler, settingsRepository, context.applicationContext) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -18,6 +18,9 @@ class SettingsRepository(private val context: Context) {
     companion object {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
+        val PERSISTENT_REMINDER = booleanPreferencesKey("persistent_reminder")
+        val CRITICAL_ALERTS = booleanPreferencesKey("critical_alerts")
+        val ALARM_MODE = booleanPreferencesKey("alarm_mode")
     }
 
     val themeModeFlow: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
@@ -42,6 +45,40 @@ class SettingsRepository(private val context: Context) {
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[NOTIFICATIONS_ENABLED] = enabled
+        }
+    }
+
+    // The reminder notification stays pinned (island/shade) until the dose is taken.
+    val persistentReminderFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PERSISTENT_REMINDER] ?: true
+    }
+
+    suspend fun setPersistentReminder(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PERSISTENT_REMINDER] = enabled
+        }
+    }
+
+    // Reminder sound routed through the DND-bypassing channel. Requires
+    // notification policy access to actually ring while Do Not Disturb is on.
+    val criticalAlertsFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[CRITICAL_ALERTS] ?: false
+    }
+
+    suspend fun setCriticalAlerts(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[CRITICAL_ALERTS] = enabled
+        }
+    }
+
+    // Full-screen alarm presentation instead of a plain heads-up notification.
+    val alarmModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[ALARM_MODE] ?: true
+    }
+
+    suspend fun setAlarmMode(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[ALARM_MODE] = enabled
         }
     }
 }

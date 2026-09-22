@@ -38,6 +38,17 @@
     <string name="alarm_text">Не забудьте прийняти свої ліки!</string>
     <string name="alarm_channel_name">Сповіщення про ліки</string>
     <string name="alarm_channel_desc">Нагадування про прийом препаратів</string>
+    <string name="alarm_channel_critical_name">Критичні сповіщення про ліки</string>
+    <string name="alarm_channel_critical_desc">Звук, який долинає навіть у режимі «Не турбувати»</string>
+    <string name="notif_taken">Прийнято</string>
+    <string name="settings_island">Тримати в острівці</string>
+    <string name="settings_island_desc">Нагадування тримається в острівці зверху з кнопками «Прийнято» та «Відкласти», доки ви не приймете препарат</string>
+    <string name="settings_critical">Звук у беззвучному та «Не турбувати»</string>
+    <string name="settings_critical_desc">Дзвінок, як будильник, навіть коли телефон без звуку або в режимі «Не турбувати»</string>
+    <string name="settings_critical_blocked">Натисніть тут, щоб надати доступ «Не турбувати» у налаштуваннях системи</string>
+    <string name="settings_alarm_mode">Режим будильника</string>
+    <string name="settings_alarm_mode_desc">Будильник на весь екран: будить дисплей і дзвінок триває, доки ви не приймете або не відкладете</string>
+    <string name="settings_alarm_blocked">Натисніть тут, щоб дозволити показ на весь екран у налаштуваннях системи</string>
     <string name="settings_title">Налаштування</string>
     <string name="settings_theme">Тема</string>
     <string name="settings_theme_system">Системна</string>

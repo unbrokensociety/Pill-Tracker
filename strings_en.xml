@@ -38,6 +38,17 @@
     <string name="alarm_text">Don\'t forget to take your medication!</string>
     <string name="alarm_channel_name">Medication Notifications</string>
     <string name="alarm_channel_desc">Reminders to take medications</string>
+    <string name="alarm_channel_critical_name">Critical Medication Alerts</string>
+    <string name="alarm_channel_critical_desc">Sound that reaches you even in Do Not Disturb</string>
+    <string name="notif_taken">Taken</string>
+    <string name="settings_island">Keep in the island</string>
+    <string name="settings_island_desc">The reminder stays in the island at the top with Taken and Snooze buttons until you take it</string>
+    <string name="settings_critical">Sound in silent &amp; Do Not Disturb</string>
+    <string name="settings_critical_desc">Rings like an alarm even when the phone is muted or in Do Not Disturb</string>
+    <string name="settings_critical_blocked">Tap here to grant Do Not Disturb access in system settings</string>
+    <string name="settings_alarm_mode">Alarm mode</string>
+    <string name="settings_alarm_mode_desc">A full-screen alarm that wakes the display and rings until you take it or snooze</string>
+    <string name="settings_alarm_blocked">Tap here to allow full-screen display in system settings</string>
     <string name="settings_title">Settings</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_system">System Default</string>

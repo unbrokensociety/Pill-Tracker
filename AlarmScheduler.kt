@@ -104,4 +104,20 @@ class AlarmScheduler(private val context: Context) {
         )
         alarmManager.cancel(pendingIntent)
     }
+
+    // Snooze alarms use the requestCode space scheduleId * 1000 + minutes.
+    // Cancelling the two supported snooze lengths drops any pending snooze
+    // for a dose that has just been logged as taken.
+    fun cancelSnoozeAlarms(scheduleId: Int) {
+        listOf(15, 30).forEach { minutes ->
+            val intent = Intent(context, AlarmReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                scheduleId * 1000 + minutes,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.cancel(pendingIntent)
+        }
+    }
 }

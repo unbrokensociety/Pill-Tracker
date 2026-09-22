@@ -2,6 +2,7 @@ package com.aistudio.meditracker
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -106,11 +107,6 @@ class MainActivity : ComponentActivity() {
         MainViewModelFactory(this.applicationContext)
     }
 
-    private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
-            // Permission state is naturally reflected in the Settings toggle.
-        }
-
     override fun attachBaseContext(newBase: android.content.Context) {
         val lang = com.aistudio.meditracker.ui.locale.LocaleHelper.getLanguage(newBase)
         val contextWithLocale = com.aistudio.meditracker.ui.locale.LocaleHelper.updateResources(newBase, lang)
@@ -121,13 +117,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         capFrameRateAt60()
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            val permission = android.Manifest.permission.POST_NOTIFICATIONS
-            if (checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                notificationPermissionLauncher.launch(permission)
-            }
-        }
 
         setContent {
             MyAppThemeWrapper(viewModel) {
@@ -182,13 +171,24 @@ fun MainScreen(viewModel: MainViewModel) {
             }
     }
 
-    LaunchedEffect(Unit) {
-        snapshotFlow { OnboardingBus.backRequested }
-            .filter { it }
-            .collect {
-                OnboardingBus.consumeBack()
-                navController.popBackStack()
-            }
+    // Notification permission fallback: the onboarding asks for it on its
+    // permission slide; if the intro was skipped before that slide, ask
+    // once right after the tutorial closes (never twice, never later).
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        // Permission state is naturally reflected in the Settings toggle.
+    }
+    LaunchedEffect(onboardingDone) {
+        if (!onboardingDone) return@LaunchedEffect
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            !OnboardingPrefs.isPermissionAsked(context) &&
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            OnboardingPrefs.setPermissionAsked(context)
+            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

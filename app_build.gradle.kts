@@ -35,11 +35,11 @@ android {
     applicationId = "com.aistudio.meditracker.zqxpr"
     minSdk = 26
     targetSdk = 36
-    // versionCode = 2410 + GITHUB_RUN_NUMBER so CI builds never regress;
+    // versionCode = 2420 + GITHUB_RUN_NUMBER so CI builds never regress;
     // versionName must match the app-version marker in RELEASE_NOTES.md.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
-    versionCode = 2410 + runNumber
-    versionName = "2.5.1"
+    versionCode = 2420 + runNumber
+    versionName = "2.5.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

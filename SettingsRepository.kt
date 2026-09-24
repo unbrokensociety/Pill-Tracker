@@ -18,8 +18,6 @@ class SettingsRepository(private val context: Context) {
     companion object {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
-        val PERSISTENT_REMINDER = booleanPreferencesKey("persistent_reminder")
-        val CRITICAL_ALERTS = booleanPreferencesKey("critical_alerts")
         val ALARM_MODE = booleanPreferencesKey("alarm_mode")
     }
 
@@ -48,28 +46,10 @@ class SettingsRepository(private val context: Context) {
         }
     }
 
-    // The reminder notification stays pinned (island/shade) until the dose is taken.
-    val persistentReminderFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[PERSISTENT_REMINDER] ?: true
-    }
-
-    suspend fun setPersistentReminder(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[PERSISTENT_REMINDER] = enabled
-        }
-    }
-
-    // Reminder sound routed through the DND-bypassing channel. Requires
-    // notification policy access to actually ring while Do Not Disturb is on.
-    val criticalAlertsFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[CRITICAL_ALERTS] ?: false
-    }
-
-    suspend fun setCriticalAlerts(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[CRITICAL_ALERTS] = enabled
-        }
-    }
+    // NOTE: the reminder is always pinned in the island and always routes
+    // through the DND-bypassing channel (with automatic fallback to the
+    // normal channel while policy access is missing). These are no longer
+    // user-facing toggles — v2.5.3 removed them from Settings.
 
     // Full-screen alarm presentation instead of a plain heads-up notification.
     val alarmModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->

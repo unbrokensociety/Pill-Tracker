@@ -43,7 +43,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.BrightnessAuto
-import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.DarkMode
@@ -54,7 +53,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Texture
 import androidx.compose.material.icons.filled.Tune
@@ -123,7 +121,7 @@ import kotlin.math.roundToInt
  *
  * Структура — 5 карточек вместо 8:
  *  1) Прогрес прийому — одна строка с кольцом
- *  2) Сповіщення — 4 тумблера
+ *  2) Сповіщення — 2 тумблера (островок и критический звук всегда включены)
  *  3) Вигляд — тема, рідке скло (перенесено из «Про застосунок») та мова
  *  4) Основне — ім'я, повтор навчання, перевірка оновлень (група рядків)
  *  5) Про застосунок — версія, опис, юридичні документи
@@ -136,8 +134,6 @@ fun SettingsScreen(
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
-    val persistentReminder by viewModel.persistentReminderEnabled.collectAsState()
-    val criticalAlerts by viewModel.criticalAlertsEnabled.collectAsState()
     val alarmMode by viewModel.alarmModeEnabled.collectAsState()
 
     val medications by viewModel.allMedications.collectAsState()
@@ -149,9 +145,6 @@ fun SettingsScreen(
     val notificationManager = remember {
         context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
     }
-    var dndAccessGranted by remember {
-        mutableStateOf(notificationManager?.isNotificationPolicyAccessGranted ?: false)
-    }
     var fullScreenIntentGranted by remember {
         mutableStateOf(
             Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
@@ -162,7 +155,6 @@ fun SettingsScreen(
     DisposableEffect(Unit) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                dndAccessGranted = notificationManager?.isNotificationPolicyAccessGranted ?: false
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     fullScreenIntentGranted = notificationManager?.canUseFullScreenIntent() ?: true
                 }
@@ -322,7 +314,9 @@ fun SettingsScreen(
             }
 
             // ─────────────────────────────────────────────────────────
-            // 2. Сповіщення — 4 тумблера в одній картці
+            // 2. Сповіщення — 2 тумблери в одній картці.
+            // Островок и критический звук всегда включены — с v2.5.3
+            // отдельные тумблеры больше не нужны.
             // ─────────────────────────────────────────────────────────
             item {
                 GlassCard(modifier = Modifier.fillMaxWidth(), contentPadding = 12.dp) {
@@ -336,40 +330,6 @@ fun SettingsScreen(
                             ),
                             checked = notificationsEnabled,
                             onToggle = { viewModel.setNotifications(!notificationsEnabled) }
-                        )
-
-                        RowDivider()
-
-                        SettingsToggleRow(
-                            icon = Icons.Filled.PushPin,
-                            title = stringResource(R.string.settings_island),
-                            subtitle = stringResource(R.string.settings_island_desc),
-                            checked = persistentReminder,
-                            onToggle = { viewModel.setPersistentReminder(!persistentReminder) }
-                        )
-
-                        RowDivider()
-
-                        val criticalSubtitle = if (criticalAlerts && !dndAccessGranted) {
-                            stringResource(R.string.settings_critical_blocked)
-                        } else {
-                            stringResource(R.string.settings_critical_desc)
-                        }
-                        SettingsToggleRow(
-                            icon = Icons.Filled.Campaign,
-                            title = stringResource(R.string.settings_critical),
-                            subtitle = criticalSubtitle,
-                            checked = criticalAlerts,
-                            onToggle = {
-                                when {
-                                    !criticalAlerts -> {
-                                        viewModel.setCriticalAlerts(true)
-                                        openDndAccessSettings(context)
-                                    }
-                                    dndAccessGranted -> viewModel.setCriticalAlerts(false)
-                                    else -> openDndAccessSettings(context)
-                                }
-                            }
                         )
 
                         RowDivider()
@@ -1241,17 +1201,6 @@ private fun NameEditDialog(
         },
         shape = RoundedCornerShape(20.dp)
     )
-}
-
-// Opens the screen where the user grants Do-Not-Disturb access for the app;
-// the critical channel only bypasses DND while this access is granted.
-private fun openDndAccessSettings(context: Context) {
-    try {
-        val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
-    } catch (_: Exception) {
-    }
 }
 
 // Opens the screen where the user allows the full-screen alarm presentation.

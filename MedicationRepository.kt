@@ -6,6 +6,22 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class MedicationRepository(private val dao: MedicationDao) {
+    companion object {
+        /**
+         * A course is FINISHED when the supply is exhausted (stock tracking
+         * on and the count hit zero) or the scheduled end date has passed.
+         * Finished medications stop reminding and move to the "Finished"
+         * group in the list — but their intake history always stays.
+         */
+        fun isCourseFinished(med: Medication): Boolean {
+            val todayStart = java.time.LocalDate.now()
+                .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val endPassed = med.endDate != null && med.endDate > 0L && med.endDate < todayStart
+            val stockOut = med.trackStock && med.stockCount <= 0
+            return endPassed || stockOut
+        }
+    }
+
     val allMedications: Flow<List<Medication>> = dao.getAllMedications()
     val allIntakeLogDates: Flow<List<Long>> = dao.getAllIntakeLogDates()
 
@@ -25,6 +41,10 @@ class MedicationRepository(private val dao: MedicationDao) {
 
     suspend fun getMedicationById(id: Int): Medication? {
         return dao.getMedicationById(id)
+    }
+
+    suspend fun getAllMedicationsOnce(): List<Medication> {
+        return dao.getAllMedicationsOnce()
     }
 
     suspend fun updateMedicationWithSchedules(medication: Medication, times: List<Pair<Int, Int>>): List<Schedule> {
@@ -59,7 +79,9 @@ class MedicationRepository(private val dao: MedicationDao) {
     }
 
     suspend fun deleteMedication(medication: Medication) {
-        dao.deleteIntakeLogsForMedication(medication.id)
+        // History is never wiped: intake logs carry denormalized name/dosage
+        // copies, so past intakes remain in the calendar even after the
+        // medication itself (and its schedules) is removed.
         dao.deleteSchedulesForMedication(medication.id)
         dao.deleteMedication(medication)
     }
@@ -80,7 +102,8 @@ class MedicationRepository(private val dao: MedicationDao) {
 
     fun getDailySchedules(date: LocalDate): Flow<List<DailyScheduleView>> {
         val dateEpoch = getStartOfDayEpochMillis(date)
-        return dao.getDailySchedules(dateEpoch).map { list ->
+        val todayStart = getStartOfDayEpochMillis(LocalDate.now())
+        return dao.getDailySchedules(dateEpoch, todayStart).map { list ->
             list.filter { item ->
                 if (item.scheduleType == "interval") {
                     val startLocal = java.time.Instant.ofEpochMilli(item.startDate)

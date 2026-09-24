@@ -26,6 +26,9 @@ interface MedicationDao {
     @Query("SELECT * FROM medications WHERE id = :id")
     suspend fun getMedicationById(id: Int): Medication?
 
+    @Query("SELECT * FROM medications")
+    suspend fun getAllMedicationsOnce(): List<Medication>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSchedules(schedules: List<Schedule>)
 
@@ -35,16 +38,20 @@ interface MedicationDao {
     @Query("DELETE FROM schedules WHERE medicationId = :medicationId")
     suspend fun deleteSchedulesForMedication(medicationId: Int)
 
-    // A unified query to get today's schedules with medication info
+    // A unified query to get today's schedules with medication info.
+    // Course-finished medications (stock ran out with tracking on, or the
+    // end date has passed) drop out of today and future days, while PAST
+    // days keep their rows so the calendar history stays intact.
     @Query("""
         SELECT s.id as scheduleId, m.id as medicationId, m.name, m.dosage, m.color, s.timeHour, s.timeMinute,
                m.formType, m.scheduleType, m.intervalDays, m.stockCount, m.lowStockThreshold, m.trackStock, m.startDate
         FROM medications m
         INNER JOIN schedules s ON m.id = s.medicationId
         WHERE :date >= m.startDate AND (m.endDate IS NULL OR :date <= m.endDate)
+          AND (m.trackStock = 0 OR m.stockCount > 0 OR :date < :todayStart)
         ORDER BY s.timeHour, s.timeMinute
     """)
-    fun getDailySchedules(date: Long): Flow<List<DailyScheduleView>>
+    fun getDailySchedules(date: Long, todayStart: Long): Flow<List<DailyScheduleView>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertIntakeLog(log: IntakeLog)
@@ -54,9 +61,6 @@ interface MedicationDao {
 
     @Query("DELETE FROM intake_logs WHERE scheduleId = :scheduleId AND scheduledDateEpoch = :dateEpoch")
     suspend fun deleteIntakeLog(scheduleId: Int, dateEpoch: Long)
-
-    @Query("DELETE FROM intake_logs WHERE medicationId = :medicationId")
-    suspend fun deleteIntakeLogsForMedication(medicationId: Int)
 
     @Query("DELETE FROM medications")
     suspend fun deleteAllMedications()

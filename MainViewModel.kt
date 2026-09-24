@@ -44,18 +44,6 @@ class MainViewModel(
         initialValue = true
     )
 
-    val persistentReminderEnabled: StateFlow<Boolean> = settingsRepository.persistentReminderFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
-
-    val criticalAlertsEnabled: StateFlow<Boolean> = settingsRepository.criticalAlertsFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
-    )
-
     val alarmModeEnabled: StateFlow<Boolean> = settingsRepository.alarmModeFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -113,6 +101,24 @@ class MainViewModel(
             initialValue = emptyList()
         )
 
+    /** Courses still running: stock left and the end date has not passed. */
+    val activeMedications: StateFlow<List<Medication>> = allMedications
+        .map { list -> list.filterNot { MedicationRepository.isCourseFinished(it) } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    /** Finished courses — kept visible (and refindable/editable), no reminders. */
+    val finishedMedications: StateFlow<List<Medication>> = allMedications
+        .map { list -> list.filter { MedicationRepository.isCourseFinished(it) } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     fun setSelectedDate(date: LocalDate) {
         _selectedDate.value = date
     }
@@ -125,6 +131,7 @@ class MainViewModel(
         viewModelScope.launch {
             settingsRepository.setNotificationsEnabled(enabled)
             val allSchedules = repository.getAllActiveScheduleViews()
+            val medsById = repository.getAllMedicationsOnce().associateBy { it.id }
             allSchedules.forEach { view ->
                 val sched = com.aistudio.meditracker.data.Schedule(
                     id = view.scheduleId,
@@ -133,7 +140,12 @@ class MainViewModel(
                     timeMinute = view.timeMinute
                 )
                 if (enabled) {
-                    alarmScheduler.scheduleAlarm(sched, view.name)
+                    // Course-finished medications get no new alarms — their
+                    // stock is gone or the end date has passed.
+                    val med = medsById[view.medicationId]
+                    if (med != null && !MedicationRepository.isCourseFinished(med)) {
+                        alarmScheduler.scheduleAlarm(sched, view.name)
+                    }
                 } else {
                     alarmScheduler.cancelAlarm(sched)
                 }
@@ -141,13 +153,9 @@ class MainViewModel(
         }
     }
 
-    fun setPersistentReminder(enabled: Boolean) {
-        viewModelScope.launch { settingsRepository.setPersistentReminder(enabled) }
-    }
-
-    fun setCriticalAlerts(enabled: Boolean) {
-        viewModelScope.launch { settingsRepository.setCriticalAlerts(enabled) }
-    }
+    // NOTE: island pinning and DND-bypassing sound are always on since
+    // v2.5.3 — the toggles were removed from Settings, so there are no
+    // setters for them here anymore.
 
     fun setAlarmMode(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setAlarmMode(enabled) }
@@ -172,6 +180,22 @@ class MainViewModel(
                 } catch (_: Exception) {
                 }
                 alarmScheduler.cancelSnoozeAlarms(schedule.scheduleId)
+
+                // That may have been the last pill: when the course just
+                // finished, disarm the next scheduled reminder right away —
+                // the history stays, the reminders stop.
+                val med = repository.getMedicationById(schedule.medicationId)
+                if (med != null && MedicationRepository.isCourseFinished(med)) {
+                    alarmScheduler.cancelAlarm(
+                        com.aistudio.meditracker.data.Schedule(
+                            id = schedule.scheduleId,
+                            medicationId = schedule.medicationId,
+                            timeHour = schedule.timeHour,
+                            timeMinute = schedule.timeMinute
+                        )
+                    )
+                    alarmScheduler.cancelSnoozeAlarms(schedule.scheduleId)
+                }
             }
         }
     }
@@ -179,14 +203,27 @@ class MainViewModel(
     fun refillStock(medicationId: Int, amount: Int) {
         viewModelScope.launch {
             repository.refillStock(medicationId, amount)
+            // A refill revives a finished course: re-arm its reminders so
+            // the user does not have to edit anything to get them back.
+            val med = repository.getMedicationById(medicationId)
+            if (med != null && !MedicationRepository.isCourseFinished(med)) {
+                repository.getSchedulesForMedication(medicationId).forEach { s ->
+                    alarmScheduler.scheduleAlarm(s, med.name)
+                }
+            }
         }
     }
 
     fun addMedication(medication: Medication, times: List<Pair<Int, Int>>) {
         viewModelScope.launch {
             val createdSchedules = repository.addMedicationWithSchedules(medication, times)
-            createdSchedules.forEach { schedule ->
-                alarmScheduler.scheduleAlarm(schedule, medication.name)
+            // A brand-new course could theoretically start already finished
+            // (zero stock / past end date) — never arm alarms for it.
+            val finished = MedicationRepository.isCourseFinished(medication)
+            if (!finished) {
+                createdSchedules.forEach { schedule ->
+                    alarmScheduler.scheduleAlarm(schedule, medication.name)
+                }
             }
         }
     }
@@ -205,8 +242,13 @@ class MainViewModel(
             oldSchedules.forEach { alarmScheduler.cancelAlarm(it) }
 
             val newSchedules = repository.updateMedicationWithSchedules(medication, times)
-            newSchedules.forEach { schedule ->
-                alarmScheduler.scheduleAlarm(schedule, medication.name)
+            // Editing a finished course (e.g. refilling the stock or moving
+            // the end date) re-activates it; while it stays finished, no
+            // new alarms are armed.
+            if (!MedicationRepository.isCourseFinished(medication)) {
+                newSchedules.forEach { schedule ->
+                    alarmScheduler.scheduleAlarm(schedule, medication.name)
+                }
             }
         }
     }
@@ -216,6 +258,7 @@ class MainViewModel(
             val schedules = repository.getSchedulesForMedication(medication.id)
             schedules.forEach { schedule ->
                 alarmScheduler.cancelAlarm(schedule)
+                alarmScheduler.cancelSnoozeAlarms(schedule.id)
             }
             repository.deleteMedication(medication)
         }

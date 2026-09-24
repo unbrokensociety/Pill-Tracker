@@ -1,20 +1,14 @@
-> app-version: 2.5.2
+> app-version: 2.5.3
 
-* Completely reworked first-launch onboarding: three swipeable intro
-  slides — what the app does, a live preview of the reminder island
-  with its Taken/Snooze buttons, and privacy — followed by two short
-  coach-mark steps over the real interface (light scrim, so the app
-  stays visible while it is being explained)
-* The notification permission is now requested in context, on the
-  last intro slide after the reason is explained — instead of a cold
-  system dialog over a black screen at startup; it is never asked
-  twice, and early skippers get one polite fallback request right
-  after the tutorial closes
-* The tour always ends with an action: "Add now" opens the real
-  add-medication form so the first medication is entered right away;
-  "Later" leaves the user on the home screen
-* Coach steps trimmed from eight to the two that matter — today's
-  doses with the one-tap check-off circle, and the "+" button; the
-  name input moved out of onboarding (it already lives in Settings)
-* All onboarding texts rewritten shorter and clearer in English,
-  Ukrainian and Russian; replay from Settings works as before
+* Settings cleaned up: the "keep in the island" and "sound in silent &
+  DND" toggles are gone — both features are now simply always on (the
+  DND sound falls back to the normal channel automatically while
+  policy access is missing)
+* Smarter course handling: when pills run out or the end date passes,
+  the medication stops reminding and moves to a new "Finished courses"
+  group in the list; a refill brings it right back
+* History is never lost anymore: deleting a medication keeps all past
+  intakes in the calendar, and finished courses stay browsable too
+* Onboarding rebuilt: 6 slides — including an interactive one-tap demo
+  you can try on the spot and a stock/course explainer — plus a 4-step
+  coach tour (doses, bottom navigation island, settings, add button)

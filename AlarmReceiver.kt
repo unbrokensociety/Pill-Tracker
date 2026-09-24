@@ -91,11 +91,14 @@ class AlarmReceiver : BroadcastReceiver() {
             try {
                 val settingsRepo = com.aistudio.meditracker.data.SettingsRepository(context.applicationContext)
                 val isNotifEnabled = settingsRepo.notificationsFlow.first()
-                val isPersistent = settingsRepo.persistentReminderFlow.first()
-                val isCritical = settingsRepo.criticalAlertsFlow.first()
                 val isAlarmMode = settingsRepo.alarmModeFlow.first()
+                // Since v2.5.3 the island pinning and the DND-bypassing sound
+                // are always on: no user-facing toggles for them anymore.
+                val isPersistent = true
+                val isCritical = true
 
                 var alreadyTakenToday = false
+                var courseFinished = false
 
                 if (scheduleId != -1) {
                     val db = com.aistudio.meditracker.data.AppDatabase.getDatabase(context.applicationContext)
@@ -106,7 +109,12 @@ class AlarmReceiver : BroadcastReceiver() {
                     alreadyTakenToday = dao.getIntakeLog(scheduleId, todayEpoch) != null
 
                     // Reschedule the next occurrence while the course is active.
-                    if (view != null) {
+                    if (view == null) {
+                        // The medication (or its schedules) is gone — let the
+                        // last pending alarm die silently instead of ringing
+                        // about a ghost dose.
+                        courseFinished = true
+                    } else {
                         val med = dao.getMedicationById(view.medicationId)
                         val now = LocalDateTime.now()
                         var nextTime = now.withHour(view.timeHour).withMinute(view.timeMinute).withSecond(0).withNano(0)
@@ -115,9 +123,14 @@ class AlarmReceiver : BroadcastReceiver() {
                         }
                         val nextTimeMillis = nextTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-                        if (med == null || (med.endDate != null && med.endDate > 0L && nextTimeMillis > med.endDate)) {
-                            // Medication expired or removed, do not reschedule
-                        } else {
+                        // A finished course (medication removed, end date passed
+                        // or stock exhausted) stops reminding for good — the
+                        // intake history, however, is never touched.
+                        courseFinished = med == null ||
+                            (med.endDate != null && med.endDate > 0L && nextTimeMillis > med.endDate) ||
+                            com.aistudio.meditracker.data.MedicationRepository.isCourseFinished(med)
+
+                        if (!courseFinished) {
                             val schedule = com.aistudio.meditracker.data.Schedule(
                                 id = view.scheduleId,
                                 medicationId = view.medicationId,
@@ -130,7 +143,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     }
                 }
 
-                if (isNotifEnabled && !alreadyTakenToday) {
+                if (isNotifEnabled && !alreadyTakenToday && !courseFinished) {
                     showNotification(context, medicationName, scheduleId, isPersistent, isCritical, isAlarmMode)
                 }
             } catch (e: Exception) {

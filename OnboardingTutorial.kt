@@ -1,15 +1,17 @@
 package com.aistudio.meditracker.ui.components
 
 /*
- * Onboarding v3 — three short acts:
+ * Onboarding v4 — deeper, hands-on:
  *
- *   1) Swipeable intro slides: what the app does, how a reminder looks
- *      (a preview of the real notification island) and privacy.
- *   2) A contextual notification-permission step: the system dialog is
- *      only shown after the user knows why reminders need it.
- *   3) Two coach-mark steps over the REAL interface (the scrim is light
- *      so the app stays visible): where today's doses live and the "+"
- *      button that opens the real add form.
+ *   1) Six swipeable intro slides: what the app does, a preview of the
+ *      real reminder island, an INTERACTIVE one-tap demo (the user marks
+ *      a dose right on the slide), a stock & course explainer (what
+ *      happens when pills run out — reminders stop, history stays),
+ *      privacy, and the notification permission asked in context.
+ *   2) Four coach-mark steps over the REAL interface (light scrim so the
+ *      app stays visible): today's doses, the bottom navigation island,
+ *      Settings, and finally the "+" button that opens the real add
+ *      form.
  *
  * The tour always ends with an action, not a "congratulations" screen:
  * either "add now" (the add form opens for real) or "later" (home).
@@ -35,6 +37,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -54,6 +57,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -73,10 +77,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -287,6 +294,23 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         primaryRes = R.string.ob_next
     ),
     TourStep(
+        tag = "nav_island",
+        wantPage = 0,
+        icon = Icons.Filled.SwapHoriz,
+        animatedIcon = true,
+        titleRes = R.string.ob_step_nav_title,
+        descRes = R.string.ob_step_nav_desc,
+        primaryRes = R.string.ob_next
+    ),
+    TourStep(
+        tag = "settings_content",
+        wantPage = 3,
+        icon = Icons.Filled.Tune,
+        titleRes = R.string.ob_step_settings_title,
+        descRes = R.string.ob_step_settings_desc,
+        primaryRes = R.string.ob_next
+    ),
+    TourStep(
         tag = "fab_add",
         wantPage = 0,
         icon = Icons.Filled.AddCircle,
@@ -330,10 +354,11 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Act 1 + 2: intro slides (welcome / reminder / privacy / permission)
+ * Act 1 + 2: intro slides (welcome / reminder / demo / stock /
+ * privacy / permission)
  * ──────────────────────────────────────────────────────────────── */
 
-private const val INTRO_SLIDE_COUNT = 4
+private const val INTRO_SLIDE_COUNT = 6
 
 @Composable
 private fun IntroSlides(
@@ -510,7 +535,9 @@ private fun IntroSlides(
                         when (page) {
                             0 -> WelcomeSlide()
                             1 -> ReminderSlide()
-                            2 -> PrivacySlide()
+                            2 -> DemoSlide()
+                            3 -> StockSlide()
+                            4 -> PrivacySlide()
                             else -> PermissionSlide()
                         }
                     }
@@ -773,7 +800,315 @@ private fun ReminderIslandMock() {
     }
 }
 
-/* ── Slide 3: privacy ── */
+/* ── Slide 3: interactive one-tap demo ── */
+
+@Composable
+private fun DemoSlide() {
+    var demoTaken by remember { mutableStateOf(false) }
+
+    SlideIconBadge(icon = Icons.Filled.TouchApp)
+
+    Spacer(modifier = Modifier.height(18.dp))
+    SlideTitle(R.string.ob_demo_title)
+    Spacer(modifier = Modifier.height(8.dp))
+    SlideBody(R.string.ob_demo_desc)
+    Spacer(modifier = Modifier.height(18.dp))
+
+    DemoDoseCard(taken = demoTaken, onToggle = { demoTaken = !demoTaken })
+
+    Spacer(modifier = Modifier.height(14.dp))
+
+    // The hint reacts to the user's action — the slide teaches the exact
+    // gesture used on the real home screen.
+    AnimatedContent(
+        targetState = demoTaken,
+        transitionSpec = {
+            (fadeIn(tween(220, easing = EaseOutCubic)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
+                .togetherWith(fadeOut(tween(120)))
+        },
+        label = "demoHint"
+    ) { taken ->
+        Text(
+            text = stringResource(if (taken) R.string.ob_demo_hint_done else R.string.ob_demo_hint_idle),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (taken) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (taken) Color(0xFF6FCF97) else Color.White.copy(alpha = 0.72f)
+        )
+    }
+}
+
+/** A miniature of the real dose card — the circle actually toggles. */
+@Composable
+private fun DemoDoseCard(
+    taken: Boolean,
+    onToggle: () -> Unit
+) {
+    val cardScale by animateFloatAsState(
+        targetValue = if (taken) 0.98f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "demoCardScale"
+    )
+    val circleBg by animateColorAsState(
+        targetValue = if (taken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+        animationSpec = tween(280, easing = EaseOutCubic),
+        label = "demoCircleBg"
+    )
+    val circleBorder by animateColorAsState(
+        targetValue = if (taken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        animationSpec = tween(280, easing = EaseOutCubic),
+        label = "demoCircleBorder"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            }
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.verticalGradient(listOf(Color(0xFF232B38), Color(0xFF1A212C)))
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(18.dp))
+            .padding(14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.tertiary
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Medication,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(21.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.10f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ob_demo_chip_time),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.10f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ob_demo_chip_dose),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.85f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = stringResource(R.string.ob_mock_med),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            // The star of the show: a working check circle.
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(circleBg)
+                    .border(
+                        width = if (taken) 0.dp else 2.dp,
+                        color = circleBorder,
+                        shape = CircleShape
+                    )
+                    .clickable { onToggle() },
+                contentAlignment = Alignment.Center
+            ) {
+                AnimatedContent(
+                    targetState = taken,
+                    transitionSpec = {
+                        (scaleIn(initialScale = 0.4f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) + fadeIn(tween(180)))
+                            .togetherWith(scaleOut(targetScale = 0.4f, animationSpec = tween(140)) + fadeOut(tween(140)))
+                    },
+                    label = "demoCheck"
+                ) { checked ->
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = if (checked) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        },
+                        modifier = Modifier.size(if (checked) 24.dp else 20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/* ── Slide 4: stock & course lifecycle ── */
+
+@Composable
+private fun StockSlide() {
+    SlideIconBadge(icon = Icons.Filled.Inventory2)
+
+    Spacer(modifier = Modifier.height(18.dp))
+    SlideTitle(R.string.ob_stock_title)
+    Spacer(modifier = Modifier.height(8.dp))
+    SlideBody(R.string.ob_stock_desc)
+    Spacer(modifier = Modifier.height(18.dp))
+
+    StockPreviewCard()
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    SlideBullet(R.string.ob_stock_c1)
+    Spacer(modifier = Modifier.height(9.dp))
+    SlideBullet(R.string.ob_stock_c2)
+    Spacer(modifier = Modifier.height(9.dp))
+    SlideBullet(R.string.ob_stock_c3)
+}
+
+/** A low-stock preview: the app counts the package and warns in advance. */
+@Composable
+private fun StockPreviewCard() {
+    // Subtle breathing on the warning level so the card reads alive.
+    val breathe = rememberInfiniteTransition(label = "stockBreathe")
+    val warnAlpha by breathe.animateFloat(
+        initialValue = 0.55f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            tween(1100, easing = FastOutLinearInEasing),
+            RepeatMode.Reverse
+        ),
+        label = "stockWarnAlpha"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.verticalGradient(listOf(Color(0xFF232B38), Color(0xFF1A212C)))
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(18.dp))
+            .padding(14.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.tertiary
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Inventory2,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.ob_mock_med),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = stringResource(R.string.stock_remaining, 4),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.55f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Stock bar: almost empty.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.12f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.13f)
+                    .fillMaxHeight()
+                    .clip(CircleShape)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFFEF5350), Color(0xFFFF8A65))
+                        )
+                    )
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Notifications,
+                contentDescription = null,
+                tint = Color(0xFFFF8A65).copy(alpha = warnAlpha),
+                modifier = Modifier.size(13.dp)
+            )
+            Text(
+                text = stringResource(R.string.ob_stock_warn_line),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFFF8A65).copy(alpha = 0.55f + 0.45f * warnAlpha)
+            )
+        }
+    }
+}
+
+/* ── Slide 5: privacy ── */
 
 @Composable
 private fun PrivacySlide() {
@@ -830,7 +1165,7 @@ private fun PrivacySlide() {
     }
 }
 
-/* ── Slide 4: notification permission ── */
+/* ── Slide 6: notification permission ── */
 
 @Composable
 private fun PermissionSlide() {

@@ -26,7 +26,9 @@ class BootReceiver : BroadcastReceiver() {
 
                     for (view in activeSchedules) {
                         val med = dao.getMedicationById(view.medicationId)
-                        if (med == null || (med.endDate != null && med.endDate > 0L && System.currentTimeMillis() > med.endDate)) {
+                        // Finished courses (end date passed or stock ran out)
+                        // are not re-armed after a reboot / update.
+                        if (med == null || com.aistudio.meditracker.data.MedicationRepository.isCourseFinished(med)) {
                             continue
                         }
                         val schedule = Schedule(

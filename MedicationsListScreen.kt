@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.DateRange
@@ -40,7 +41,8 @@ fun MedicationsListScreen(
     bottomPadding: androidx.compose.ui.unit.Dp,
     onEditMedication: (Int) -> Unit = {}
 ) {
-    val medications by viewModel.allMedications.collectAsState()
+    val activeMeds by viewModel.activeMedications.collectAsState()
+    val finishedMeds by viewModel.finishedMedications.collectAsState()
     var medicationToDelete by remember { mutableStateOf<Medication?>(null) }
 
     if (medicationToDelete != null) {
@@ -107,7 +109,7 @@ fun MedicationsListScreen(
                 .padding(top = padding.calculateTopPadding())
                 .fillMaxSize()
         ) {
-            if (medications.isEmpty()) {
+            if (activeMeds.isEmpty() && finishedMeds.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -152,7 +154,15 @@ fun MedicationsListScreen(
                         .fillMaxSize()
                         .coachTag("meds_content")
                 ) {
-                    itemsIndexed(medications, key = { _, med -> med.id }) { index, med ->
+                    // Section headers appear only when both groups exist —
+                    // with a single group the list stays clean.
+                    if (finishedMeds.isNotEmpty() && activeMeds.isNotEmpty()) {
+                        item(key = "header_active") {
+                            ListSectionTitle(text = stringResource(R.string.meds_section_active))
+                        }
+                    }
+
+                    itemsIndexed(activeMeds, key = { _, med -> med.id }) { index, med ->
                         Box(
                             modifier = Modifier.animateItem(
                                 placementSpec = spring(
@@ -164,6 +174,36 @@ fun MedicationsListScreen(
                             StaggeredAppear(index = index) {
                                 MedicationInfoCard(
                                     medication = med,
+                                    finished = false,
+                                    onEdit = { onEditMedication(med.id) },
+                                    onDelete = { medicationToDelete = med }
+                                )
+                            }
+                        }
+                    }
+
+                    if (finishedMeds.isNotEmpty()) {
+                        item(key = "header_finished") {
+                            ListSectionTitle(
+                                text = stringResource(R.string.meds_section_finished),
+                                modifier = Modifier.padding(top = if (activeMeds.isEmpty()) 0.dp else 6.dp)
+                            )
+                        }
+                    }
+
+                    itemsIndexed(finishedMeds, key = { _, med -> "f_${med.id}" }) { index, med ->
+                        Box(
+                            modifier = Modifier.animateItem(
+                                placementSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMedium
+                                )
+                            )
+                        ) {
+                            StaggeredAppear(index = index) {
+                                MedicationInfoCard(
+                                    medication = med,
+                                    finished = true,
                                     onEdit = { onEditMedication(med.id) },
                                     onDelete = { medicationToDelete = med }
                                 )
@@ -178,8 +218,21 @@ fun MedicationsListScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
+private fun ListSectionTitle(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier.padding(start = 4.dp)
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
 fun MedicationInfoCard(
     medication: Medication,
+    finished: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -210,7 +263,7 @@ fun MedicationInfoCard(
                     text = medication.name,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (finished) 0.62f else 1f)
                 )
                 Text(
                     text = medication.dosage,
@@ -237,6 +290,37 @@ fun MedicationInfoCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    // Finished-course badge replaces the stock counter —
+                    // "0 pcs / low stock" would be noise for a ended course.
+                    if (finished) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.meds_finished_badge),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    }
+
                     val schedLabel = when (medication.scheduleType) {
                         "interval" -> stringResource(R.string.sched_interval, medication.intervalDays)
                         "as_needed" -> stringResource(R.string.sched_as_needed)
@@ -259,7 +343,7 @@ fun MedicationInfoCard(
                         )
                     }
 
-                    if (medication.trackStock) {
+                    if (medication.trackStock && !finished) {
                         val isLow = medication.stockCount <= medication.lowStockThreshold
                         Box(
                             modifier = Modifier

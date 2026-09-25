@@ -1,25 +1,27 @@
 package com.aistudio.meditracker.ui.components
 
 /*
- * Onboarding v6 — plain, native, human.
+ * Onboarding v7 — rebuilt from scratch.
  *
- * ACT 1 · Four swipeable intro slides on the app's own background, set in
- * the app's own colors and components (no dark overlay, no gradients):
- *     1. Welcome — what the app does, in one sentence (by name, if given)
- *     2. Try it — the real dose-card gesture, right on the slide
+ * ACT 1 · Four intro slides on the app's own background:
+ *     1. Welcome — what the app does, in one sentence (by name, if known)
+ *     2. Try it — the real dose-card gesture, live on the slide
  *     3. Reminders — the island, then the full-screen alarm fallback
- *     4. One last thing — the notification permission, honestly asked
+ *     4. One last thing — the notification permission, asked honestly
  *
- * ACT 2 · Five coach-mark steps over the REAL interface: today's doses,
- * the navigation island, the Calendar (history), Settings, and finally
- * the "+" button that opens the real add form.
+ * ACT 2 · A three-step guided tour over the REAL interface:
+ *     the "Today" header, the navigation island, the "+" button.
+ *     No whole-screen spotlights, no pulsing frames, no arrows: a quiet
+ *     scrim with one clean hole marks the element, a solid card placed
+ *     right below (or above) it explains it in one sentence, and the
+ *     button inside the card moves on. Between steps the overlay fades
+ *     out and back in — the screen behind never jumps.
  *
- * The tour always ends with an action, not a "congratulations" screen:
- * either "add now" (the add form opens for real) or "later" (home).
+ * Replay from Settings ("Показати навчання знову") skips the intro and
+ * opens the tour directly — the intro is for the very first launch.
  *
- * Coach-mark mechanics: screens publish their frames through
- * Modifier.coachTag("key"); the overlay cuts a hole in the scrim above
- * the current step's frame and animates the hole between steps.
+ * Elements opt into the tour with Modifier.coachTag("key"); the overlay
+ * reads their window frames from CoachMarks.
  */
 
 import androidx.activity.compose.BackHandler
@@ -28,17 +30,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector4D
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.TwoWayConverter
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -46,7 +41,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,15 +66,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -98,6 +87,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -108,7 +98,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -122,10 +111,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aistudio.meditracker.R
-import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.math.sin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -187,8 +173,8 @@ object OnboardingPrefs {
 
 /**
  * Tutorial bus: replay from Settings + navigation requests that the tour
- * hands to the main screen (switch pager page / open the add screen).
- * MainScreen listens and performs them.
+ * hands to the main screen (open the add screen; page switching is kept
+ * for compatibility). MainScreen listens and performs them.
  */
 object OnboardingBus {
     var replayRequested by mutableStateOf(false)
@@ -203,9 +189,19 @@ object OnboardingBus {
     /** Request "open the add-medication screen". */
     var addRequested by mutableStateOf(false)
 
+    /** Replay from Settings: jump straight to the tour, skip the intro. */
+    var replaySkipIntro by mutableStateOf(false)
+        private set
+
     fun requestReplay(context: android.content.Context) {
         OnboardingPrefs.reset(context)
+        replaySkipIntro = true
         replayRequested = true
+    }
+
+    /** Consumed by the overlay once the initial phase has been picked. */
+    fun consumeReplaySkipIntro() {
+        replaySkipIntro = false
     }
 
     fun consume() {
@@ -244,7 +240,7 @@ object CoachMarks {
 
 /**
  * Attach to a real UI element so the tour can highlight it:
- *   Modifier.coachTag("home_list")
+ *   Modifier.coachTag("home_hero")
  */
 fun Modifier.coachTag(key: String): Modifier {
     return this.onGloballyPositioned { coordinates ->
@@ -264,57 +260,33 @@ private fun notificationsGranted(context: android.content.Context): Boolean {
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Tour steps (the hands-on part)
+ * Tour steps — three, all small real elements on the home page
  * ──────────────────────────────────────────────────────────────── */
 
 private data class TourStep(
-    val tag: String,                // key in CoachMarks
-    val wantPage: Int,              // pager page to show when the step starts
-    val icon: ImageVector,
+    val tag: String,               // key in CoachMarks
     val titleRes: Int,
     val descRes: Int,
-    val primaryRes: Int,            // main button label
-    val secondaryRes: Int? = null,  // optional second button (always exits the tour)
-    val primaryOpensAdd: Boolean = false // primary action opens the real add form
+    val primaryRes: Int,           // main button label
+    val secondaryRes: Int? = null, // optional second button (always exits)
+    val primaryOpensAdd: Boolean = false
 )
 
 private fun buildTourSteps(): List<TourStep> = listOf(
     TourStep(
-        tag = "home_list",
-        wantPage = 0,
-        icon = Icons.Filled.TouchApp,
-        titleRes = R.string.ob_step_doses_title,
-        descRes = R.string.ob_step_doses_desc,
+        tag = "home_hero",
+        titleRes = R.string.ob_step_today_title,
+        descRes = R.string.ob_step_today_desc,
         primaryRes = R.string.ob_next
     ),
     TourStep(
         tag = "nav_island",
-        wantPage = 0,
-        icon = Icons.Filled.SwapHoriz,
         titleRes = R.string.ob_step_nav_title,
         descRes = R.string.ob_step_nav_desc,
         primaryRes = R.string.ob_next
     ),
     TourStep(
-        tag = "calendar_content",
-        wantPage = 1,
-        icon = Icons.Filled.CalendarMonth,
-        titleRes = R.string.ob_step_cal_title,
-        descRes = R.string.ob_step_cal_desc,
-        primaryRes = R.string.ob_next
-    ),
-    TourStep(
-        tag = "settings_content",
-        wantPage = 3,
-        icon = Icons.Filled.Tune,
-        titleRes = R.string.ob_step_settings_title,
-        descRes = R.string.ob_step_settings_desc,
-        primaryRes = R.string.ob_next
-    ),
-    TourStep(
         tag = "fab_add",
-        wantPage = 0,
-        icon = Icons.Filled.AddCircle,
         titleRes = R.string.ob_step_add_title,
         descRes = R.string.ob_step_add_desc,
         primaryRes = R.string.ob_add_now,
@@ -323,22 +295,17 @@ private fun buildTourSteps(): List<TourStep> = listOf(
     )
 )
 
-private val RectConverter = TwoWayConverter<Rect, AnimationVector4D>(
-    convertToVector = { AnimationVector4D(it.left, it.top, it.right, it.bottom) },
-    convertFromVector = { Rect(it.v1, it.v2, it.v3, it.v4) }
-)
-
 /* ────────────────────────────────────────────────────────────────
  * Overlay: intro slides -> coach tour
  * ──────────────────────────────────────────────────────────────── */
 
 @Composable
 fun OnboardingOverlay(onFinished: () -> Unit) {
-    var phase by remember { mutableStateOf(0) } // 0 = slides, 1 = coach tour
+    // Replay from Settings opens the tour directly.
+    var phase by remember { mutableStateOf(if (OnboardingBus.replaySkipIntro) 1 else 0) }
 
-    SideEffect {
-        OnboardingBus.tourActive = phase == 1
-    }
+    LaunchedEffect(Unit) { OnboardingBus.consumeReplaySkipIntro() }
+    SideEffect { OnboardingBus.tourActive = phase == 1 }
 
     if (phase == 0) {
         IntroSlides(
@@ -465,7 +432,7 @@ private fun IntroSlides(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Slide dots — quiet, left-aligned with the content.
+            // Slide dots — quiet, centered.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -534,7 +501,7 @@ private fun WelcomeSlide() {
 
     WelcomeArt()
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(26.dp))
     SlideTitle(R.string.ob_welcome_title)
     if (userName != null) {
         Spacer(modifier = Modifier.height(5.dp))
@@ -895,7 +862,12 @@ private fun PrimaryButton(
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Act 2: coach tour over the real interface
+ * Act 2: guided tour over the real interface
+ *
+ * One step, one element, one sentence. The overlay is a scrim with a
+ * single clean hole; the card sits right next to the hole and carries
+ * the only button. No pulses, no arrows, no cross-screen flights:
+ * between steps the overlay simply fades out and back in.
  * ──────────────────────────────────────────────────────────────── */
 
 @Composable
@@ -905,110 +877,11 @@ private fun CoachTour(
 ) {
     val density = LocalDensity.current
     var stepIndex by remember { mutableStateOf(0) }
-    var shownStep by remember { mutableStateOf(0) }
-    var holeTarget by remember { mutableStateOf<Rect?>(null) }
-    var nudge by remember { mutableStateOf(0) }
+    var hole by remember { mutableStateOf(Rect.Zero) }
 
-    val holeAnim = remember { Animatable(Rect(0f, 0f, 0f, 0f), RectConverter) }
+    val fade = remember { Animatable(0f) }
 
     val step = steps[stepIndex]
-
-    // System "back": previous step, or leave the tutorial.
-    BackHandler(enabled = true) {
-        if (stepIndex > 0) {
-            stepIndex -= 1
-        } else {
-            onFinish()
-        }
-    }
-
-    // Ask the main screen for the page the step lives on, then wait a
-    // moment for the tag's frame to appear.
-    LaunchedEffect(stepIndex) {
-        OnboardingBus.requestPage(step.wantPage)
-        val tag = step.tag
-        withTimeoutOrNull(900L) {
-            snapshotFlow { CoachMarks.rects[tag] }.firstOrNull()
-        }
-        shownStep = stepIndex
-    }
-
-    // Track the highlighted element's frame (tall elements are capped
-    // so the hole never swallows the whole screen).
-    LaunchedEffect(shownStep) {
-        val tag = steps[shownStep].tag
-        snapshotFlow { CoachMarks.rects[tag] }
-            .filterNotNull()
-            .collect { r ->
-                val maxHoleH = with(density) { 300.dp.toPx() }
-                holeTarget = if (r.height > maxHoleH) {
-                    Rect(r.left, r.top, r.right, r.top + maxHoleH)
-                } else {
-                    r
-                }
-            }
-    }
-
-    LaunchedEffect(holeTarget) {
-        val target = holeTarget ?: return@LaunchedEffect
-        if (holeAnim.value.isEmpty) {
-            holeAnim.snapTo(target)
-        } else {
-            holeAnim.animateTo(
-                target,
-                spring(dampingRatio = 0.88f, stiffness = 460f)
-            )
-        }
-    }
-
-    // Pulsing highlight frame.
-    val pulse = rememberInfiniteTransition(label = "coachPulse")
-    val pulseAlpha by pulse.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            tween(900, easing = FastOutLinearInEasing),
-            RepeatMode.Reverse
-        ),
-        label = "coachPulseAlpha"
-    )
-
-    // "Tap here": expanding rings in the center of the hole.
-    val tapPulse = rememberInfiniteTransition(label = "tapPulse")
-    val tapPhase by tapPulse.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            tween(1500, easing = LinearEasing),
-            RepeatMode.Restart
-        ),
-        label = "tapPhase"
-    )
-
-    val appear = remember(shownStep) { Animatable(0f) }
-    LaunchedEffect(shownStep) {
-        appear.animateTo(1f, tween(360, easing = EaseOutCubic))
-    }
-
-    val nudgeShake by animateFloatAsState(
-        targetValue = if (nudge > 0) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.35f, stiffness = 400f),
-        label = "nudgeShake"
-    )
-    LaunchedEffect(nudge) {
-        if (nudge > 0) {
-            delay(450)
-            nudge = 0
-        }
-    }
-
-    // LIGHT scrim: the real interface stays visible behind the overlay —
-    // the tooltip card has its own solid background for readability.
-    val scrimAlpha = 0.40f * appear.value
-
-    val gap = 10.dp
-    val arrowSize = 14.dp
-    var tooltipH by remember { mutableStateOf(232.dp) }
 
     fun performPrimary() {
         if (step.primaryOpensAdd) {
@@ -1021,277 +894,178 @@ private fun CoachTour(
         }
     }
 
+    // System "back": previous step, or leave the tutorial.
+    BackHandler(enabled = true) {
+        if (stepIndex > 0) {
+            stepIndex -= 1
+        } else {
+            onFinish()
+        }
+    }
+
+    // Step lifecycle: fade the spotlight out (if shown), take the new
+    // element's frame, fade back in. The screen behind never jumps —
+    // the swap happens while the overlay is invisible.
+    LaunchedEffect(stepIndex) {
+        if (fade.value > 0f) {
+            fade.animateTo(0f, tween(170, easing = FastOutLinearInEasing))
+        }
+        val rect = withTimeoutOrNull(1500L) {
+            snapshotFlow { CoachMarks.rects[steps[stepIndex].tag] }
+                .filterNotNull()
+                .firstOrNull()
+        }
+        hole = rect ?: Rect.Zero
+        fade.animateTo(1f, tween(300, easing = EaseOutCubic))
+    }
+
+    // Keep the hole glued to the element in case its frame shifts.
+    LaunchedEffect(stepIndex) {
+        snapshotFlow { CoachMarks.rects[steps[stepIndex].tag] }
+            .filterNotNull()
+            .collect { rect ->
+                if (rect != hole) hole = rect
+            }
+    }
+
+    var tooltipH by remember { mutableStateOf(210.dp) }
+    val gap = 18.dp
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(holeTarget, stepIndex) {
-                detectTapGestures { offset ->
-                    val hole = holeTarget
-                    if (hole != null && hole.inflate(12f).contains(offset)) {
-                        performPrimary()
-                    } else {
-                        nudge++
-                    }
-                }
-            }
+            // Consume everything: the interface below is read-only during
+            // the tour; the card's buttons are the way forward.
+            .pointerInput(Unit) { detectTapGestures { } }
             .drawBehind {
-                // Scrim with a hole above the highlighted element.
-                val hole = holeAnim.value
+                val f = fade.value
+                if (f <= 0.01f) return@drawBehind
+                val h = hole
+                // Scrim with one rounded hole above the highlighted element.
                 val path = Path()
                 path.fillType = PathFillType.EvenOdd
                 path.addRect(Rect(0f, 0f, size.width, size.height))
-                if (!hole.isEmpty) {
-                    val cornerRadius = 22.dp.toPx()
+                if (!h.isEmpty) {
+                    val pad = 10.dp.toPx()
+                    val corner = 22.dp.toPx()
                     path.addRoundRect(
                         RoundRect(
-                            left = hole.left - 8f,
-                            top = hole.top - 8f,
-                            right = hole.right + 8f,
-                            bottom = hole.bottom + 8f,
-                            cornerRadius = CornerRadius(cornerRadius, cornerRadius)
+                            rect = Rect(h.left - pad, h.top - pad, h.right + pad, h.bottom + pad),
+                            cornerRadius = CornerRadius(corner, corner)
                         )
                     )
                 }
-                drawPath(path, Color.Black.copy(alpha = scrimAlpha))
+                drawPath(path, Color.Black.copy(alpha = 0.52f * f))
+                // A thin quiet ring — no pulsing.
+                if (!h.isEmpty) {
+                    val pad = 10.dp.toPx()
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.65f * f),
+                        topLeft = Offset(h.left - pad, h.top - pad),
+                        size = Size(h.width + pad * 2f, h.height + pad * 2f),
+                        cornerRadius = CornerRadius(22.dp.toPx(), 22.dp.toPx()),
+                        style = Stroke(width = 1.5.dp.toPx())
+                    )
+                }
             }
     ) {
         val maxHPx = with(density) { maxHeight.toPx() }
-        val topMinPx = with(density) { 100.dp.toPx() }
-        val bottomGuardPx = with(density) { 24.dp.toPx() }
 
-        Canvas(
+        // "Skip" — always available in the top-right corner.
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    alpha = appear.value
-                    translationX = nudgeShake * 6f * sin(nudge * 12.9898f * 100f)
-                }
-        ) {
-            val hole = holeAnim.value
-            if (hole.isEmpty) return@Canvas
-            val cornerRadius = 22.dp.toPx()
-            val insetHole = Rect(
-                left = hole.left - 8f,
-                top = hole.top - 8f,
-                right = hole.right + 8f,
-                bottom = hole.bottom + 8f
-            )
-            // Soft glow.
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.14f * pulseAlpha),
-                topLeft = Offset(insetHole.left, insetHole.top),
-                size = Size(insetHole.width, insetHole.height),
-                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                style = Stroke(width = 10.dp.toPx())
-            )
-            // Bright frame.
-            drawRoundRect(
-                color = Color.White.copy(alpha = 0.95f * pulseAlpha),
-                topLeft = Offset(insetHole.left, insetHole.top),
-                size = Size(insetHole.width, insetHole.height),
-                cornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                style = Stroke(width = 2.5.dp.toPx())
-            )
-            // "Tap here" rings + center dot.
-            val c = hole.center
-            val rMin = min(hole.width, hole.height) / 2f
-            val ringR = rMin * (0.34f + 0.62f * tapPhase)
-            drawCircle(
-                color = Color.White.copy(alpha = (1f - tapPhase) * 0.50f),
-                radius = ringR,
-                center = c,
-                style = Stroke(width = 3.dp.toPx())
-            )
-            drawCircle(
-                color = Color.White.copy(alpha = 0.92f),
-                radius = 5.dp.toPx(),
-                center = c
-            )
-        }
-
-        // "Skip" — always in the top-right corner.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
+                .align(Alignment.TopEnd)
                 .systemBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .graphicsLayer { alpha = fade.value }
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable { onFinish() }
+                .padding(horizontal = 16.dp, vertical = 9.dp)
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable { onFinish() }
-                    .padding(horizontal = 16.dp, vertical = 9.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.ob_skip),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            Text(
+                text = stringResource(R.string.ob_skip),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
 
-        // Step tooltip: the card measures its real height and positions
-        // itself below the hole (or above it when there is no room).
-        AnimatedContent(
-            targetState = shownStep,
+        // Step card: solid surface, overline with the step number, title,
+        // one sentence, one button. Positioned below the hole when it
+        // fits, above it otherwise; centered when there is no hole yet.
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset {
-                    val hole = holeAnim.value
                     val tipHPx = tooltipH.toPx()
                     val gapPx = gap.toPx()
                     val y: Float = if (hole.isEmpty) {
                         (maxHPx - tipHPx) / 2f
                     } else {
                         val fitsBelow =
-                            hole.bottom + gapPx + tipHPx + bottomGuardPx < maxHPx
+                            hole.bottom + gapPx + tipHPx + 24.dp.toPx() <= maxHPx
                         if (fitsBelow) {
-                            (hole.bottom + gapPx)
-                                .coerceAtMost(maxHPx - tipHPx - bottomGuardPx)
+                            hole.bottom + gapPx
                         } else {
-                            (hole.top - tipHPx - gapPx).coerceAtLeast(topMinPx)
+                            (hole.top - gapPx - tipHPx).coerceAtLeast(64.dp.toPx())
                         }
                     }
                     IntOffset(0, y.roundToInt())
                 }
-                .padding(horizontal = 20.dp),
-            transitionSpec = {
-                (
-                    fadeIn(tween(260, easing = EaseOutCubic)) +
-                        scaleIn(
-                            initialScale = 0.97f,
-                            animationSpec = tween(260, easing = EaseOutCubic)
-                        )
-                    ) togetherWith (
-                    fadeOut(tween(140, easing = FastOutLinearInEasing)) +
-                        scaleOut(targetScale = 0.98f, animationSpec = tween(140))
-                    )
-            },
-            label = "coachTooltip"
-        ) { index ->
-            val s = steps[index]
-            // Colors are read in composable context (never inside drawBehind).
-            val tipColor = MaterialTheme.colorScheme.surface
-            val titleColor = MaterialTheme.colorScheme.onSurface
-            val subColor = MaterialTheme.colorScheme.onSurfaceVariant
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer { alpha = appear.value }
-                    .onGloballyPositioned { coords ->
-                        with(density) { tooltipH = coords.size.height.toDp() }
-                    }
-                    // Arrow pointing at the hole (drawn before clip so the
-                    // rounded corners do not cut it off).
-                    .drawBehind {
-                        val hole = holeAnim.value
-                        val a = arrowSize.toPx()
-                        val cx = if (hole.isEmpty) {
-                            size.width / 2f
-                        } else {
-                            val screenCx = (hole.left + hole.right) / 2f - 20.dp.toPx()
-                            screenCx.coerceIn(a, size.width - a)
-                        }
-                        val path = Path()
-                        val fitsBelow = if (hole.isEmpty) true else {
-                            hole.bottom + gap.toPx() + size.height + 24.dp.toPx() < maxHPx
-                        }
-                        if (fitsBelow) {
-                            path.moveTo(cx, -a / 2f)
-                            path.lineTo(cx + a / 2f, a / 2f)
-                            path.lineTo(cx, a * 1.5f)
-                            path.lineTo(cx - a / 2f, a / 2f)
-                        } else {
-                            path.moveTo(cx, size.height + a / 2f)
-                            path.lineTo(cx + a / 2f, size.height - a / 2f)
-                            path.lineTo(cx, size.height - a * 1.5f)
-                            path.lineTo(cx - a / 2f, size.height - a / 2f)
-                        }
-                        path.close()
-                        drawPath(path, tipColor)
-                    }
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(tipColor)
-                    .padding(20.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = s.icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(21.dp)
-                        )
-                    }
-                    Text(
-                        text = stringResource(s.titleRes),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = titleColor,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = stringResource(
-                            R.string.ob_step_of, index + 1, steps.size
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = subColor
-                    )
+                .graphicsLayer { alpha = fade.value }
+                .onGloballyPositioned { coords ->
+                    with(density) { tooltipH = coords.size.height.toDp() }
                 }
+                .padding(horizontal = 20.dp)
+                .shadow(12.dp, RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 20.dp, vertical = 18.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.ob_step_of, stepIndex + 1, steps.size),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
+            )
 
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(s.descRes),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = subColor
-                )
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = stringResource(step.titleRes),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
 
-                Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(7.dp))
+            Text(
+                text = stringResource(step.descRes),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-                // Primary action of the step.
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // Primary action of the step.
+            CoachButton(
+                labelRes = step.primaryRes,
+                filled = true
+            ) { performPrimary() }
+
+            // Optional secondary action ("later") — always exits the tour.
+            step.secondaryRes?.let { secondaryRes ->
+                Spacer(modifier = Modifier.height(6.dp))
                 CoachButton(
-                    labelRes = s.primaryRes,
-                    filled = true
-                ) { performPrimary() }
-
-                // Optional secondary action ("later") — always exits the tour.
-                s.secondaryRes?.let { secondaryRes ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    CoachButton(
-                        labelRes = secondaryRes,
-                        filled = false
-                    ) { onFinish() }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Text(
-                    text = stringResource(R.string.ob_tap_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = subColor.copy(alpha = 0.75f),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                    labelRes = secondaryRes,
+                    filled = false
+                ) { onFinish() }
             }
         }
     }
 }
 
-/** Tooltip buttons: solid primary, or a quiet outlined variant. */
+/** Tour card buttons: solid primary, or a quiet outlined variant. */
 @Composable
 private fun CoachButton(
     labelRes: Int,

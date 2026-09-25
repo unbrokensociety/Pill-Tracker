@@ -1,10 +1,12 @@
-> app-version: 2.5.5
+> app-version: 2.5.6
 
-* Onboarding redesigned with a human touch: it now uses the app's own
-  colors and real components instead of a dark show — 4 calm slides
-  (welcome, a hands-on dose-marking demo, the reminder preview, the
-  notification permission) instead of 7
-* Illustrations redrawn in the app's theme: a day ring that fills,
-  the reminder island and the full-screen alarm — no gradients, no glow
-* Shorter, friendlier copy in all three languages
-* The coach tour keeps its 5 steps with a cleaner card and quieter copy
+* Onboarding rebuilt from scratch. The guided tour now highlights only
+  real, specific elements — the Today header, the navigation island and
+  the "+" button — with one clean spotlight and a single card next to
+  it. No more pulsing frames, tap rings or whole-screen spotlights
+* The tour is now 3 focused steps instead of 5, and "Show the tutorial
+  again" from Settings opens it directly, skipping the intro slides
+* Between steps the overlay fades out and back in — nothing jumps
+  or flies across the screen anymore
+* Intro copy polished in all three languages; the welcome art is now
+  an open composition instead of a boxed panel

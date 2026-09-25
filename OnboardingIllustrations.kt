@@ -63,11 +63,9 @@ import com.aistudio.meditracker.R
 
 @Composable
 fun WelcomeArt(modifier: Modifier = Modifier) {
-    val panel = MaterialTheme.colorScheme.surfaceVariant
-    val panelBorder = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
     val accent = MaterialTheme.colorScheme.primary
     val track = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-    val chipBg = MaterialTheme.colorScheme.surface
+    val chipBg = MaterialTheme.colorScheme.surfaceVariant
     val chipText = MaterialTheme.colorScheme.onSurfaceVariant
 
     // One meaningful motion: the ring fills once, the way it does on the
@@ -78,17 +76,12 @@ fun WelcomeArt(modifier: Modifier = Modifier) {
     }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
-            .background(panel)
-            .border(1.dp, panelBorder, RoundedCornerShape(26.dp))
-            .padding(vertical = 22.dp),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Canvas(modifier = Modifier.size(116.dp)) {
-                val stroke = 9.dp.toPx()
+            Canvas(modifier = Modifier.size(132.dp)) {
+                val stroke = 10.dp.toPx()
                 val inset = stroke / 2f + 1.dp.toPx()
                 val arc = Size(size.width - inset * 2f, size.height - inset * 2f)
                 drawArc(
@@ -113,8 +106,8 @@ fun WelcomeArt(modifier: Modifier = Modifier) {
             FormTypeIcon(
                 formKey = "capsule",
                 tint = accent,
-                size = 52.dp,
-                iconSize = 25.dp
+                size = 56.dp,
+                iconSize = 27.dp
             )
         }
 
@@ -127,7 +120,6 @@ fun WelcomeArt(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .clip(RoundedCornerShape(10.dp))
                         .background(chipBg)
-                        .border(1.dp, panelBorder, RoundedCornerShape(10.dp))
                         .padding(horizontal = 11.dp, vertical = 5.dp)
                 ) {
                     Text(

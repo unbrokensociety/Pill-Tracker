@@ -1,12 +1,7 @@
-> app-version: 2.5.6
+> app-version: 2.5.7
 
-* Onboarding rebuilt from scratch. The guided tour now highlights only
-  real, specific elements — the Today header, the navigation island and
-  the "+" button — with one clean spotlight and a single card next to
-  it. No more pulsing frames, tap rings or whole-screen spotlights
-* The tour is now 3 focused steps instead of 5, and "Show the tutorial
-  again" from Settings opens it directly, skipping the intro slides
-* Between steps the overlay fades out and back in — nothing jumps
-  or flies across the screen anymore
-* Intro copy polished in all three languages; the welcome art is now
-  an open composition instead of a boxed panel
+* The onboarding from v2.5.5 is fully back — the same 4 intro slides
+  and the same 5-step guided tour over the real interface
+* The minimal 3-step tour from v2.5.6 is gone; it cut too much of
+  what the tour was supposed to teach
+* Nothing else changed — this release only rolls the onboarding back

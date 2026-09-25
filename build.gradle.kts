@@ -30,6 +30,7 @@ val flatSources: Map<String, String> = mapOf(
     "TermsOfServiceDialog.kt" to "app/src/main/java/com/aistudio/meditracker/ui/components/TermsOfServiceDialog.kt",
     "LocaleHelper.kt" to "app/src/main/java/com/aistudio/meditracker/ui/locale/LocaleHelper.kt",
     "OnboardingTutorial.kt" to "app/src/main/java/com/aistudio/meditracker/ui/components/OnboardingTutorial.kt",
+    "OnboardingIllustrations.kt" to "app/src/main/java/com/aistudio/meditracker/ui/components/OnboardingIllustrations.kt",
     "UpdateChecker.kt" to "app/src/main/java/com/aistudio/meditracker/ui/components/UpdateChecker.kt",
     "UpdateCenter.kt" to "app/src/main/java/com/aistudio/meditracker/ui/components/UpdateCenter.kt",
     "UpdateDialog.kt" to "app/src/main/java/com/aistudio/meditracker/ui/components/UpdateDialog.kt",

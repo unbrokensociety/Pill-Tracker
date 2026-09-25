@@ -1,17 +1,21 @@
 package com.aistudio.meditracker.ui.components
 
 /*
- * Onboarding v4 — deeper, hands-on:
+ * Onboarding v5 — a full guided course, illustrated:
  *
- *   1) Six swipeable intro slides: what the app does, a preview of the
- *      real reminder island, an INTERACTIVE one-tap demo (the user marks
- *      a dose right on the slide), a stock & course explainer (what
- *      happens when pills run out — reminders stop, history stays),
- *      privacy, and the notification permission asked in context.
- *   2) Four coach-mark steps over the REAL interface (light scrim so the
- *      app stays visible): today's doses, the bottom navigation island,
- *      Settings, and finally the "+" button that opens the real add
- *      form.
+ *   ACT 1 · Seven swipeable intro slides, each led by a living,
+ *   hand-drawn illustration (OnboardingIllustrations.kt):
+ *     1. Welcome — glowing capsule, personal greeting by name
+ *     2. Adding a medication — a miniature of the real add form
+ *     3. INTERACTIVE demo — mark a dose on the spot, watch the day ring fill
+ *     4. Reminders — the island preview + the full-screen alarm fallback
+ *     5. Stock & courses — the counting bottle + active/done/history strip
+ *     6. History — a month grid that fills with taken/missed days
+ *     7. Privacy — the shield + the notification permission asked in context
+ *
+ *   ACT 2 · Five coach-mark steps over the REAL interface: today's doses,
+ *   the navigation island, the Calendar (history), Settings, and finally
+ *   the "+" button that opens the real add form.
  *
  * The tour always ends with an action, not a "congratulations" screen:
  * either "add now" (the add form opens for real) or "later" (home).
@@ -57,7 +61,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -75,12 +78,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
@@ -303,6 +304,14 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         primaryRes = R.string.ob_next
     ),
     TourStep(
+        tag = "calendar_content",
+        wantPage = 1,
+        icon = Icons.Filled.CalendarMonth,
+        titleRes = R.string.ob_step_cal_title,
+        descRes = R.string.ob_step_cal_desc,
+        primaryRes = R.string.ob_next
+    ),
+    TourStep(
         tag = "settings_content",
         wantPage = 3,
         icon = Icons.Filled.Tune,
@@ -354,11 +363,11 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Act 1 + 2: intro slides (welcome / reminder / demo / stock /
- * privacy / permission)
+ * Act 1: intro slides (welcome / add / demo / reminders / stock /
+ * history / privacy + permission)
  * ──────────────────────────────────────────────────────────────── */
 
-private const val INTRO_SLIDE_COUNT = 6
+private const val INTRO_SLIDE_COUNT = 7
 
 @Composable
 private fun IntroSlides(
@@ -534,11 +543,12 @@ private fun IntroSlides(
                     ) {
                         when (page) {
                             0 -> WelcomeSlide()
-                            1 -> ReminderSlide()
+                            1 -> AddSlide()
                             2 -> DemoSlide()
-                            3 -> StockSlide()
-                            4 -> PrivacySlide()
-                            else -> PermissionSlide()
+                            3 -> ReminderSlide()
+                            4 -> StockSlide()
+                            5 -> HistorySlide()
+                            else -> PrivacySlide()
                         }
                     }
                 }
@@ -608,24 +618,22 @@ private fun IntroSlides(
 
 @Composable
 private fun WelcomeSlide() {
-    // Breathing app icon.
-    val breathe = rememberInfiniteTransition(label = "breathe")
-    val scale by breathe.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
-        animationSpec = infiniteRepeatable(
-            tween(1600, easing = FastOutLinearInEasing),
-            RepeatMode.Reverse
-        ),
-        label = "breatheScale"
-    )
-    SlideIconBadge(
-        icon = Icons.Filled.Medication,
-        scale = { scale }
-    )
+    val context = LocalContext.current
+    val userName = remember { OnboardingPrefs.getUserName(context) }
+
+    WelcomeArt()
 
     Spacer(modifier = Modifier.height(20.dp))
     SlideTitle(R.string.ob_welcome_title)
+    if (userName != null) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.ob_welcome_name, userName),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
     Spacer(modifier = Modifier.height(8.dp))
     SlideBody(R.string.ob_welcome_desc)
     Spacer(modifier = Modifier.height(18.dp))
@@ -636,74 +644,32 @@ private fun WelcomeSlide() {
     SlideBullet(R.string.ob_welcome_b3)
 }
 
-/* ── Slide 2: how a reminder looks ── */
+/* ── Slide 2: adding a medication (with a miniature of the real form) ── */
 
 @Composable
-private fun ReminderSlide() {
-    SlideIconBadge(icon = Icons.Filled.Notifications)
+private fun AddSlide() {
+    AddFormArt()
 
-    Spacer(modifier = Modifier.height(18.dp))
-    SlideTitle(R.string.ob_reminder_title)
+    Spacer(modifier = Modifier.height(20.dp))
+    SlideTitle(R.string.ob_add_title)
     Spacer(modifier = Modifier.height(8.dp))
-    SlideBody(R.string.ob_reminder_desc)
+    SlideBody(R.string.ob_add_desc)
     Spacer(modifier = Modifier.height(18.dp))
 
-    ReminderIslandMock()
-
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = stringResource(R.string.ob_reminder_explain),
-        style = MaterialTheme.typography.bodySmall,
-        color = Color.White.copy(alpha = 0.72f)
+    // Three numbered steps — the exact path through the add form.
+    val stepTexts = listOf(
+        R.string.ob_add_s1,
+        R.string.ob_add_s2,
+        R.string.ob_add_s3
     )
-}
-
-/** A still preview of the real reminder island with its action buttons. */
-@Composable
-private fun ReminderIslandMock() {
-    // Gentle float so the card reads as "alive".
-    val float = rememberInfiniteTransition(label = "islandFloat")
-    val floatY by float.animateFloat(
-        initialValue = -4f,
-        targetValue = 4f,
-        animationSpec = infiniteRepeatable(
-            tween(2200, easing = FastOutLinearInEasing),
-            RepeatMode.Reverse
-        ),
-        label = "islandFloatY"
-    )
-    // Pulsing "now" marker, like the live chronometer in the real reminder.
-    val nowPulse = rememberInfiniteTransition(label = "nowPulse")
-    val nowAlpha by nowPulse.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            tween(900, easing = FastOutLinearInEasing),
-            RepeatMode.Reverse
-        ),
-        label = "nowAlpha"
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .graphicsLayer { translationY = floatY }
-            .clip(RoundedCornerShape(18.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF232B38), Color(0xFF1A212C))
-                )
-            )
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(18.dp))
-            .padding(12.dp)
-    ) {
+    stepTexts.forEachIndexed { index, res ->
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(22.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -715,89 +681,53 @@ private fun ReminderIslandMock() {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Medication,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.ob_mock_med),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = stringResource(R.string.ob_mock_dose),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.55f)
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = nowAlpha))
-                )
-                Text(
-                    text = stringResource(R.string.ob_mock_now),
+                    text = "${index + 1}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.65f)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Filled "taken" action — the primary path.
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(38.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.notif_taken),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = Color.White
                 )
             }
-            // Tonal "snooze" action.
-            Box(
-                modifier = Modifier
-                    .weight(1.2f)
-                    .height(38.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.10f))
-                    .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.ob_mock_snooze),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
-            }
+            Text(
+                text = stringResource(res),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.80f)
+            )
+        }
+        if (index < stepTexts.lastIndex) {
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
+}
+
+/* ── Slide 4: how a reminder looks (island + full-screen alarm) ── */
+
+@Composable
+private fun ReminderSlide() {
+    SlideTitle(R.string.ob_reminder_title)
+    Spacer(modifier = Modifier.height(8.dp))
+    SlideBody(R.string.ob_reminder_desc)
+    Spacer(modifier = Modifier.height(16.dp))
+
+    IslandNotificationMock()
+
+    Spacer(modifier = Modifier.height(14.dp))
+    Text(
+        text = stringResource(R.string.ob_reminder_explain),
+        style = MaterialTheme.typography.bodySmall,
+        color = Color.White.copy(alpha = 0.72f)
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    AlarmMockArt()
+
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(
+        text = stringResource(R.string.ob_reminder_alarm),
+        style = MaterialTheme.typography.bodySmall,
+        color = Color.White.copy(alpha = 0.72f)
+    )
 }
 
 /* ── Slide 3: interactive one-tap demo ── */
@@ -818,22 +748,28 @@ private fun DemoSlide() {
 
     Spacer(modifier = Modifier.height(14.dp))
 
-    // The hint reacts to the user's action — the slide teaches the exact
-    // gesture used on the real home screen.
-    AnimatedContent(
-        targetState = demoTaken,
-        transitionSpec = {
-            (fadeIn(tween(220, easing = EaseOutCubic)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
-                .togetherWith(fadeOut(tween(120)))
-        },
-        label = "demoHint"
-    ) { taken ->
-        Text(
-            text = stringResource(if (taken) R.string.ob_demo_hint_done else R.string.ob_demo_hint_idle),
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (taken) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (taken) Color(0xFF6FCF97) else Color.White.copy(alpha = 0.72f)
-        )
+    // The hint reacts to the user's action — the day ring fills exactly
+    // like the real one on the home screen when a dose is marked.
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        MiniDayRing(fraction = { if (demoTaken) 1f else 0f })
+        AnimatedContent(
+            targetState = demoTaken,
+            transitionSpec = {
+                (fadeIn(tween(220, easing = EaseOutCubic)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
+                    .togetherWith(fadeOut(tween(120)))
+            },
+            label = "demoHint"
+        ) { taken ->
+            Text(
+                text = stringResource(if (taken) R.string.ob_demo_hint_done else R.string.ob_demo_hint_idle),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = if (taken) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (taken) Color(0xFF6FCF97) else Color.White.copy(alpha = 0.72f)
+            )
+        }
     }
 }
 
@@ -974,19 +910,20 @@ private fun DemoDoseCard(
     }
 }
 
-/* ── Slide 4: stock & course lifecycle ── */
+/* ── Slide 5: stock & course lifecycle ── */
 
 @Composable
 private fun StockSlide() {
-    SlideIconBadge(icon = Icons.Filled.Inventory2)
-
-    Spacer(modifier = Modifier.height(18.dp))
     SlideTitle(R.string.ob_stock_title)
     Spacer(modifier = Modifier.height(8.dp))
     SlideBody(R.string.ob_stock_desc)
-    Spacer(modifier = Modifier.height(18.dp))
+    Spacer(modifier = Modifier.height(16.dp))
 
-    StockPreviewCard()
+    StockBottleArt()
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    CourseLifecycleArt()
 
     Spacer(modifier = Modifier.height(16.dp))
 
@@ -997,143 +934,42 @@ private fun StockSlide() {
     SlideBullet(R.string.ob_stock_c3)
 }
 
-/** A low-stock preview: the app counts the package and warns in advance. */
+/* ── Slide 6: history & calendar ── */
+
 @Composable
-private fun StockPreviewCard() {
-    // Subtle breathing on the warning level so the card reads alive.
-    val breathe = rememberInfiniteTransition(label = "stockBreathe")
-    val warnAlpha by breathe.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            tween(1100, easing = FastOutLinearInEasing),
-            RepeatMode.Reverse
-        ),
-        label = "stockWarnAlpha"
-    )
+private fun HistorySlide() {
+    SlideTitle(R.string.ob_hist_title)
+    Spacer(modifier = Modifier.height(8.dp))
+    SlideBody(R.string.ob_hist_desc)
+    Spacer(modifier = Modifier.height(16.dp))
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(
-                Brush.verticalGradient(listOf(Color(0xFF232B38), Color(0xFF1A212C)))
-            )
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(18.dp))
-            .padding(14.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Inventory2,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+    CalendarMonthArt()
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.ob_mock_med),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = stringResource(R.string.stock_remaining, 4),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.55f)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Stock bar: almost empty.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.12f))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.13f)
-                    .fillMaxHeight()
-                    .clip(CircleShape)
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(Color(0xFFEF5350), Color(0xFFFF8A65))
-                        )
-                    )
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Notifications,
-                contentDescription = null,
-                tint = Color(0xFFFF8A65).copy(alpha = warnAlpha),
-                modifier = Modifier.size(13.dp)
-            )
-            Text(
-                text = stringResource(R.string.ob_stock_warn_line),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFFFF8A65).copy(alpha = 0.55f + 0.45f * warnAlpha)
-            )
-        }
-    }
+    Spacer(modifier = Modifier.height(16.dp))
+    SlideBullet(R.string.ob_hist_bullet)
 }
 
-/* ── Slide 5: privacy ── */
+/* ── Slide 7: privacy + the notification permission ── */
 
 @Composable
 private fun PrivacySlide() {
-    // Slow float for the lock badge.
-    val float = rememberInfiniteTransition(label = "lockFloat")
-    val offsetY by float.animateFloat(
-        initialValue = -3f,
-        targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            tween(2600, easing = FastOutLinearInEasing),
-            RepeatMode.Reverse
-        ),
-        label = "lockFloatY"
-    )
+    val context = LocalContext.current
+    var granted by remember { mutableStateOf(notificationsGranted(context)) }
 
-    SlideIconBadge(
-        icon = Icons.Filled.Lock,
-        translationY = { offsetY }
-    )
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        granted = notificationsGranted(context)
+    }
 
-    Spacer(modifier = Modifier.height(18.dp))
     SlideTitle(R.string.ob_privacy_title)
     Spacer(modifier = Modifier.height(8.dp))
     SlideBody(R.string.ob_privacy_desc)
-    Spacer(modifier = Modifier.height(18.dp))
+    Spacer(modifier = Modifier.height(16.dp))
+
+    ShieldArt()
+
+    Spacer(modifier = Modifier.height(16.dp))
 
     // Three compact fact chips.
     Row(
@@ -1163,43 +999,16 @@ private fun PrivacySlide() {
             }
         }
     }
-}
 
-/* ── Slide 6: notification permission ── */
-
-@Composable
-private fun PermissionSlide() {
-    val context = LocalContext.current
-    var granted by remember { mutableStateOf(notificationsGranted(context)) }
-
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { _ ->
-        granted = notificationsGranted(context)
-    }
-
-    // A bell that rocks gently — reminders are the point of the app.
-    val rock = rememberInfiniteTransition(label = "bellRock")
-    val angle by rock.animateFloat(
-        initialValue = -9f,
-        targetValue = 9f,
-        animationSpec = infiniteRepeatable(
-            tween(1400, easing = FastOutLinearInEasing),
-            RepeatMode.Reverse
-        ),
-        label = "bellAngle"
-    )
-    SlideIconBadge(
-        icon = Icons.Filled.Notifications,
-        rotationZ = { angle },
-        rotationPivotTop = true
-    )
-
-    Spacer(modifier = Modifier.height(18.dp))
-    SlideTitle(R.string.ob_perm_title)
-    Spacer(modifier = Modifier.height(8.dp))
-    SlideBody(R.string.ob_perm_desc)
     Spacer(modifier = Modifier.height(20.dp))
+
+    Text(
+        text = stringResource(R.string.ob_perm_inline_title),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = Color.White
+    )
+    Spacer(modifier = Modifier.height(12.dp))
 
     // Success state morphs in place once the permission is granted.
     AnimatedContent(
@@ -1240,15 +1049,13 @@ private fun PermissionSlide() {
                 )
             }
         } else {
-            Column {
-                GradientButton(
-                    labelRes = R.string.ob_perm_button,
-                    height = 50.dp
-                ) {
-                    OnboardingPrefs.setPermissionAsked(context)
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                    }
+            GradientButton(
+                labelRes = R.string.ob_perm_button,
+                height = 50.dp
+            ) {
+                OnboardingPrefs.setPermissionAsked(context)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
         }

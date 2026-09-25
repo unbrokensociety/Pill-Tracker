@@ -145,50 +145,17 @@ private fun rememberLiquidLensShader(): RuntimeShader =
 
 enum class LiquidGlassQuality { FULL, REDUCED, FROST }
 
+/**
+ * Global liquid-glass state. Since v2.5.4 the quality is fully automatic:
+ * DeviceGlassPolicy picks the initial level from the hardware and the
+ * governor adapts it live to the measured frame pacing. There is no
+ * user-visible picker anymore — the state below is read-only for screens.
+ */
 object LiquidGlassState {
-    val quality = mutableStateOf(LiquidGlassQuality.FULL)
-    val userMode = mutableStateOf<LiquidGlassQuality?>(null)
-    val intensity = mutableStateOf(GlassModeStore.DEFAULT_INTENSITY)
-}
-
-object GlassModeStore {
-    private const val PREFS = "liquid_glass"
-    private const val KEY = "mode"
-    private const val KEY_INTENSITY = "intensity"
-
     const val DEFAULT_INTENSITY = 0.75f
 
-    fun loadMode(context: Context): LiquidGlassQuality? = try {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(KEY, null)
-            ?.let { value -> runCatching { LiquidGlassQuality.valueOf(value) }.getOrNull() }
-    } catch (t: Throwable) {
-        null
-    }
-
-    fun loadIntensity(context: Context): Float = try {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getFloat(KEY_INTENSITY, DEFAULT_INTENSITY)
-            .coerceIn(0f, 1f)
-    } catch (t: Throwable) {
-        DEFAULT_INTENSITY
-    }
-
-    fun saveMode(context: Context, mode: LiquidGlassQuality?) = try {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY, mode?.name)
-            .apply()
-    } catch (t: Throwable) {
-    }
-
-    fun saveIntensity(context: Context, intensity: Float) = try {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putFloat(KEY_INTENSITY, intensity.coerceIn(0f, 1f))
-            .apply()
-    } catch (t: Throwable) {
-    }
+    val quality = mutableStateOf(LiquidGlassQuality.FULL)
+    val intensity = mutableStateOf(DEFAULT_INTENSITY)
 }
 
 object DeviceGlassPolicy {
@@ -225,15 +192,6 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
     val policyLevel = remember { DeviceGlassPolicy.assess(context) }
 
     LaunchedEffect(backdrop) {
-        LiquidGlassState.intensity.value = GlassModeStore.loadIntensity(context)
-
-        val savedMode = GlassModeStore.loadMode(context)
-        if (savedMode != null) {
-            LiquidGlassState.userMode.value = savedMode
-            LiquidGlassState.quality.value = savedMode
-            return@LaunchedEffect
-        }
-
         var level = policyLevel
         var saverOn = false
         var lastSaverCheck = 0L
@@ -262,8 +220,6 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
 
         while (true) {
             val nanos = withFrameNanos { it }
-
-            if (LiquidGlassState.userMode.value != null) return@LaunchedEffect
 
             val delta = if (prevNanos == 0L) 0L else nanos - prevNanos
             prevNanos = nanos

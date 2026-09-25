@@ -1,14 +1,11 @@
-> app-version: 2.5.3
+> app-version: 2.5.4
 
-* Settings cleaned up: the "keep in the island" and "sound in silent &
-  DND" toggles are gone — both features are now simply always on (the
-  DND sound falls back to the normal channel automatically while
-  policy access is missing)
-* Smarter course handling: when pills run out or the end date passes,
-  the medication stops reminding and moves to a new "Finished courses"
-  group in the list; a refill brings it right back
-* History is never lost anymore: deleting a medication keeps all past
-  intakes in the calendar, and finished courses stay browsable too
-* Onboarding rebuilt: 6 slides — including an interactive one-tap demo
-  you can try on the spot and a stock/course explainer — plus a 4-step
-  coach tour (doses, bottom navigation island, settings, add button)
+* Liquid glass is now fully automatic — the manual picker is gone from
+  Settings: the app picks the best quality for your hardware and adapts
+  on the fly (power saving included)
+* Onboarding rebuilt: 7 illustrated slides with animated artwork — a
+  miniature of the add-medication form, a hands-on demo where the day
+  ring fills as you mark a dose, the full-screen alarm preview, the
+  course lifecycle and a living calendar grid
+* The coach tour now also walks you through the Calendar tab (5 steps)
+* Fresh wording everywhere, name greeting on the welcome slide

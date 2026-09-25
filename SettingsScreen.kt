@@ -7,17 +7,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -43,19 +35,15 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.BrightnessAuto
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Texture
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -63,7 +51,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -72,12 +59,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,9 +86,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aistudio.meditracker.R
 import com.aistudio.meditracker.data.ThemeMode
 import com.aistudio.meditracker.ui.components.GlassCard
-import com.aistudio.meditracker.ui.components.GlassModeStore
-import com.aistudio.meditracker.ui.components.LiquidGlassQuality
-import com.aistudio.meditracker.ui.components.LiquidGlassState
 import com.aistudio.meditracker.ui.components.OnboardingBus
 import com.aistudio.meditracker.ui.components.OnboardingPrefs
 import com.aistudio.meditracker.ui.components.PrivacyPolicyDialog
@@ -112,9 +94,6 @@ import com.aistudio.meditracker.ui.components.UpdateBus
 import com.aistudio.meditracker.ui.components.coachTag
 import com.aistudio.meditracker.ui.locale.LocaleHelper
 import com.aistudio.meditracker.ui.locale.findActivity
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 /**
  * Компактный экран настроек.
@@ -122,7 +101,7 @@ import kotlin.math.roundToInt
  * Структура — 5 карточек вместо 8:
  *  1) Прогрес прийому — одна строка с кольцом
  *  2) Сповіщення — 2 тумблера (островок и критический звук всегда включены)
- *  3) Вигляд — тема, рідке скло (перенесено из «Про застосунок») та мова
+ *  3) Вигляд — тема та мова (якість рідкого скла підбирається автоматично)
  *  4) Основне — ім'я, повтор навчання, перевірка оновлень (група рядків)
  *  5) Про застосунок — версія, опис, юридичні документи
  */
@@ -389,204 +368,6 @@ fun SettingsScreen(
 
                         RowDivider(inset = 0.dp)
 
-                        // ── Рідке скло (перенесено з «Про застосунок») ──
-                        val glassQuality by LiquidGlassState.quality
-                        val glassUserMode by LiquidGlassState.userMode
-                        val glassIntensity by LiquidGlassState.intensity
-                        var glassPickerOpen by remember { mutableStateOf(false) }
-                        val glassScope = rememberCoroutineScope()
-                        val glassLabel = stringResource(
-                            when (glassQuality) {
-                                LiquidGlassQuality.FULL -> R.string.settings_glass_full
-                                LiquidGlassQuality.REDUCED -> R.string.settings_glass_reduced
-                                LiquidGlassQuality.FROST -> R.string.settings_glass_frost
-                            }
-                        )
-                        val pickGlassMode: (LiquidGlassQuality) -> Unit = { mode ->
-                            LiquidGlassState.userMode.value = mode
-                            LiquidGlassState.quality.value = mode
-                            GlassModeStore.saveMode(context, mode)
-                            glassScope.launch {
-                                // let the picked style flash for a beat,
-                                // then fold the picker back the same way
-                                delay(240)
-                                glassPickerOpen = false
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { glassPickerOpen = !glassPickerOpen }
-                                .padding(horizontal = 4.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.settings_glass_title),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = glassLabel,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            // pill chevron toggle
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.settings_glass_choose),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                val chevronRotation by animateFloatAsState(
-                                    targetValue = if (glassPickerOpen) 180f else 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = 0.8f,
-                                        stiffness = Spring.StiffnessMedium
-                                    ),
-                                    label = "glassChevron"
-                                )
-                                Icon(
-                                    imageVector = Icons.Filled.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .graphicsLayer { rotationZ = chevronRotation }
-                                )
-                            }
-                        }
-
-                        AnimatedVisibility(
-                            visible = glassPickerOpen,
-                            enter = expandVertically(
-                                animationSpec = spring(
-                                    dampingRatio = 0.85f,
-                                    stiffness = 380f
-                                )
-                            ) + fadeIn(animationSpec = tween(220, easing = EaseOutCubic)),
-                            exit = shrinkVertically(
-                                animationSpec = spring(
-                                    dampingRatio = 0.85f,
-                                    stiffness = 380f
-                                )
-                            ) + fadeOut(animationSpec = tween(150))
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(top = 4.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                GlassModeOption(
-                                    open = glassPickerOpen,
-                                    index = 0,
-                                    label = stringResource(R.string.settings_glass_full),
-                                    description = stringResource(R.string.settings_glass_full_desc),
-                                    icon = Icons.Filled.BlurOn,
-                                    selected = glassUserMode == LiquidGlassQuality.FULL,
-                                    onClick = { pickGlassMode(LiquidGlassQuality.FULL) }
-                                )
-                                GlassModeOption(
-                                    open = glassPickerOpen,
-                                    index = 1,
-                                    label = stringResource(R.string.settings_glass_reduced),
-                                    description = stringResource(R.string.settings_glass_reduced_desc),
-                                    icon = Icons.Filled.Tune,
-                                    selected = glassUserMode == LiquidGlassQuality.REDUCED,
-                                    onClick = { pickGlassMode(LiquidGlassQuality.REDUCED) }
-                                )
-                                GlassModeOption(
-                                    open = glassPickerOpen,
-                                    index = 2,
-                                    label = stringResource(R.string.settings_glass_frost),
-                                    description = stringResource(R.string.settings_glass_frost_desc),
-                                    icon = Icons.Filled.Texture,
-                                    selected = glassUserMode == LiquidGlassQuality.FROST,
-                                    onClick = { pickGlassMode(LiquidGlassQuality.FROST) }
-                                )
-
-                                // Intensity — every glass panel re-renders
-                                // LIVE while the thumb is dragged.
-                                GlassPickerRow(open = glassPickerOpen, index = 3) {
-                                    Surface(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(16.dp)),
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                                        border = BorderStroke(
-                                            1.dp,
-                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-                                        )
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = stringResource(R.string.settings_glass_intensity),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurface
-                                                )
-                                                Text(
-                                                    text = "${(glassIntensity * 100f).roundToInt()}%",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                            Slider(
-                                                value = glassIntensity,
-                                                onValueChange = { value ->
-                                                    LiquidGlassState.intensity.value = value
-                                                    GlassModeStore.saveIntensity(context, value)
-                                                },
-                                                valueRange = 0f..1f,
-                                                enabled = glassQuality != LiquidGlassQuality.FROST,
-                                                modifier = Modifier.fillMaxWidth()
-                                            )
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text(
-                                                    text = stringResource(R.string.settings_glass_intensity_matte),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                                Text(
-                                                    text = stringResource(R.string.settings_glass_intensity_liquid),
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        RowDivider(inset = 0.dp)
-
                         // ── Мова ──
                         SectionHeader(
                             icon = Icons.Filled.Language,
@@ -659,7 +440,7 @@ fun SettingsScreen(
                         val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
                         "v${pInfo.versionName}"
                     } catch (e: Exception) {
-                        "v2.5.2"
+                        "v2.5.4"
                     }
                 }
 
@@ -971,152 +752,6 @@ private fun <T> ChipGroup(
                 selected = isSelected(item),
                 onClick = { onSelect(item) }
             )
-        }
-    }
-}
-
-/** Ступенчатое появление ряда раскрытого пикера стекла (70 мс шаг). */
-@Composable
-private fun GlassPickerRow(
-    open: Boolean,
-    index: Int,
-    content: @Composable () -> Unit
-) {
-    val appear = remember { Animatable(0f) }
-    LaunchedEffect(open) {
-        if (open) {
-            delay(index * 70L)
-            appear.animateTo(
-                1f,
-                animationSpec = spring(
-                    dampingRatio = 0.80f,
-                    stiffness = 420f
-                )
-            )
-        } else {
-            appear.animateTo(0f, tween(140))
-        }
-    }
-    Box(
-        modifier = Modifier.graphicsLayer {
-            alpha = appear.value
-            translationY = (1f - appear.value) * 14.dp.toPx()
-        }
-    ) {
-        content()
-    }
-}
-
-/** Режим стекла: градиентный бейдж + заголовок + описание + галочка. */
-@Composable
-private fun GlassModeOption(
-    open: Boolean,
-    index: Int,
-    label: String,
-    description: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    GlassPickerRow(open = open, index = index) {
-        val selectScale by animateFloatAsState(
-            targetValue = if (selected) 1.02f else 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioLowBouncy,
-                stiffness = Spring.StiffnessMedium
-            ),
-            label = "glassOptionScale"
-        )
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    scaleX = selectScale
-                    scaleY = selectScale
-                }
-                .clip(RoundedCornerShape(16.dp))
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(16.dp),
-            color = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-            },
-            border = if (selected) {
-                BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
-            } else {
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-            }
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .then(
-                            if (selected) {
-                                Modifier.background(
-                                    Brush.linearGradient(
-                                        listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            MaterialTheme.colorScheme.tertiary
-                                        )
-                                    )
-                                )
-                            } else {
-                                Modifier.background(
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f)
-                                )
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (selected) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.size(19.dp)
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                if (selected) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
         }
     }
 }

@@ -53,6 +53,8 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_brand">Brand</string>
+    <string name="settings_glass_title">Liquid glass</string>
+    <string name="settings_glass_desc">Light-bending refraction and glints — on powerful devices</string>
     <string name="settings_notifications">Notifications</string>
     <string name="settings_language">Language</string>
     <string name="settings_lang_system">System Default</string>

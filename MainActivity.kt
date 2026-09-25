@@ -55,6 +55,7 @@ import com.aistudio.meditracker.ui.SettingsScreen
 import com.aistudio.meditracker.ui.MainViewModel
 import com.aistudio.meditracker.ui.MainViewModelFactory
 import com.aistudio.meditracker.ui.components.LiquidGlassPanel
+import com.aistudio.meditracker.ui.components.LiquidGlassState
 import com.aistudio.meditracker.ui.components.GlassFAB
 import com.aistudio.meditracker.ui.components.GlassPerformanceGovernor
 import com.aistudio.meditracker.ui.components.auroraBackdrop
@@ -151,6 +152,12 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
     val context = LocalContext.current
+
+    // Master switch for the liquid glass material (Settings → Вигляд).
+    val glassEnabled by viewModel.liquidGlassEnabled.collectAsState()
+    LaunchedEffect(glassEnabled) {
+        LiquidGlassState.enabled.value = glassEnabled
+    }
 
     var onboardingDone by remember { mutableStateOf(OnboardingPrefs.isCompleted(context)) }
     LaunchedEffect(Unit) {
@@ -721,9 +728,12 @@ fun RowScope.FloatingNavItem(
             }
 
             val density = LocalDensity.current
-            val availableWidthPx = with(density) { constraints.maxWidth - 4.dp.roundToPx() }
+            // Fit inside the sliding pill, not just the tab: the pill is
+            // inset 4dp per side, keep ~4dp more so long labels like
+            // «Налаштування» never poke past its rounded corners.
+            val availableWidthPx = with(density) { constraints.maxWidth - 16.dp.roundToPx() }
             val fitScale = if (naturalWidthPx > 0) {
-                (availableWidthPx.toFloat() / naturalWidthPx).coerceIn(0.5f, 1f)
+                (availableWidthPx.toFloat() / naturalWidthPx).coerceIn(0.42f, 1f)
             } else 1f
             Text(
                 text = label,

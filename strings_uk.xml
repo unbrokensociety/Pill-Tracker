@@ -53,6 +53,8 @@
     <string name="settings_theme_light">Світла</string>
     <string name="settings_theme_dark">Темна</string>
     <string name="settings_theme_brand">Фірмова</string>
+    <string name="settings_glass_title">Рідке скло</string>
+    <string name="settings_glass_desc">Заломлення світла та блики — на потужних пристроях</string>
     <string name="settings_notifications">Сповіщення</string>
     <string name="settings_language">Мова</string>
     <string name="settings_lang_system">Системна мова</string>

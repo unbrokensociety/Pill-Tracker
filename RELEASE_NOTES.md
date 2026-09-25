@@ -1,11 +1,10 @@
-> app-version: 2.5.4
+> app-version: 2.5.5
 
-* Liquid glass is now fully automatic — the manual picker is gone from
-  Settings: the app picks the best quality for your hardware and adapts
-  on the fly (power saving included)
-* Onboarding rebuilt: 7 illustrated slides with animated artwork — a
-  miniature of the add-medication form, a hands-on demo where the day
-  ring fills as you mark a dose, the full-screen alarm preview, the
-  course lifecycle and a living calendar grid
-* The coach tour now also walks you through the Calendar tab (5 steps)
-* Fresh wording everywhere, name greeting on the welcome slide
+* Onboarding redesigned with a human touch: it now uses the app's own
+  colors and real components instead of a dark show — 4 calm slides
+  (welcome, a hands-on dose-marking demo, the reminder preview, the
+  notification permission) instead of 7
+* Illustrations redrawn in the app's theme: a day ring that fills,
+  the reminder island and the full-screen alarm — no gradients, no glow
+* Shorter, friendlier copy in all three languages
+* The coach tour keeps its 5 steps with a cleaner card and quieter copy

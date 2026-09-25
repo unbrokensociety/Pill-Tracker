@@ -1,21 +1,18 @@
 package com.aistudio.meditracker.ui.components
 
 /*
- * Onboarding v5 — a full guided course, illustrated:
+ * Onboarding v6 — plain, native, human.
  *
- *   ACT 1 · Seven swipeable intro slides, each led by a living,
- *   hand-drawn illustration (OnboardingIllustrations.kt):
- *     1. Welcome — glowing capsule, personal greeting by name
- *     2. Adding a medication — a miniature of the real add form
- *     3. INTERACTIVE demo — mark a dose on the spot, watch the day ring fill
- *     4. Reminders — the island preview + the full-screen alarm fallback
- *     5. Stock & courses — the counting bottle + active/done/history strip
- *     6. History — a month grid that fills with taken/missed days
- *     7. Privacy — the shield + the notification permission asked in context
+ * ACT 1 · Four swipeable intro slides on the app's own background, set in
+ * the app's own colors and components (no dark overlay, no gradients):
+ *     1. Welcome — what the app does, in one sentence (by name, if given)
+ *     2. Try it — the real dose-card gesture, right on the slide
+ *     3. Reminders — the island, then the full-screen alarm fallback
+ *     4. One last thing — the notification permission, honestly asked
  *
- *   ACT 2 · Five coach-mark steps over the REAL interface: today's doses,
- *   the navigation island, the Calendar (history), Settings, and finally
- *   the "+" button that opens the real add form.
+ * ACT 2 · Five coach-mark steps over the REAL interface: today's doses,
+ * the navigation island, the Calendar (history), Settings, and finally
+ * the "+" button that opens the real add form.
  *
  * The tour always ends with an action, not a "congratulations" screen:
  * either "add now" (the add form opens for real) or "later" (home).
@@ -29,6 +26,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector4D
 import androidx.compose.animation.core.EaseOutCubic
@@ -41,7 +39,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -54,7 +51,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -64,12 +60,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -81,6 +76,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TouchApp
@@ -102,18 +98,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -121,6 +114,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -128,9 +122,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.aistudio.meditracker.R
-import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
@@ -276,7 +271,6 @@ private data class TourStep(
     val tag: String,                // key in CoachMarks
     val wantPage: Int,              // pager page to show when the step starts
     val icon: ImageVector,
-    val animatedIcon: Boolean = false,
     val titleRes: Int,
     val descRes: Int,
     val primaryRes: Int,            // main button label
@@ -289,7 +283,6 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         tag = "home_list",
         wantPage = 0,
         icon = Icons.Filled.TouchApp,
-        animatedIcon = true,
         titleRes = R.string.ob_step_doses_title,
         descRes = R.string.ob_step_doses_desc,
         primaryRes = R.string.ob_next
@@ -298,7 +291,6 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         tag = "nav_island",
         wantPage = 0,
         icon = Icons.Filled.SwapHoriz,
-        animatedIcon = true,
         titleRes = R.string.ob_step_nav_title,
         descRes = R.string.ob_step_nav_desc,
         primaryRes = R.string.ob_next
@@ -323,7 +315,6 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         tag = "fab_add",
         wantPage = 0,
         icon = Icons.Filled.AddCircle,
-        animatedIcon = true,
         titleRes = R.string.ob_step_add_title,
         descRes = R.string.ob_step_add_desc,
         primaryRes = R.string.ob_add_now,
@@ -363,11 +354,10 @@ fun OnboardingOverlay(onFinished: () -> Unit) {
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Act 1: intro slides (welcome / add / demo / reminders / stock /
- * history / privacy + permission)
+ * Act 1: intro slides (welcome / try it / reminders / permission)
  * ──────────────────────────────────────────────────────────────── */
 
-private const val INTRO_SLIDE_COUNT = 7
+private const val INTRO_SLIDE_COUNT = 4
 
 @Composable
 private fun IntroSlides(
@@ -389,134 +379,60 @@ private fun IntroSlides(
 
     val entrance = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
-        entrance.animateTo(1f, tween(360, easing = EaseOutCubic))
+        entrance.animateTo(1f, tween(280, easing = EaseOutCubic))
     }
 
-    // Living backdrop: three slowly drifting radial blobs.
-    val drift = rememberInfiniteTransition(label = "onboardingDrift")
-    val blobPhase by drift.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(24000, easing = LinearEasing)),
-        label = "onboardingPhase"
-    )
-    val roleColors = listOf(
-        MaterialTheme.colorScheme.primary,
-        MaterialTheme.colorScheme.tertiary,
-        MaterialTheme.colorScheme.secondary
-    )
-
-    BoxWithConstraints(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer {
-                alpha = entrance.value
-                scaleX = 0.94f + 0.06f * entrance.value
-                scaleY = 0.94f + 0.06f * entrance.value
-            }
-            .background(Color.Black.copy(alpha = 0.92f))
-            .drawWithCache {
-                val w = size.width
-                val h = size.height
-                val blob1 = Brush.radialGradient(
-                    colors = listOf(roleColors[0].copy(alpha = 0.30f), Color.Transparent),
-                    center = Offset.Zero,
-                    radius = w * 0.75f
-                )
-                val blob2 = Brush.radialGradient(
-                    colors = listOf(roleColors[1].copy(alpha = 0.24f), Color.Transparent),
-                    center = Offset.Zero,
-                    radius = w * 0.65f
-                )
-                val blob3 = Brush.radialGradient(
-                    colors = listOf(roleColors[2].copy(alpha = 0.20f), Color.Transparent),
-                    center = Offset.Zero,
-                    radius = w * 0.70f
-                )
-                onDrawBehind {
-                    val t = blobPhase * 2f * Math.PI.toFloat()
-                    translate(w * (0.22f + 0.10f * cos(t)), h * (0.16f + 0.08f * sin(t))) {
-                        drawCircle(brush = blob1, radius = w * 0.75f, center = Offset.Zero)
-                    }
-                    translate(w * (0.82f + 0.08f * sin(t)), h * (0.30f + 0.10f * cos(t))) {
-                        drawCircle(brush = blob2, radius = w * 0.65f, center = Offset.Zero)
-                    }
-                    translate(w * (0.50f + 0.12f * cos(t * 0.7f)), h * (0.92f + 0.06f * sin(t * 0.7f))) {
-                        drawCircle(brush = blob3, radius = w * 0.70f, center = Offset.Zero)
-                    }
-                }
-            }
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { /* absorb taps on the backdrop */ }
+            .graphicsLayer { alpha = entrance.value }
+            .background(MaterialTheme.colorScheme.background)
+            .systemBarsPadding()
     ) {
-        // Local height cap available to nested lambdas without receiver tricks.
-        val screenMaxHeight = maxHeight
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .systemBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 14.dp)
+                .padding(horizontal = 24.dp, vertical = 10.dp)
         ) {
-            // Top row: logo + "Skip".
+            // Top row: app mark + "Skip".
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.tertiary
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Medication,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(19.dp)
-                        )
-                    }
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White.copy(alpha = 0.13f))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onSkip() }
-                        .padding(horizontal = 16.dp, vertical = 9.dp)
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = stringResource(R.string.ob_skip),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                    Icon(
+                        imageVector = Icons.Filled.Medication,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(19.dp)
                     )
                 }
+                Spacer(modifier = Modifier.size(9.dp))
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.ob_skip),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onSkip() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             // The slides themselves: swipeable, one idea per slide.
             HorizontalPager(
@@ -524,41 +440,36 @@ private fun IntroSlides(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                pageSpacing = 16.dp
+                pageSpacing = 12.dp
             ) { page ->
-                Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Column(
                         modifier = Modifier
-                            .align(Alignment.Center)
                             .fillMaxWidth()
-                            .heightIn(max = screenMaxHeight - 236.dp)
-                            .clip(RoundedCornerShape(30.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color(0xFF1D242F), Color(0xFF161B24))
-                                )
-                            )
-                            .verticalScroll(rememberScrollState())
-                            .padding(26.dp)
+                            .widthIn(max = 480.dp)
                     ) {
                         when (page) {
                             0 -> WelcomeSlide()
-                            1 -> AddSlide()
-                            2 -> DemoSlide()
-                            3 -> ReminderSlide()
-                            4 -> StockSlide()
-                            5 -> HistorySlide()
-                            else -> PrivacySlide()
+                            1 -> DemoSlide()
+                            2 -> ReminderSlide()
+                            else -> PermissionSlide()
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Slide dots.
+            // Slide dots — quiet, left-aligned with the content.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 480.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -568,34 +479,34 @@ private fun IntroSlides(
                         modifier = Modifier
                             .padding(horizontal = 3.dp)
                             .size(
-                                width = if (active) 18.dp else 6.dp,
+                                width = if (active) 20.dp else 6.dp,
                                 height = 6.dp
                             )
                             .clip(CircleShape)
                             .background(
                                 if (active) MaterialTheme.colorScheme.primary
-                                else Color.White.copy(alpha = 0.22f)
+                                else MaterialTheme.colorScheme.outlineVariant
                             )
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
             // Swipe hint: only meaningful on the first slide.
             if (pagerState.currentPage == 0) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.ob_swipe_hint),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.45f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Main button: next slide, or start the hands-on part.
-            GradientButton(
+            PrimaryButton(
                 labelRes = if (pagerState.currentPage == INTRO_SLIDE_COUNT - 1) {
                     R.string.ob_start_tour
                 } else {
@@ -623,130 +534,35 @@ private fun WelcomeSlide() {
 
     WelcomeArt()
 
-    Spacer(modifier = Modifier.height(20.dp))
+    Spacer(modifier = Modifier.height(24.dp))
     SlideTitle(R.string.ob_welcome_title)
     if (userName != null) {
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(5.dp))
         Text(
             text = stringResource(R.string.ob_welcome_name, userName),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary
         )
     }
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(9.dp))
     SlideBody(R.string.ob_welcome_desc)
-    Spacer(modifier = Modifier.height(18.dp))
-    SlideBullet(R.string.ob_welcome_b1)
-    Spacer(modifier = Modifier.height(10.dp))
-    SlideBullet(R.string.ob_welcome_b2)
-    Spacer(modifier = Modifier.height(10.dp))
-    SlideBullet(R.string.ob_welcome_b3)
 }
 
-/* ── Slide 2: adding a medication (with a miniature of the real form) ── */
-
-@Composable
-private fun AddSlide() {
-    AddFormArt()
-
-    Spacer(modifier = Modifier.height(20.dp))
-    SlideTitle(R.string.ob_add_title)
-    Spacer(modifier = Modifier.height(8.dp))
-    SlideBody(R.string.ob_add_desc)
-    Spacer(modifier = Modifier.height(18.dp))
-
-    // Three numbered steps — the exact path through the add form.
-    val stepTexts = listOf(
-        R.string.ob_add_s1,
-        R.string.ob_add_s2,
-        R.string.ob_add_s3
-    )
-    stepTexts.forEachIndexed { index, res ->
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "${index + 1}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
-                )
-            }
-            Text(
-                text = stringResource(res),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.80f)
-            )
-        }
-        if (index < stepTexts.lastIndex) {
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-    }
-}
-
-/* ── Slide 4: how a reminder looks (island + full-screen alarm) ── */
-
-@Composable
-private fun ReminderSlide() {
-    SlideTitle(R.string.ob_reminder_title)
-    Spacer(modifier = Modifier.height(8.dp))
-    SlideBody(R.string.ob_reminder_desc)
-    Spacer(modifier = Modifier.height(16.dp))
-
-    IslandNotificationMock()
-
-    Spacer(modifier = Modifier.height(14.dp))
-    Text(
-        text = stringResource(R.string.ob_reminder_explain),
-        style = MaterialTheme.typography.bodySmall,
-        color = Color.White.copy(alpha = 0.72f)
-    )
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    AlarmMockArt()
-
-    Spacer(modifier = Modifier.height(12.dp))
-    Text(
-        text = stringResource(R.string.ob_reminder_alarm),
-        style = MaterialTheme.typography.bodySmall,
-        color = Color.White.copy(alpha = 0.72f)
-    )
-}
-
-/* ── Slide 3: interactive one-tap demo ── */
+/* ── Slide 2: the real gesture, on a real card ── */
 
 @Composable
 private fun DemoSlide() {
     var demoTaken by remember { mutableStateOf(false) }
 
-    SlideIconBadge(icon = Icons.Filled.TouchApp)
-
-    Spacer(modifier = Modifier.height(18.dp))
     SlideTitle(R.string.ob_demo_title)
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(9.dp))
     SlideBody(R.string.ob_demo_desc)
-    Spacer(modifier = Modifier.height(18.dp))
+    Spacer(modifier = Modifier.height(20.dp))
 
     DemoDoseCard(taken = demoTaken, onToggle = { demoTaken = !demoTaken })
 
-    Spacer(modifier = Modifier.height(14.dp))
+    Spacer(modifier = Modifier.height(16.dp))
 
     // The hint reacts to the user's action — the day ring fills exactly
     // like the real one on the home screen when a dose is marked.
@@ -766,131 +582,134 @@ private fun DemoSlide() {
             Text(
                 text = stringResource(if (taken) R.string.ob_demo_hint_done else R.string.ob_demo_hint_idle),
                 style = MaterialTheme.typography.bodySmall,
-                fontWeight = if (taken) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (taken) Color(0xFF6FCF97) else Color.White.copy(alpha = 0.72f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
-/** A miniature of the real dose card — the circle actually toggles. */
+/**
+ * A faithful miniature of the home screen dose card: same GlassCard, same
+ * icon badge, same chips, same check circle with the same haptic tick.
+ */
 @Composable
 private fun DemoDoseCard(
     taken: Boolean,
     onToggle: () -> Unit
 ) {
+    val hapticView = LocalView.current
+
     val cardScale by animateFloatAsState(
         targetValue = if (taken) 0.98f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "demoCardScale"
     )
-    val circleBg by animateColorAsState(
-        targetValue = if (taken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+    val checkBg by animateColorAsState(
+        targetValue = if (taken) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+        },
         animationSpec = tween(280, easing = EaseOutCubic),
-        label = "demoCircleBg"
+        label = "demoCheckBg"
     )
-    val circleBorder by animateColorAsState(
-        targetValue = if (taken) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+    val checkBorder by animateColorAsState(
+        targetValue = if (taken) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+        },
         animationSpec = tween(280, easing = EaseOutCubic),
-        label = "demoCircleBorder"
+        label = "demoCheckBorder"
     )
 
-    Column(
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .graphicsLayer {
                 scaleX = cardScale
                 scaleY = cardScale
-            }
-            .clip(RoundedCornerShape(18.dp))
-            .background(
-                Brush.verticalGradient(listOf(Color(0xFF232B38), Color(0xFF1A212C)))
-            )
-            .border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(18.dp))
-            .padding(14.dp)
+            },
+        onClick = {
+            hapticView.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+            onToggle()
+        },
+        glassAlpha = if (taken) 0.85f else 1.0f,
+        elevation = if (taken) 6.dp else 12.dp
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.tertiary
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Medication,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(21.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            FormTypeIcon(
+                formKey = "tablet",
+                tint = MaterialTheme.colorScheme.primary,
+                size = 56.dp,
+                iconSize = 26.dp
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.10f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.ob_demo_chip_time),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.10f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.ob_demo_chip_dose),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                    }
+                    GlassChip(
+                        text = stringResource(R.string.ob_demo_chip_time),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    GlassChip(
+                        text = stringResource(R.string.ob_demo_chip_dose),
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Spacer(modifier = Modifier.height(5.dp))
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
                     text = stringResource(R.string.ob_mock_med),
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = stringResource(R.string.ob_mock_dose),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // The star of the show: a working check circle.
+            // The star of the show: a working check circle, same as home.
             Box(
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
-                    .background(circleBg)
+                    .background(checkBg)
                     .border(
                         width = if (taken) 0.dp else 2.dp,
-                        color = circleBorder,
+                        color = checkBorder,
                         shape = CircleShape
                     )
-                    .clickable { onToggle() },
+                    .clickable {
+                        hapticView.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                        onToggle()
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 AnimatedContent(
                     targetState = taken,
                     transitionSpec = {
-                        (scaleIn(initialScale = 0.4f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) + fadeIn(tween(180)))
-                            .togetherWith(scaleOut(targetScale = 0.4f, animationSpec = tween(140)) + fadeOut(tween(140)))
+                        (
+                            scaleIn(
+                                initialScale = 0.4f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
+                            ) + fadeIn(tween(180))
+                            ).togetherWith(
+                            scaleOut(targetScale = 0.4f, animationSpec = tween(140)) +
+                                fadeOut(tween(140))
+                        )
                     },
                     label = "demoCheck"
                 ) { checked ->
@@ -902,7 +721,7 @@ private fun DemoDoseCard(
                         } else {
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                         },
-                        modifier = Modifier.size(if (checked) 24.dp else 20.dp)
+                        modifier = Modifier.size(if (checked) 26.dp else 22.dp)
                     )
                 }
             }
@@ -910,49 +729,40 @@ private fun DemoDoseCard(
     }
 }
 
-/* ── Slide 5: stock & course lifecycle ── */
+/* ── Slide 3: how a reminder looks (island + full-screen alarm) ── */
 
 @Composable
-private fun StockSlide() {
-    SlideTitle(R.string.ob_stock_title)
-    Spacer(modifier = Modifier.height(8.dp))
-    SlideBody(R.string.ob_stock_desc)
+private fun ReminderSlide() {
+    SlideTitle(R.string.ob_reminder_title)
+    Spacer(modifier = Modifier.height(9.dp))
+    SlideBody(R.string.ob_reminder_desc)
     Spacer(modifier = Modifier.height(16.dp))
 
-    StockBottleArt()
+    IslandNotificationMock()
 
     Spacer(modifier = Modifier.height(12.dp))
-
-    CourseLifecycleArt()
+    Text(
+        text = stringResource(R.string.ob_reminder_explain),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    SlideBullet(R.string.ob_stock_c1)
-    Spacer(modifier = Modifier.height(9.dp))
-    SlideBullet(R.string.ob_stock_c2)
-    Spacer(modifier = Modifier.height(9.dp))
-    SlideBullet(R.string.ob_stock_c3)
+    AlarmMockArt()
+
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(
+        text = stringResource(R.string.ob_reminder_alarm),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
-/* ── Slide 6: history & calendar ── */
+/* ── Slide 4: the notification permission, asked honestly ── */
 
 @Composable
-private fun HistorySlide() {
-    SlideTitle(R.string.ob_hist_title)
-    Spacer(modifier = Modifier.height(8.dp))
-    SlideBody(R.string.ob_hist_desc)
-    Spacer(modifier = Modifier.height(16.dp))
-
-    CalendarMonthArt()
-
-    Spacer(modifier = Modifier.height(16.dp))
-    SlideBullet(R.string.ob_hist_bullet)
-}
-
-/* ── Slide 7: privacy + the notification permission ── */
-
-@Composable
-private fun PrivacySlide() {
+private fun PermissionSlide() {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(notificationsGranted(context)) }
 
@@ -962,55 +772,13 @@ private fun PrivacySlide() {
         granted = notificationsGranted(context)
     }
 
-    SlideTitle(R.string.ob_privacy_title)
-    Spacer(modifier = Modifier.height(8.dp))
-    SlideBody(R.string.ob_privacy_desc)
-    Spacer(modifier = Modifier.height(16.dp))
+    SlideTitle(R.string.ob_perm_title)
+    Spacer(modifier = Modifier.height(9.dp))
+    SlideBody(R.string.ob_perm_desc)
 
-    ShieldArt()
+    Spacer(modifier = Modifier.height(24.dp))
 
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // Three compact fact chips.
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        listOf(
-            R.string.ob_privacy_c1,
-            R.string.ob_privacy_c2,
-            R.string.ob_privacy_c3
-        ).forEach { res ->
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
-                    .padding(vertical = 10.dp, horizontal = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(res),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-
-    Spacer(modifier = Modifier.height(20.dp))
-
-    Text(
-        text = stringResource(R.string.ob_perm_inline_title),
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = Color.White
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Success state morphs in place once the permission is granted.
+    // The state morphs in place once the permission is granted.
     AnimatedContent(
         targetState = granted,
         transitionSpec = {
@@ -1029,27 +797,26 @@ private fun PrivacySlide() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF1E3A2F))
-                    .border(1.dp, Color(0xFF3F8F6A), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Icon(
                     imageVector = Icons.Filled.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFF6FCF97),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = stringResource(R.string.ob_perm_granted),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFD7F5E4)
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         } else {
-            GradientButton(
+            PrimaryButton(
                 labelRes = R.string.ob_perm_button,
                 height = 50.dp
             ) {
@@ -1060,57 +827,36 @@ private fun PrivacySlide() {
             }
         }
     }
-}
 
-/* ── Shared slide building blocks ── */
+    Spacer(modifier = Modifier.height(20.dp))
 
-@Composable
-private fun SlideIconBadge(
-    icon: ImageVector,
-    scale: () -> Float = { 1f },
-    translationY: () -> Float = { 0f },
-    rotationZ: () -> Float = { 0f },
-    rotationPivotTop: Boolean = false
-) {
-    Box(
-        modifier = Modifier
-            .size(64.dp)
-            .graphicsLayer {
-                scaleX = scale()
-                scaleY = scale()
-                this.translationY = translationY()
-                this.rotationZ = rotationZ()
-                if (rotationPivotTop) {
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.15f)
-                }
-            }
-            .clip(CircleShape)
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.tertiary
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         Icon(
-            imageVector = icon,
+            imageVector = Icons.Filled.Lock,
             contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(30.dp)
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(14.dp)
+        )
+        Text(
+            text = stringResource(R.string.ob_perm_privacy),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
+
+/* ── Shared slide building blocks ── */
 
 @Composable
 private fun SlideTitle(titleRes: Int) {
     Text(
         text = stringResource(titleRes),
         style = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.ExtraBold,
-        color = Color.White
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurface
     )
 }
 
@@ -1118,67 +864,38 @@ private fun SlideTitle(titleRes: Int) {
 private fun SlideBody(bodyRes: Int) {
     Text(
         text = stringResource(bodyRes),
-        style = MaterialTheme.typography.bodyMedium,
-        color = Color.White.copy(alpha = 0.82f)
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
+/** Solid primary button — the same quiet style the app uses. */
 @Composable
-private fun SlideBullet(bulletRes: Int) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Check,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(16.dp)
-        )
-        Text(
-            text = stringResource(bulletRes),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.78f)
-        )
-    }
-}
-
-@Composable
-private fun GradientButton(
+private fun PrimaryButton(
     labelRes: Int,
-    height: Dp,
+    height: Dp = 52.dp,
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
-            .clip(RoundedCornerShape(18.dp))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.tertiary
-                    )
-                )
-            )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onClick() },
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.primary)
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = stringResource(labelRes),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color.White
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onPrimary
         )
     }
 }
 
 /* ────────────────────────────────────────────────────────────────
- * Act 3: coach tour over the real interface
+ * Act 2: coach tour over the real interface
  * ──────────────────────────────────────────────────────────────── */
 
 @Composable
@@ -1280,7 +997,7 @@ private fun CoachTour(
     )
     LaunchedEffect(nudge) {
         if (nudge > 0) {
-            kotlinx.coroutines.delay(450)
+            delay(450)
             nudge = 0
         }
     }
@@ -1377,7 +1094,7 @@ private fun CoachTour(
             )
             // "Tap here" rings + center dot.
             val c = hole.center
-            val rMin = kotlin.math.min(hole.width, hole.height) / 2f
+            val rMin = min(hole.width, hole.height) / 2f
             val ringR = rMin * (0.34f + 0.62f * tapPhase)
             drawCircle(
                 color = Color.White.copy(alpha = (1f - tapPhase) * 0.50f),
@@ -1404,18 +1121,15 @@ private fun CoachTour(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color.Black.copy(alpha = 0.45f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onFinish() }
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable { onFinish() }
                     .padding(horizontal = 16.dp, vertical = 9.dp)
             ) {
                 Text(
                     text = stringResource(R.string.ob_skip),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -1460,6 +1174,10 @@ private fun CoachTour(
             label = "coachTooltip"
         ) { index ->
             val s = steps[index]
+            // Colors are read in composable context (never inside drawBehind).
+            val tipColor = MaterialTheme.colorScheme.surface
+            val titleColor = MaterialTheme.colorScheme.onSurface
+            val subColor = MaterialTheme.colorScheme.onSurfaceVariant
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1478,7 +1196,6 @@ private fun CoachTour(
                             val screenCx = (hole.left + hole.right) / 2f - 20.dp.toPx()
                             screenCx.coerceIn(a, size.width - a)
                         }
-                        val tipColor = Color(0xFF1D242F)
                         val path = Path()
                         val fitsBelow = if (hole.isEmpty) true else {
                             hole.bottom + gap.toPx() + size.height + 24.dp.toPx() < maxHPx
@@ -1497,81 +1214,42 @@ private fun CoachTour(
                         path.close()
                         drawPath(path, tipColor)
                     }
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF1D242F), Color(0xFF161B24))
-                        )
-                    )
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(tipColor)
                     .padding(20.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Step icon: the "hand" and "plus" icons wiggle slightly.
-                    val wiggle = rememberInfiniteTransition(label = "wiggle")
-                    val wiggleX by wiggle.animateFloat(
-                        initialValue = -7f,
-                        targetValue = 7f,
-                        animationSpec = infiniteRepeatable(
-                            tween(700, easing = FastOutLinearInEasing),
-                            RepeatMode.Reverse
-                        ),
-                        label = "wiggleX"
-                    )
-                    val wiggleScale by wiggle.animateFloat(
-                        initialValue = 0.97f,
-                        targetValue = 1.05f,
-                        animationSpec = infiniteRepeatable(
-                            tween(900, easing = FastOutLinearInEasing),
-                            RepeatMode.Reverse
-                        ),
-                        label = "wiggleScale"
-                    )
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
-                            .graphicsLayer {
-                                if (s.animatedIcon) {
-                                    translationX = wiggleX
-                                    scaleX = wiggleScale
-                                    scaleY = wiggleScale
-                                }
-                            }
+                            .size(40.dp)
                             .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.tertiary
-                                    )
-                                )
-                            ),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = s.icon,
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(21.dp)
                         )
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(s.titleRes),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
-                    }
+                    Text(
+                        text = stringResource(s.titleRes),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = titleColor,
+                        modifier = Modifier.weight(1f)
+                    )
                     Text(
                         text = stringResource(
                             R.string.ob_step_of, index + 1, steps.size
                         ),
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.55f)
+                        fontWeight = FontWeight.SemiBold,
+                        color = subColor
                     )
                 }
 
@@ -1579,82 +1257,82 @@ private fun CoachTour(
                 Text(
                     text = stringResource(s.descRes),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.85f)
+                    color = subColor
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Tour progress dots.
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    repeat(steps.size) { i ->
-                        val active = i == index
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 3.dp)
-                                .size(
-                                    width = if (active) 18.dp else 6.dp,
-                                    height = 6.dp
-                                )
-                                .clip(CircleShape)
-                                .background(
-                                    if (active) MaterialTheme.colorScheme.primary
-                                    else Color.White.copy(alpha = 0.22f)
-                                )
-                        )
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Primary action of the step.
-                GradientButton(
+                CoachButton(
                     labelRes = s.primaryRes,
-                    height = 48.dp
+                    filled = true
                 ) { performPrimary() }
 
                 // Optional secondary action ("later") — always exits the tour.
                 s.secondaryRes?.let { secondaryRes ->
                     Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White.copy(alpha = 0.08f))
-                            .border(
-                                1.dp,
-                                Color.White.copy(alpha = 0.16f),
-                                RoundedCornerShape(16.dp)
-                            )
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onFinish() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(secondaryRes),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                    }
+                    CoachButton(
+                        labelRes = secondaryRes,
+                        filled = false
+                    ) { onFinish() }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = stringResource(R.string.ob_tap_hint),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = subColor.copy(alpha = 0.75f),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
             }
         }
+    }
+}
+
+/** Tooltip buttons: solid primary, or a quiet outlined variant. */
+@Composable
+private fun CoachButton(
+    labelRes: Int,
+    filled: Boolean,
+    onClick: () -> Unit
+) {
+    val bg = if (filled) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color.Transparent
+    }
+    val fg = if (filled) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(if (filled) 46.dp else 42.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(bg)
+            .then(
+                if (filled) {
+                    Modifier
+                } else {
+                    Modifier.border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant,
+                        RoundedCornerShape(14.dp)
+                    )
+                }
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = fg
+        )
     }
 }

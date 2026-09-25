@@ -179,6 +179,9 @@ private fun MockAction(
 @Composable
 fun WelcomeArt(modifier: Modifier = Modifier) {
     val glow = rememberBreath(2200)
+    // Captured in composable context — Canvas lambdas are not composable.
+    val artPrimary = MaterialTheme.colorScheme.primary
+    val artTertiary = MaterialTheme.colorScheme.tertiary
     val spin = rememberInfiniteTransition(label = "welcomeSpin")
     val orbit by spin.animateFloat(
         initialValue = 0f,
@@ -206,7 +209,7 @@ fun WelcomeArt(modifier: Modifier = Modifier) {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.20f + 0.12f * glow),
+                        artPrimary.copy(alpha = 0.20f + 0.12f * glow),
                         Color.Transparent
                     ),
                     center = c,
@@ -247,8 +250,8 @@ fun WelcomeArt(modifier: Modifier = Modifier) {
                 drawRoundRect(
                     brush = Brush.linearGradient(
                         listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.82f)
+                            artPrimary,
+                            artPrimary.copy(alpha = 0.82f)
                         )
                     ),
                     topLeft = half,
@@ -258,8 +261,8 @@ fun WelcomeArt(modifier: Modifier = Modifier) {
                 drawRoundRect(
                     brush = Brush.linearGradient(
                         listOf(
-                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.92f),
-                            MaterialTheme.colorScheme.tertiary
+                            artTertiary.copy(alpha = 0.92f),
+                            artTertiary
                         )
                     ),
                     topLeft = Offset(half.x + capW * 0.44f, half.y),
@@ -499,7 +502,7 @@ private fun PhoneFrame(
 fun MiniDayRing(
     fraction: () -> Float,
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp
+    ringSize: Dp = 40.dp
 ) {
     val animated by animateFloatAsState(
         targetValue = fraction().coerceIn(0f, 1f),
@@ -509,7 +512,7 @@ fun MiniDayRing(
         ),
         label = "miniDayRing"
     )
-    Box(modifier.size(size), contentAlignment = Alignment.Center) {
+    Box(modifier.size(ringSize), contentAlignment = Alignment.Center) {
         val ring = MaterialTheme.colorScheme.primary
         val ringTrack = ArtWhite.copy(alpha = 0.14f)
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -781,6 +784,9 @@ fun AlarmMockArt(modifier: Modifier = Modifier) {
 @Composable
 fun StockBottleArt(modifier: Modifier = Modifier) {
     val warn = rememberBreath(1100)
+    // Captured in composable context — Canvas lambdas are not composable.
+    val artPrimary = MaterialTheme.colorScheme.primary
+    val artTertiary = MaterialTheme.colorScheme.tertiary
 
     ArtPanel(modifier.height(170.dp), contentPadding = PaddingValues(14.dp)) {
         Row(
@@ -812,8 +818,8 @@ fun StockBottleArt(modifier: Modifier = Modifier) {
                     drawRoundRect(
                         brush = Brush.verticalGradient(
                             listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.38f),
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.22f)
+                                artPrimary.copy(alpha = 0.38f),
+                                artTertiary.copy(alpha = 0.22f)
                             )
                         ),
                         topLeft = Offset(w * 0.06f, h * 0.13f),
@@ -1139,6 +1145,9 @@ fun ShieldArt(modifier: Modifier = Modifier) {
         label = "shieldPhase"
     )
     val breathe = rememberBreath(2000)
+    // Captured in composable context — Canvas lambdas are not composable.
+    val artPrimary = MaterialTheme.colorScheme.primary
+    val artTertiary = MaterialTheme.colorScheme.tertiary
 
     ArtPanel(modifier.height(150.dp)) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -1149,7 +1158,7 @@ fun ShieldArt(modifier: Modifier = Modifier) {
             repeat(2) { i ->
                 val p = (phase + i * 0.5f) % 1f
                 drawCircle(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = (1f - p) * 0.28f),
+                    color = artPrimary.copy(alpha = (1f - p) * 0.28f),
                     radius = base * (0.16f + 0.30f * p),
                     center = c,
                     style = Stroke(2.dp.toPx())
@@ -1191,8 +1200,8 @@ fun ShieldArt(modifier: Modifier = Modifier) {
                 path = path,
                 brush = Brush.verticalGradient(
                     listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.75f + 0.20f * breathe),
-                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.70f)
+                        artPrimary.copy(alpha = 0.75f + 0.20f * breathe),
+                        artTertiary.copy(alpha = 0.70f)
                     ),
                     startY = top,
                     endY = top + shieldH

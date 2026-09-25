@@ -156,10 +156,9 @@ object UpdateCenter {
                     .trim()
             }
             .filter { it.length > 2 }
-            .map { line ->
-                if (line.length > 112) line.take(109).trimEnd() + "…" else line
-            }
-            .take(3)
+            // Full lines, no mid-sentence "…" cuts — the changelog list in
+            // the update dialog scrolls, so long bullets are welcome now.
+            .take(10)
             .toList()
 
         return Release(tag, versionName, apkUrl, pageUrl, notes)

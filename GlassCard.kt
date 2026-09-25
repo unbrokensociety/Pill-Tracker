@@ -82,7 +82,6 @@ uniform float specular;
 uniform float lightX;
 uniform float lightY;
 uniform float phase;
-uniform float glintPhase;
 uniform float saturation;
 uniform float tintA;
 uniform float hairA;
@@ -100,7 +99,6 @@ half4 main(float2 fragCoord) {
     float t = clamp(inDist / band, 0.0, 1.0);
     float rim = 1.0 - t;
 
-    // Outward normal from the SDF gradient.
     float2 ex = float2(1.0, 0.0);
     float2 ey = float2(0.0, 1.0);
     float2 grad = float2(
@@ -108,58 +106,32 @@ half4 main(float2 fragCoord) {
         sdRoundBox(p + ey, c, corner) - sdRoundBox(p - ey, c, corner));
     float2 n = grad / max(length(grad), 0.0001);
 
-    // Thick-glass bend: content is pulled from beyond the edge and
-    // magnified — deepest right at the boundary, fading inward.
-    float bend = pow(rim, 1.6);
-    float2 lim = float2(0.5);
-    float2 limHi = resolution - float2(0.5);
-    float2 uvBase = clamp(fragCoord + n * bend * refraction * band, lim, limHi);
-
-    // Prism dispersion: red bends least, blue most, spread grows at the edge.
-    float ca = chroma * bend * max(band * 0.05, 0.8);
+    float lens = pow(rim, 2.0);
+    float2 uv = clamp(fragCoord + n * lens * refraction * band, float2(0.5), resolution - float2(0.5));
+    float ca = chroma * lens * max(band * 0.045, 0.75);
     half4 col;
-    col.r = content.eval(clamp(uvBase - n * ca, lim, limHi)).r;
-    col.g = content.eval(uvBase).g;
-    col.b = content.eval(clamp(uvBase + n * ca, lim, limHi)).b;
+    col.r = content.eval(clamp(uv + n * ca, float2(0.5), resolution - float2(0.5))).r;
+    col.g = content.eval(uv).g;
+    col.b = content.eval(clamp(uv - n * ca, float2(0.5), resolution - float2(0.5))).b;
     col.a = 1.0;
 
     float3 rgb = float3(col.rgb);
-
-    // Saturation pump: glass enriches whatever it shows, stronger where
-    // the lens bends hardest.
     float l = dot(rgb, float3(0.2126, 0.7152, 0.0722));
-    rgb = clamp(mix(float3(l), rgb, 1.0 + saturation * (0.35 + 0.85 * bend)), float3(0.0), float3(1.0));
-    rgb += bend * 0.018; // faint luminance lift of the bent slab
+    rgb = clamp(mix(float3(l), rgb, 1.0 + saturation * lens), float3(0.0), float3(1.0));
 
-    // --- lighting: key light from the top-left ---
     float lambert = clamp(dot(n, float2(lightX, lightY)), 0.0, 1.0);
-    float backLight = clamp(-dot(n, float2(lightX, lightY)), 0.0, 1.0);
-
-    // (a) crisp fresnel contour hugging the boundary
-    float contour = pow(rim, 12.0);
-    // (b) broad specular glow on the lit side
-    float glow = pow(rim, 2.4) * (0.22 + 0.78 * pow(lambert, 2.0));
-    // (c) travelling glint — a slow bright bead orbiting the edge
-    float2 glintDir = float2(cos(glintPhase + phase), sin(glintPhase + phase));
-    float bead = pow(clamp(dot(n, glintDir), 0.0, 1.0), 36.0) * pow(rim, 2.0);
-
-    float spec = (contour * (0.55 + 0.45 * lambert) + glow * 0.5 + bead * 0.55) * specular;
-
-    // Inner shadow on the far side gives the slab depth.
-    float shade = pow(rim, 3.0) * pow(backLight, 1.6) * 0.30;
-
-    rgb = rgb * (1.0 + spec * 1.15) + float3(spec * 0.32);
+    float glint = 0.5 + 0.5 * sin(phase + (n.x * 1.2 + n.y * 0.8) * 1.7);
+    float spec = pow(rim, 2.5) *
+        (0.30 + 0.55 * pow(lambert, 2.0) + 0.25 * glint * (0.35 + 0.65 * lambert)) * specular;
+    float shade = pow(rim, 3.0) *
+        pow(clamp(-dot(n, float2(lightX, lightY)), 0.0, 1.0), 1.5) * 0.30;
+    rgb = rgb * (1.0 + spec * 1.1) + float3(spec * 0.30);
     rgb = rgb * (1.0 - shade);
 
-    // Film grain against gradient banding.
-    float g = fract(sin(dot(fragCoord, float2(12.9898, 78.233))) * 43758.5453);
-    rgb += (g - 0.5) * 0.014;
+    float mask = 1.0 - smoothstep(0.45, 1.0, t);
+    float hairline = pow(rim, 9.0) * hairA;
 
-    // The edge band is opaque glass; the center lets the blurred base show.
-    float mask = 1.0 - smoothstep(0.35, 0.92, t);
-    float hairline = contour * hairA;
-
-    float cover = clamp(mask + spec * 0.80, 0.0, 1.0);
+    float cover = clamp(mask + spec * 0.85, 0.0, 1.0);
     float white = clamp(tintA + hairline, 0.0, 1.0);
     float3 prem = rgb * cover + float3(white);
     return half4(half3(prem), half(clamp(cover + white, 0.0, 1.0)));
@@ -174,18 +146,14 @@ private fun rememberLiquidLensShader(): RuntimeShader =
 enum class LiquidGlassQuality { FULL, REDUCED, FROST }
 
 /**
- * Global liquid-glass state. The quality is fully automatic:
+ * Global liquid-glass state. Since v2.5.4 the quality is fully automatic:
  * DeviceGlassPolicy picks the initial level from the hardware and the
- * governor adapts it live to the measured frame pacing.
- *
- * `enabled` is the user-facing master switch (Settings → Вигляд).
- * When it is off, every panel falls back to the calm frosted look;
- * the classic bar keeps its plain blur, everything else goes opaque.
+ * governor adapts it live to the measured frame pacing. There is no
+ * user-visible picker anymore — the state below is read-only for screens.
  */
 object LiquidGlassState {
     const val DEFAULT_INTENSITY = 0.75f
 
-    val enabled = mutableStateOf(true)
     val quality = mutableStateOf(LiquidGlassQuality.FULL)
     val intensity = mutableStateOf(DEFAULT_INTENSITY)
 }
@@ -202,15 +170,9 @@ object DeviceGlassPolicy {
 
             when {
                 am.isLowRamDevice -> LiquidGlassQuality.FROST
-                // Full iOS-grade lens needs AGSL (API 33+) and real GPU
-                // headroom — flagship-class devices only.
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> when {
-                    cores >= 8 && ramGb >= 6.0 -> LiquidGlassQuality.FULL
-                    cores >= 4 && ramGb >= 2.5 -> LiquidGlassQuality.REDUCED
-                    else -> LiquidGlassQuality.FROST
-                }
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> when {
-                    cores >= 4 && ramGb >= 2.5 -> LiquidGlassQuality.REDUCED
+                    cores >= 4 && ramGb >= 2.5 -> LiquidGlassQuality.FULL
+                    cores >= 4 -> LiquidGlassQuality.REDUCED
                     else -> LiquidGlassQuality.FROST
                 }
                 else -> when {
@@ -241,15 +203,10 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
 
         fun applyQuality() {
             LiquidGlassState.quality.value =
-                if (!LiquidGlassState.enabled.value || saverOn) {
-                    LiquidGlassQuality.FROST
-                } else {
-                    level
-                }
+                if (saverOn) LiquidGlassQuality.FROST else level
         }
 
-        var lastEnabled = LiquidGlassState.enabled.value
-        applyQuality()
+        LiquidGlassState.quality.value = level
 
         val windowSize = 120
         val deltas = LongArray(windowSize)
@@ -266,13 +223,6 @@ fun GlassPerformanceGovernor(backdrop: GlassBackdrop) {
 
             val delta = if (prevNanos == 0L) 0L else nanos - prevNanos
             prevNanos = nanos
-
-            val enabledNow = LiquidGlassState.enabled.value
-            if (enabledNow != lastEnabled) {
-                lastEnabled = enabledNow
-                applyQuality()
-                cooldown = 60
-            }
 
             if (nanos - lastSaverCheck > 4_000_000_000L) {
                 lastSaverCheck = nanos
@@ -441,11 +391,6 @@ fun LiquidGlassPanel(
     val glassQuality by LiquidGlassState.quality
     val quality = glassQuality
 
-    // Master switch: when the user turns liquid glass off, every panel
-    // goes to the calm frosted look; the classic bar keeps its plain blur.
-    val glassOn by LiquidGlassState.enabled
-    val frozen = !glassOn || quality == LiquidGlassQuality.FROST
-
     val rawIntensity by LiquidGlassState.intensity
     val iEff = rawIntensity.coerceIn(0f, 1f)
     val curve = iEff.pow(1.15f)
@@ -459,9 +404,10 @@ fun LiquidGlassPanel(
         else -> 0.dp
     }
 
-    val useLens = hardwareBlur && glassOn &&
+    val useLens = hardwareBlur &&
             quality == LiquidGlassQuality.FULL &&
-            AgslLensSupported
+            AgslLensSupported &&
+            !classic
 
     val glassTint = tint
         ?: when {
@@ -476,10 +422,9 @@ fun LiquidGlassPanel(
                 MaterialTheme.colorScheme.surface.copy(
                     alpha = if (isDark) 0.42f else 0.34f
                 )
-            // No-blur fallback (low RAM / saver with FROST quality,
-            // or the user turned liquid glass off):
+            // No-blur fallback (low RAM / saver with FROST quality):
             // calm translucent fill, content softly shows through.
-            frozen ->
+            quality == LiquidGlassQuality.FROST ->
                 MaterialTheme.colorScheme.surface.copy(
                     alpha = if (isDark) 0.72f else 0.82f
                 )
@@ -502,14 +447,14 @@ fun LiquidGlassPanel(
     val scrimTop = when {
         // Classic: top-weighted, light scrims.
         classic -> if (isDark) Color(0x38000000) else Color(0x18000000)
-        frozen -> Color.Transparent
+        quality == LiquidGlassQuality.FROST -> Color.Transparent
         quality == LiquidGlassQuality.REDUCED ->
             Color.Black.copy(alpha = (if (isDark) 0.17f else 0.085f) * scrimScale)
         else -> Color.Black.copy(alpha = (if (isDark) 0.125f else 0.055f) * scrimScale)
     }
     val scrimBottom = when {
         classic -> if (isDark) Color(0x16000000) else Color(0x08000000)
-        frozen -> Color.Transparent
+        quality == LiquidGlassQuality.FROST -> Color.Transparent
         quality == LiquidGlassQuality.REDUCED ->
             Color.Black.copy(alpha = (if (isDark) 0.07f else 0.03f) * scrimScale)
         else -> Color.Black.copy(alpha = (if (isDark) 0.047f else 0.02f) * scrimScale)
@@ -525,7 +470,7 @@ fun LiquidGlassPanel(
             val rimBottom = if (isDark) Color(1f, 1f, 1f, 0.14f) else Color(1f, 1f, 1f, 0.45f)
             Brush.verticalGradient(listOf(rimTop, rimMid, rimBottom))
         }
-        frozen -> {
+        quality == LiquidGlassQuality.FROST -> {
             val hairline = MaterialTheme.colorScheme.outlineVariant.copy(
                 alpha = if (isDark) 0.45f else 0.65f
             )
@@ -555,7 +500,7 @@ fun LiquidGlassPanel(
 
     // The classic bar keeps its blur under every quality tier — the
     // software path runs even in FROST.
-    val softBlur = if (!hardwareBlur && (classic || !frozen)) {
+    val softBlur = if (!hardwareBlur && (classic || quality != LiquidGlassQuality.FROST)) {
         rememberSoftBackdropBitmap(
             backdrop = backdrop,
             panelOriginProvider = { panelOrigin },
@@ -580,7 +525,7 @@ fun LiquidGlassPanel(
             )
             .clip(shape)
     ) {
-        if (hardwareBlur && (classic || !frozen)) {
+        if (hardwareBlur && (classic || quality != LiquidGlassQuality.FROST)) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -596,7 +541,8 @@ fun LiquidGlassPanel(
                         }
                     }
             )
-            if (useLens && lensShader != null) {
+            if (quality == LiquidGlassQuality.FULL && !classic) {
+                if (lensShader != null) {
                     AgslLensPass(
                         backdrop = backdrop,
                         shader = lensShader,
@@ -607,7 +553,7 @@ fun LiquidGlassPanel(
                         panelOriginState = panelOriginState,
                         modifier = Modifier.matchParentSize()
                     )
-            } else if (!classic && quality == LiquidGlassQuality.FULL) {
+                } else {
                     Box(
                         modifier = Modifier
                             .matchParentSize()
@@ -628,8 +574,9 @@ fun LiquidGlassPanel(
                                 }
                             }
                     )
+                }
             }
-        } else if (!hardwareBlur && (classic || !frozen)) {
+        } else if (!hardwareBlur && (classic || quality != LiquidGlassQuality.FROST)) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -691,31 +638,19 @@ private fun AgslLensPass(
     panelOriginState: State<Offset?>,
     modifier: Modifier = Modifier
 ) {
-    // Slow orbiting glint: the phase is computed frame-side (double
-    // precision, wrapped into [0, 2π)) so the shader float never loses
-    // precision even after hours of uptime.
-    var glintPhase by remember { mutableStateOf(0f) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            withFrameNanos { nanos ->
-                glintPhase = ((nanos * 0.55e-9) % (2.0 * Math.PI)).toFloat()
-            }
-        }
-    }
-
     Box(
         modifier = modifier
             .graphicsLayer {
                 val cornerPx = (shape.createOutline(size, layoutDirection, this)
                     as? Outline.Rounded)?.roundRect?.topLeftCornerRadius?.x ?: 0f
-                val bandPx = (14.dp + (30.dp - 14.dp) * curve).toPx()
+                val bandPx = (12.dp + (26.dp - 12.dp) * curve).toPx()
                 shader.setFloatUniform("resolution", size.width, size.height)
                 shader.setFloatUniform("corner", cornerPx)
                 shader.setFloatUniform("band", bandPx)
-                shader.setFloatUniform("refraction", lerp(0.55f, 1.15f, curve))
-                shader.setFloatUniform("chroma", lerp(0.20f, 0.85f, curve))
-                shader.setFloatUniform("specular", lerp(0.45f, 1.0f, curve))
-                shader.setFloatUniform("saturation", lerp(0.12f, 0.34f, curve))
+                shader.setFloatUniform("refraction", lerp(0.35f, 0.95f, curve))
+                shader.setFloatUniform("chroma", lerp(0.15f, 0.75f, curve))
+                shader.setFloatUniform("specular", lerp(0.35f, 1.0f, curve))
+                shader.setFloatUniform("saturation", lerp(0.10f, 0.30f, curve))
                 shader.setFloatUniform("lightX", -0.55f)
                 shader.setFloatUniform("lightY", -0.83f)
                 shader.setFloatUniform(
@@ -726,7 +661,6 @@ private fun AgslLensPass(
                 val pos = panelOriginState.value
                 val phase = (pos?.x ?: 0f) * 0.006f + (pos?.y ?: 0f) * 0.010f
                 shader.setFloatUniform("phase", phase)
-                shader.setFloatUniform("glintPhase", glintPhase)
                 renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "content")
                     .asComposeRenderEffect()
             }

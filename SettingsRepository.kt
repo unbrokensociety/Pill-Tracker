@@ -19,7 +19,6 @@ class SettingsRepository(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val ALARM_MODE = booleanPreferencesKey("alarm_mode")
-        val LIQUID_GLASS = booleanPreferencesKey("liquid_glass")
     }
 
     val themeModeFlow: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
@@ -60,19 +59,6 @@ class SettingsRepository(private val context: Context) {
     suspend fun setAlarmMode(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ALARM_MODE] = enabled
-        }
-    }
-
-    // iOS-grade liquid glass material — the user's master switch.
-    // It unlocks the full lens only on powerful devices; the performance
-    // governor still downgrades quality if frames start to stutter.
-    val liquidGlassFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[LIQUID_GLASS] ?: true
-    }
-
-    suspend fun setLiquidGlassEnabled(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[LIQUID_GLASS] = enabled
         }
     }
 }

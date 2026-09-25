@@ -1,13 +1,13 @@
-> app-version: 2.5.8
+> app-version: 2.5.9
 
-* The bottom island now wears real iOS-style liquid glass: the content
-  beneath it bends and magnifies at the edges, splits into subtle
-  rainbow dispersion and carries a light contour with a slow travelling
-  glint — flagship-class devices only (the governor still steps the
-  quality down if frames stutter)
-* New "Liquid glass" toggle in Settings → Вигляд: turn the heavy glass
-  off for the calm frosted look; the choice is remembered
-* Fixed: the Ukrainian "Налаштування" label no longer pokes outside the
-  sliding pill in the bottom island
-* Everything else untouched — quality tiers for weaker devices behave
-  exactly as before
+* The iOS-style liquid glass is gone — the bottom island is back to the
+  calm frosted look it had before. Fair call: it distracted more than
+  it impressed
+* Update dialog got real: the "What's new" list scrolls up and down,
+  long notes no longer end with a cut-off "…", and on small screens the
+  card no longer pushes its own buttons out of view
+* Swept the whole app for text poking out of its bubble: the greeting
+  with a long name, the calendar month header, chips, onboarding
+  buttons and coach tooltips all stay inside their corners now — in
+  Ukrainian too
+* Everything else is exactly as it was

@@ -33,7 +33,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.CloudDownload
@@ -102,7 +101,7 @@ import com.aistudio.meditracker.ui.locale.findActivity
  * Структура — 5 карточек вместо 8:
  *  1) Прогрес прийому — одна строка с кольцом
  *  2) Сповіщення — 2 тумблера (островок и критический звук всегда включены)
- *  3) Вигляд — тема, рідке скло (тумблер) та мова
+ *  3) Вигляд — тема та мова (якість рідкого скла підбирається автоматично)
  *  4) Основне — ім'я, повтор навчання, перевірка оновлень (група рядків)
  *  5) Про застосунок — версія, опис, юридичні документи
  */
@@ -115,7 +114,6 @@ fun SettingsScreen(
     val themeMode by viewModel.themeMode.collectAsState()
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val alarmMode by viewModel.alarmModeEnabled.collectAsState()
-    val glassEnabled by viewModel.liquidGlassEnabled.collectAsState()
 
     val medications by viewModel.allMedications.collectAsState()
     val schedules by viewModel.dailySchedules.collectAsState()
@@ -366,17 +364,6 @@ fun SettingsScreen(
                             icon = { it.third },
                             isSelected = { it.first == themeMode },
                             onSelect = { viewModel.setTheme(it.first) }
-                        )
-
-                        RowDivider(inset = 0.dp)
-
-                        // ── Рідке скло (iOS-стиль) ──
-                        SettingsToggleRow(
-                            icon = Icons.Filled.AutoAwesome,
-                            title = stringResource(R.string.settings_glass_title),
-                            subtitle = stringResource(R.string.settings_glass_desc),
-                            checked = glassEnabled,
-                            onToggle = { viewModel.setLiquidGlass(!glassEnabled) }
                         )
 
                         RowDivider(inset = 0.dp)

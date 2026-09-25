@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aistudio.meditracker.R
 import com.aistudio.meditracker.data.Medication
@@ -315,7 +316,8 @@ fun MedicationInfoCard(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     maxLines = 1,
-                                    softWrap = false
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -339,7 +341,8 @@ fun MedicationInfoCard(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             maxLines = 1,
-                            softWrap = false
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -357,7 +360,8 @@ fun MedicationInfoCard(
                                 fontWeight = FontWeight.Bold,
                                 color = if (isLow) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
-                                softWrap = false
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }

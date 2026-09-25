@@ -55,7 +55,6 @@ import com.aistudio.meditracker.ui.SettingsScreen
 import com.aistudio.meditracker.ui.MainViewModel
 import com.aistudio.meditracker.ui.MainViewModelFactory
 import com.aistudio.meditracker.ui.components.LiquidGlassPanel
-import com.aistudio.meditracker.ui.components.LiquidGlassState
 import com.aistudio.meditracker.ui.components.GlassFAB
 import com.aistudio.meditracker.ui.components.GlassPerformanceGovernor
 import com.aistudio.meditracker.ui.components.auroraBackdrop
@@ -152,12 +151,6 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(viewModel: MainViewModel) {
     val navController = rememberNavController()
     val context = LocalContext.current
-
-    // Master switch for the liquid glass material (Settings → Вигляд).
-    val glassEnabled by viewModel.liquidGlassEnabled.collectAsState()
-    LaunchedEffect(glassEnabled) {
-        LiquidGlassState.enabled.value = glassEnabled
-    }
 
     var onboardingDone by remember { mutableStateOf(OnboardingPrefs.isCompleted(context)) }
     LaunchedEffect(Unit) {

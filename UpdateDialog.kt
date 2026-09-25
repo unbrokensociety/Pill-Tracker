@@ -17,11 +17,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -38,8 +42,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.aistudio.meditracker.R
 
@@ -68,6 +74,9 @@ internal fun UpdateDialog(
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val onPrimary = MaterialTheme.colorScheme.onPrimary
+    // Never let the card grow past ~78% of the screen: on small phones a
+    // long changelog would otherwise push the buttons off-screen.
+    val maxCardHeight = LocalConfiguration.current.screenHeightDp.dp * 0.78f
 
     Box(
         modifier = Modifier
@@ -89,6 +98,7 @@ internal fun UpdateDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = maxCardHeight)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -129,7 +139,7 @@ internal fun UpdateDialog(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         val title = when (state) {
                             UpdateUi.UP_TO_DATE -> stringResource(R.string.upd_uptodate)
                             UpdateUi.FAILED -> stringResource(R.string.upd_failed)
@@ -139,19 +149,23 @@ internal fun UpdateDialog(
                             text = title,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
                         )
                         if (release != null && state != UpdateUi.UP_TO_DATE && state != UpdateUi.FAILED) {
                             Text(
                                 text = "Pill Tracker ${release.versionName ?: release.tag}",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = primary
+                                color = primary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(10.dp))
                     IconButton(
                         onClick = onDismiss,
                         modifier = Modifier.size(34.dp)
@@ -175,7 +189,13 @@ internal fun UpdateDialog(
                     },
                     label = "updateBody"
                 ) { s ->
-                    Column {
+                    // The whole body scrolls when it outgrows the card —
+                    // long changelogs never get clipped, on any screen.
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                    ) {
                         when (s) {
                             UpdateUi.CHECKING -> CheckingBody()
                             UpdateUi.ASKING -> AskingBody(release, onUpdate, onLater)

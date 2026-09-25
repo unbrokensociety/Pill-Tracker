@@ -50,12 +50,6 @@ class MainViewModel(
         initialValue = true
     )
 
-    val liquidGlassEnabled: StateFlow<Boolean> = settingsRepository.liquidGlassFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = true
-    )
-
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
 
@@ -165,10 +159,6 @@ class MainViewModel(
 
     fun setAlarmMode(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setAlarmMode(enabled) }
-    }
-
-    fun setLiquidGlass(enabled: Boolean) {
-        viewModelScope.launch { settingsRepository.setLiquidGlassEnabled(enabled) }
     }
 
     val lowStockMedications: StateFlow<List<Medication>> = repository.lowStockMedications

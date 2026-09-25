@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aistudio.meditracker.R
@@ -271,7 +272,9 @@ private fun AlarmScreen(
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                color = Color.White
+                color = Color.White,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(10.dp))

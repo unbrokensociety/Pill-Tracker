@@ -53,8 +53,6 @@
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
     <string name="settings_theme_brand">Фирменная</string>
-    <string name="settings_glass_title">Жидкое стекло</string>
-    <string name="settings_glass_desc">Преломление света и блики — на мощных устройствах</string>
     <string name="settings_notifications">Уведомления</string>
     <string name="settings_language">Язык</string>
     <string name="settings_lang_system">Системный язык</string>

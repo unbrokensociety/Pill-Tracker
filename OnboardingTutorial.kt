@@ -60,6 +60,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -112,6 +113,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -879,7 +881,9 @@ private fun PrimaryButton(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(height)
+            // min, not fixed: at larger system font scales a two-line
+            // label must grow the button instead of being cut off.
+            .heightIn(min = height)
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.primary)
             .clickable(onClick = onClick),
@@ -1178,6 +1182,10 @@ private fun CoachTour(
             val tipColor = MaterialTheme.colorScheme.surface
             val titleColor = MaterialTheme.colorScheme.onSurface
             val subColor = MaterialTheme.colorScheme.onSurfaceVariant
+            // Long localized descriptions plus two buttons can outgrow a
+            // small screen — cap the card and scroll its content instead
+            // of clipping the buttons out of reach.
+            val maxTipHeight = LocalConfiguration.current.screenHeightDp.dp * 0.72f
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1185,8 +1193,9 @@ private fun CoachTour(
                     .onGloballyPositioned { coords ->
                         with(density) { tooltipH = coords.size.height.toDp() }
                     }
-                    // Arrow pointing at the hole (drawn before clip so the
-                    // rounded corners do not cut it off).
+                    .heightIn(max = maxTipHeight)
+                    // Arrow stays on the non-scrolling window (drawn before
+                    // the scroll node) so it is never clipped by it.
                     .drawBehind {
                         val hole = holeAnim.value
                         val a = arrowSize.toPx()
@@ -1214,6 +1223,7 @@ private fun CoachTour(
                         path.close()
                         drawPath(path, tipColor)
                     }
+                    .verticalScroll(rememberScrollState())
                     .clip(RoundedCornerShape(22.dp))
                     .background(tipColor)
                     .padding(20.dp)
@@ -1311,7 +1321,7 @@ private fun CoachButton(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (filled) 46.dp else 42.dp)
+            .heightIn(min = if (filled) 46.dp else 42.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(bg)
             .then(

@@ -93,9 +93,9 @@ fun TermsOfServiceDialog(
                     ) {
                         Text(
                             text = when (lang) {
-                                "uk" -> "Pill Tracker — безкоштовний особистий органайзер для ліків. Використовуючи застосунок, ви погоджуєтесь з цими умовами. Оновлення: вересень 2026."
-                                "ru" -> "Pill Tracker — бесплатный личный органайзер для лекарств. Используя приложение, вы соглашаетесь с этими условиями. Обновление: сентябрь 2026."
-                                else -> "Pill Tracker is a free personal medication organizer. By using the app you agree to these terms. Updated: September 2026."
+                                "uk" -> "Pill Tracker — безкоштовний особистий органайзер для ліків. Використовуючи застосунок, ви погоджуєтесь з цими умовами. Оновлення: жовтень 2026."
+                                "ru" -> "Pill Tracker — бесплатный личный органайзер для лекарств. Используя приложение, вы соглашаетесь с этими условиями. Обновление: октябрь 2026."
+                                else -> "Pill Tracker is a free personal medication organizer. By using the app you agree to these terms. Updated: October 2026."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,

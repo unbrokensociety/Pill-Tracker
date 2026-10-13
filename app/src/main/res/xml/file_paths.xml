@@ -2,4 +2,11 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="reports" path="." />
     <files-path name="files" path="." />
+    <!-- Updater APKs are kept in cacheDir/updates; FileProvider needs this
+         path to hand the file to the package installer. -->
+    <cache-path name="updates" path="updates" />
+    <!-- Legacy downloads directory, kept so files left by older builds
+         can still be cleaned up. -->
+    <external-files-path name="downloads" path="Download" />
+    <external-files-path name="external_files" path="." />
 </paths>

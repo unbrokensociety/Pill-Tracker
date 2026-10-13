@@ -1,4 +1,14 @@
-name: Android CI/CD
+# Builds the release APK on every push / PR. A GitHub Release is published
+# only from the main branch, so test branches never reach the in-app updater.
+#
+# Versioning: versionCode = 2420 + GITHUB_RUN_NUMBER and versionName are set
+# in app/build.gradle.kts. versionName must match the "app-version" marker at
+# the top of RELEASE_NOTES.md - the in-app updater compares exactly these two.
+# The GitHub Release body is RELEASE_NOTES.md as is.
+#
+# Signing: with the KEYSTORE_BASE64 / STORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD
+# secrets the APK is signed with the real release key; otherwise with the
+# repo's debug.keystore (see allowDebugSigning in gradle.properties).
 
 on:
   push:
@@ -9,7 +19,8 @@ on:
       - '**'
   workflow_dispatch:
 
-permissions: write-all
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -61,15 +72,27 @@ jobs:
             echo "Decoding release.keystore from secret..."
             python3 -c "import base64, re; text='''${{ secrets.KEYSTORE_BASE64 }}'''; open('release.keystore','wb').write(base64.b64decode(re.sub(r'\s+', '', text)))"
             echo "KEYSTORE_PATH=release.keystore" >> $GITHUB_ENV
+          else
+            echo "::warning::No KEYSTORE_BASE64 secret — the APK will be signed with the debug key (explicit opt-in, -PallowDebugSigning=true). Fine for GitHub Releases + in-app updates, NOT for a store."
           fi
 
       - name: Build Release APK
-        run: gradle assembleRelease --no-daemon --stacktrace
+        # The flag is a fallback: allowDebugSigning=true also ships in
+        # gradle.properties, so a bare `gradle assembleRelease` builds too.
+        run: gradle assembleRelease --no-daemon --stacktrace -PallowDebugSigning=true
         env:
           KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Report Signing Mode
+        run: |
+          if [ -z "${{ env.KEYSTORE_PATH }}" ]; then
+            echo "⚠️  This release artifact is signed with the DEBUG key (no KEYSTORE_BASE64 secret / explicit opt-in). Updates still install over previous debug-signed builds — the in-app update chain stays intact."
+          else
+            echo "✅ Release artifact signed with the REAL release key."
+          fi
 
       - name: Locate Built APK
         run: |
@@ -104,7 +127,7 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: v1.${{ github.run_number }}

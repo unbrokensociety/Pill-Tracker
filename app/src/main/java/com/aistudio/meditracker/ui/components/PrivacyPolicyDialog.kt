@@ -93,9 +93,9 @@ fun PrivacyPolicyDialog(
                     ) {
                         Text(
                             text = when (lang) {
-                                "uk" -> "Коротко: ваші ліки та історія прийому живуть лише на цьому пристрої. Мережа використовується винятково для перевірки оновлень із GitHub — медичні дані не надсилаються нікуди. Оновлення політики: вересень 2026."
-                                "ru" -> "Коротко: ваши лекарства и история приёма живут только на этом устройстве. Сеть используется исключительно для проверки обновлений с GitHub — медицинские данные не отправляются никуда. Обновление политики: сентябрь 2026."
-                                else -> "In short: your medications and intake history live only on this device. The network is used solely to check for updates on GitHub — no medical data ever leaves your phone. Policy updated: September 2026."
+                                "uk" -> "Коротко: ваші ліки та історія прийому живуть лише на цьому пристрої. Мережа використовується винятково для перевірки оновлень із GitHub — медичні дані не надсилаються нікуди. Оновлення політики: жовтень 2026."
+                                "ru" -> "Коротко: ваши лекарства и история приёма живут только на этом устройстве. Сеть используется исключительно для проверки обновлений с GitHub — медицинские данные не отправляются никуда. Обновление политики: октябрь 2026."
+                                else -> "In short: your medications and intake history live only on this device. The network is used solely to check for updates on GitHub — no medical data ever leaves your phone. Policy updated: October 2026."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
@@ -161,12 +161,12 @@ private fun UkrainianPolicyContent() {
     PolicyCardSection(
         number = "3",
         title = "Дозволи Android та їхнє призначення",
-        body = "Сповіщення — щоб нагадувати про прийом; точний будильник — щоб нагадування приходили вчасно, а не «колось»; інтернет — лише для оновлень (див. п. 2); дозвіл на встановлення — щоб оновлюватись прямо із застосунку (дається один раз). Жодних дозволів на контакти, камеру, геолокацію чи мікрофон немає й не буде."
+        body = "Сповіщення — щоб нагадувати про прийом; точний будильник — щоб нагадування приходили вчасно; запуск після перезавантаження — щоб відновити нагадування; повноекранний будильник і доступ до режиму «Не турбувати» — необов’язкові, лише якщо ви вмикаєте режим будильника чи критичні сповіщення; інтернет — лише для оновлень (див. п. 2); дозвіл на встановлення — щоб оновлюватись прямо із застосунку (дається один раз). Дозволів на контакти, камеру, геолокацію чи мікрофон застосунок не просить."
     )
     PolicyCardSection(
         number = "4",
         title = "Резервні копії та хмара",
-        body = "Автоматичне резервне копіювання Android (у ваш Google-акаунт) для цього застосунку вимкнено (allowBackup=false): навіть системними засобами дані не «з’їжджають» у хмару. Ваше ім’я для привітання теж зберігається лише локально й видаляється однією кнопкою."
+        body = "Автоматичне резервне копіювання Android у ваш Google-акаунт для цього застосунку вимкнено, тож системне резервне копіювання теж не передає дані в хмару. Ваше ім’я для привітання зберігається лише локально й видаляється однією кнопкою."
     )
     PolicyCardSection(
         number = "5",
@@ -205,12 +205,12 @@ private fun RussianPolicyContent() {
     PolicyCardSection(
         number = "3",
         title = "Разрешения Android и их назначение",
-        body = "Уведомления — напоминать о приёме; точный будильник — чтобы напоминания приходили вовремя; интернет — только для обновлений (см. п. 2); разрешение на установку — чтобы обновляться прямо из приложения (даётся один раз). Разрешений на контакты, камеру, геолокацию или микрофон нет и не будет."
+        body = "Уведомления — напоминать о приёме; точный будильник — чтобы напоминания приходили вовремя; запуск после перезагрузки — чтобы восстановить напоминания; полноэкранный будильник и доступ к режиму «Не беспокоить» — необязательны, только если вы включаете режим будильника или критические уведомления; интернет — только для обновлений (см. п. 2); разрешение на установку — чтобы обновляться прямо из приложения (даётся один раз). Разрешений на контакты, камеру, геолокацию или микрофон приложение не запрашивает."
     )
     PolicyCardSection(
         number = "4",
         title = "Резервные копии и облако",
-        body = "Автоматическое резервное копирование Android (в ваш Google-аккаунт) для этого приложения отключено (allowBackup=false): даже системными средствами данные не уезжают в облако. Ваше имя для приветствия тоже хранится только локально и удаляется одной кнопкой."
+        body = "Автоматическое резервное копирование Android в ваш Google-аккаунт для этого приложения отключено, поэтому системная копия тоже не передаёт данные в облако. Ваше имя для приветствия хранится только локально и удаляется одной кнопкой."
     )
     PolicyCardSection(
         number = "5",
@@ -249,12 +249,12 @@ private fun EnglishPolicyContent() {
     PolicyCardSection(
         number = "3",
         title = "Android permissions and why",
-        body = "Notifications — to remind you about intakes; exact alarms — so reminders fire on time; Internet — only for updates (see §2); install permission — to update straight from the app (granted once). No permissions for contacts, camera, location or microphone — now or ever."
+        body = "Notifications — to remind you about intakes; exact alarms — so reminders fire on time; start at boot — to restore reminders after a restart; full-screen alarm and Do Not Disturb access — optional, only if you turn on alarm mode or critical alerts; Internet — only for updates (see §2); install permission — to update straight from the app (granted once). The app does not ask for contacts, camera, location or microphone."
     )
     PolicyCardSection(
         number = "4",
         title = "Backups and the cloud",
-        body = "Android automatic backup (to your Google account) is disabled for this app (allowBackup=false): your data never reaches any cloud, even via system mechanisms. Your greeting name is also stored locally and can be removed with one tap."
+        body = "Android automatic backup to your Google account is disabled for this app, so your data does not reach any cloud through system backup either. Your greeting name is also stored locally and can be removed with one tap."
     )
     PolicyCardSection(
         number = "5",

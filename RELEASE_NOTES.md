@@ -1,13 +1,11 @@
-> app-version: 2.5.9
+> app-version: 2.6.0
 
-* The iOS-style liquid glass is gone — the bottom island is back to the
-  calm frosted look it had before. Fair call: it distracted more than
-  it impressed
-* Update dialog got real: the "What's new" list scrolls up and down,
-  long notes no longer end with a cut-off "…", and on small screens the
-  card no longer pushes its own buttons out of view
-* Swept the whole app for text poking out of its bubble: the greeting
-  with a long name, the calendar month header, chips, onboarding
-  buttons and coach tooltips all stay inside their corners now — in
-  Ukrainian too
+* Privacy policy now matches what the app actually does: removed the
+  leftover mentions of HIPAA and Firestore, listed every permission and
+  why it is needed, dropped the "allowBackup" jargon
+* Texts are plainer: shorter About card, no emoji in the streak card,
+  and the onboarding no longer claims the app asks for a single
+  permission or never touches the internet (updates use it)
+* Behind the scenes: the repository was reorganised, the interval
+  schedule is covered by unit tests and the build script was cleaned up
 * Everything else is exactly as it was

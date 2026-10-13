@@ -104,21 +104,7 @@ class MedicationRepository(private val dao: MedicationDao) {
         val dateEpoch = getStartOfDayEpochMillis(date)
         val todayStart = getStartOfDayEpochMillis(LocalDate.now())
         return dao.getDailySchedules(dateEpoch, todayStart).map { list ->
-            list.filter { item ->
-                if (item.scheduleType == "interval") {
-                    val startLocal = java.time.Instant.ofEpochMilli(item.startDate)
-                        .atZone(ZoneId.systemDefault()).toLocalDate()
-                    if (date.isBefore(startLocal)) {
-                        false
-                    } else {
-                        val daysDiff = java.time.temporal.ChronoUnit.DAYS.between(startLocal, date)
-                        val interval = if (item.intervalDays > 0) item.intervalDays else 1
-                        daysDiff >= 0 && (daysDiff % interval == 0L)
-                    }
-                } else {
-                    true
-                }
-            }
+            list.filter { item -> isDueOn(item.scheduleType, item.startDate, item.intervalDays, date) }
         }
     }
 
@@ -159,4 +145,24 @@ class MedicationRepository(private val dao: MedicationDao) {
             dao.incrementStock(schedule.medicationId)
         }
     }
+}
+
+/**
+ * Whether a medication with the given schedule is due on [date].
+ * "interval" medications are due every [intervalDays] days counted from
+ * their start date (never before it); every other schedule type is due daily.
+ */
+internal fun isDueOn(
+    scheduleType: String,
+    startDateMillis: Long,
+    intervalDays: Int,
+    date: LocalDate,
+    zone: ZoneId = ZoneId.systemDefault()
+): Boolean {
+    if (scheduleType != "interval") return true
+    val startLocal = java.time.Instant.ofEpochMilli(startDateMillis).atZone(zone).toLocalDate()
+    if (date.isBefore(startLocal)) return false
+    val daysDiff = java.time.temporal.ChronoUnit.DAYS.between(startLocal, date)
+    val interval = if (intervalDays > 0) intervalDays else 1
+    return daysDiff % interval == 0L
 }

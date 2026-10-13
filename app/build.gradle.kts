@@ -1,4 +1,24 @@
+import java.io.File
 import java.util.Base64
+
+/**
+ * Decodes debug.keystore from its flat base64 twin (if present) and returns
+ * the keystore file when it is actually usable. Shared by the debug and the
+ * explicit debug-fallback release signing configs.
+ */
+fun ensureDebugKeystore(rootDir: File): File? {
+    val ksFile = File(rootDir, "debug.keystore")
+    val ksBase64File = File(rootDir, "debug.keystore.base64")
+    if ((!ksFile.exists() || ksFile.length() == 0L) && ksBase64File.exists()) {
+        try {
+            val cleanBase64 = ksBase64File.readText().replace("\\s".toRegex(), "")
+            ksFile.writeBytes(Base64.getDecoder().decode(cleanBase64))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    return ksFile.takeIf { it.exists() && it.length() > 0L }
+}
 
 plugins {
   alias(libs.plugins.android.application)
@@ -8,34 +28,26 @@ plugins {
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.aistudio.meditracker"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
     applicationId = "com.aistudio.meditracker.zqxpr"
     minSdk = 26
     targetSdk = 36
+    // versionCode = 2420 + GITHUB_RUN_NUMBER so CI builds never regress;
+    // versionName must match the app-version marker in RELEASE_NOTES.md.
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
-    versionCode = 1000 + runNumber
-    versionName = "1.$runNumber"
+    versionCode = 2420 + runNumber
+    versionName = "2.5.9"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   signingConfigs {
     getByName("debug") {
-      val ksFile = file("${rootDir}/debug.keystore")
-      val ksBase64File = file("${rootDir}/debug.keystore.base64")
-      if ((!ksFile.exists() || ksFile.length() == 0L) && ksBase64File.exists()) {
-        try {
-          val cleanBase64 = ksBase64File.readText().replace("\\s".toRegex(), "")
-          val decoded = Base64.getDecoder().decode(cleanBase64)
-          ksFile.writeBytes(decoded)
-        } catch (e: Exception) {
-          e.printStackTrace()
-        }
-      }
-      if (ksFile.exists() && ksFile.length() > 0L) {
+      val ksFile = ensureDebugKeystore(rootDir)
+      if (ksFile != null) {
         storeFile = ksFile
         storePassword = "android"
         keyAlias = "androiddebugkey"
@@ -43,6 +55,10 @@ android {
       }
     }
     create("release") {
+      // 1) real keystore via KEYSTORE_PATH env → production signing;
+      // 2) explicit opt-in (gradle.properties / -P flag / env var) →
+      //    debug key + loud warning banner (the CI/distribution path);
+      // 3) otherwise release packaging fails with instructions.
       val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
       val hasCustomReleaseKey = !releaseKeystorePath.isNullOrBlank() && file(releaseKeystorePath).let { it.exists() && it.isFile }
       if (hasCustomReleaseKey) {
@@ -51,22 +67,62 @@ android {
         keyAlias = System.getenv("KEY_ALIAS").takeIf { !it.isNullOrBlank() } ?: "upload"
         keyPassword = System.getenv("KEY_PASSWORD")
       } else {
-        val ksFile = file("${rootDir}/debug.keystore")
-        val ksBase64File = file("${rootDir}/debug.keystore.base64")
-        if ((!ksFile.exists() || ksFile.length() == 0L) && ksBase64File.exists()) {
-          try {
-            val cleanBase64 = ksBase64File.readText().replace("\\s".toRegex(), "")
-            val decoded = Base64.getDecoder().decode(cleanBase64)
-            ksFile.writeBytes(decoded)
-          } catch (e: Exception) {
-            e.printStackTrace()
+        val optInDebugSigning = (
+            providers.gradleProperty("allowDebugSigning").getOrElse("false")
+              .equals("true", ignoreCase = true)
+            ) || (
+            System.getenv("ALLOW_DEBUG_SIGNING")?.equals("true", ignoreCase = true) ?: false
+            )
+        if (optInDebugSigning) {
+          val ksFile = ensureDebugKeystore(rootDir)
+          if (ksFile != null) {
+            storeFile = ksFile
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+            // Visible from both the Gradle console and the CI logs:
+            logger.warn(
+              "╔══════════════════════════════════════════════════════════════╗\n" +
+              "║  ⚠  RELEASE APK SIGNED WITH THE DEBUG KEY (explicit opt-in)  ║\n" +
+              "║  This is a CI/distribution convenience, NOT a production      ║\n" +
+              "║  signature. Do NOT ship this artifact to a store.             ║\n" +
+              "╚══════════════════════════════════════════════════════════════╝"
+            )
+            // Machine-readable flag for CI steps (artifact naming/notices).
+            project.extra["releaseSignedWithDebugKey"] = true
           }
-        }
-        if (ksFile.exists() && ksFile.length() > 0L) {
-          storeFile = ksFile
-          storePassword = "android"
-          keyAlias = "androiddebugkey"
-          keyPassword = "android"
+          // ksFile == null → AGP default debug keystore; already warned above.
+        } else {
+          // Fail only when release packaging is actually requested.
+          val requested = gradle.startParameter.taskNames.map { it.substringAfterLast(':') }
+          val wantsReleasePackaging = requested.any { n ->
+            n.equals("assemble", true) || n.equals("build", true) || n.equals(
+              "assembleRelease", true
+            ) || (n.endsWith("Release", true) && (
+                n.startsWith("assemble") || n.startsWith("package") ||
+                    n.startsWith("bundle") || n.startsWith("install")))
+          }
+          if (wantsReleasePackaging) {
+            throw GradleException(
+              """RELEASE SIGNING IS NOT CONFIGURED — and silent fallbacks are OFF.
+
+  This build would have produced a "release" APK secretly signed with the
+  debug key. That is fine for CI convenience builds, but it must never
+  happen by accident in a real production distribution.
+
+  Pick ONE:
+    a) Provide a real release keystore:
+         KEYSTORE_PATH=/path/release.keystore \
+         STORE_PASSWORD=... KEY_ALIAS=... KEY_PASSWORD=... gradle assembleRelease
+       (in CI these come from the KEYSTORE_BASE64 / STORE_PASSWORD /
+        KEY_ALIAS / KEY_PASSWORD secrets — see android.yml)
+    b) Explicitly accept a debug-signed build — ONE line, no flags, no
+       workflow edits (this is what the shipped gradle.properties does):
+         echo 'allowDebugSigning=true' >> gradle.properties
+       (or: gradle assembleRelease -PallowDebugSigning=true)
+       The artifact will be loudly marked as debug-signed in the logs.""".trimIndent()
+            )
+          }
         }
       }
     }
@@ -75,8 +131,16 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // R8 shrinking keeps the icon/material libraries from bloating the
+      // dex — minified it is roughly 4x smaller, so the download and the
+      // installed footprint stay small.
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      // Signing: either the real release key (KEYSTORE_PATH) or the
+      // explicitly opted-in debug key — see the signingConfigs policy
+      // above. The debug fallback here only covers the pathological
+      // "opted in but no debug.keystore file at all" case (AGP's default).
       val relConfig = signingConfigs.getByName("release")
       signingConfig = if (relConfig.storeFile != null && relConfig.storeFile?.exists() == true) {
         relConfig

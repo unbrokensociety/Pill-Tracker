@@ -22,14 +22,22 @@ class AlarmReceiver : BroadcastReceiver() {
         const val ACTION_SNOOZE = "com.aistudio.meditracker.meditracker.ACTION_SNOOZE"
         const val ACTION_TAKEN = "com.aistudio.meditracker.meditracker.ACTION_TAKEN"
         const val EXTRA_SNOOZE_MINUTES = "EXTRA_SNOOZE_MINUTES"
+        // 0 (absent) = the real alarm, 1..MAX_FOLLOW_UPS = a quiet follow-up.
+        const val EXTRA_FOLLOW_UP = "EXTRA_FOLLOW_UP"
+        // Alarm mode never nags forever: after the alarm itself there are at
+        // most two quiet follow-ups, FOLLOW_UP_DELAY_MINUTES apart.
+        const val MAX_FOLLOW_UPS = 2
+        const val FOLLOW_UP_DELAY_MINUTES = 10
         private const val CHANNEL_NORMAL = "medication_channel"
         private const val CHANNEL_CRITICAL = "medication_channel_critical"
+        private const val CHANNEL_GENTLE = "medication_channel_gentle"
     }
 
     override fun onReceive(context: Context, intent: Intent?) {
         val localizedContext = LocaleHelper.getLocalizedContext(context)
         val medicationName = intent?.getStringExtra("EXTRA_MEDICATION_NAME") ?: localizedContext.getString(R.string.alarm_default_med)
         val scheduleId = intent?.getIntExtra("EXTRA_SCHEDULE_ID", -1) ?: -1
+        val followUp = intent?.getIntExtra(EXTRA_FOLLOW_UP, 0) ?: 0
 
         if (intent?.action == ACTION_SNOOZE) {
             val snoozeMinutes = intent.getIntExtra(EXTRA_SNOOZE_MINUTES, 15)
@@ -144,7 +152,14 @@ class AlarmReceiver : BroadcastReceiver() {
                 }
 
                 if (isNotifEnabled && !alreadyTakenToday && !courseFinished) {
-                    showNotification(context, medicationName, scheduleId, isPersistent, isCritical, isAlarmMode)
+                    showNotification(context, medicationName, scheduleId, isPersistent, isCritical, isAlarmMode, followUp)
+
+                    // Alarm mode: line up the next quiet follow-up, up to the cap.
+                    if (isAlarmMode && scheduleId != -1 && followUp < MAX_FOLLOW_UPS) {
+                        AlarmScheduler(context.applicationContext).scheduleFollowUp(
+                            scheduleId, medicationName, FOLLOW_UP_DELAY_MINUTES, followUp + 1
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -160,8 +175,12 @@ class AlarmReceiver : BroadcastReceiver() {
         scheduleId: Int,
         persistent: Boolean,
         critical: Boolean,
-        alarmMode: Boolean
+        alarmMode: Boolean,
+        followUp: Int
     ) {
+        // A follow-up is deliberately quiet: normal notification sound, short
+        // vibration, no full-screen takeover.
+        val gentle = followUp > 0
         val localizedContext = LocaleHelper.getLocalizedContext(context)
         val notificationManager = localizedContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -180,9 +199,26 @@ class AlarmReceiver : BroadcastReceiver() {
         } catch (_: Exception) {
             false
         }
-        val channelId = if (critical && policyGranted) CHANNEL_CRITICAL else CHANNEL_NORMAL
+        val channelId = when {
+            gentle -> CHANNEL_GENTLE
+            critical && policyGranted -> CHANNEL_CRITICAL
+            else -> CHANNEL_NORMAL
+        }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (gentle && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val gentleChannel = NotificationChannel(
+                CHANNEL_GENTLE,
+                localizedContext.getString(R.string.alarm_channel_gentle_name),
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = localizedContext.getString(R.string.alarm_channel_gentle_desc)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 250)
+            }
+            notificationManager.createNotificationChannel(gentleChannel)
+        }
+
+        if (!gentle && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
                 localizedContext.getString(
@@ -261,16 +297,28 @@ class AlarmReceiver : BroadcastReceiver() {
 
         val builder = NotificationCompat.Builder(localizedContext, channelId)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle(localizedContext.getString(R.string.alarm_title, finalMedName))
-            .setContentText(localizedContext.getString(R.string.alarm_text))
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setSound(alarmUri)
-            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
+            .setContentTitle(
+                localizedContext.getString(
+                    if (gentle) R.string.alarm_followup_title else R.string.alarm_title,
+                    finalMedName
+                )
+            )
+            .setContentText(
+                localizedContext.getString(
+                    if (gentle) R.string.alarm_followup_text else R.string.alarm_text
+                )
+            )
+            .setPriority(if (gentle) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_MAX)
+            .setCategory(if (gentle) NotificationCompat.CATEGORY_REMINDER else NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(pendingIntent)
             .addAction(0, localizedContext.getString(R.string.notif_taken), takenPendingIntent)
             .addAction(0, localizedContext.getString(R.string.snooze_15m), snooze15PendingIntent)
             .addAction(0, localizedContext.getString(R.string.snooze_30m), snooze30PendingIntent)
+
+        if (!gentle) {
+            builder.setSound(alarmUri)
+            builder.setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
+        }
 
         if (persistent) {
             // Pinned "island" reminder: it survives in the shade until the
@@ -281,15 +329,18 @@ class AlarmReceiver : BroadcastReceiver() {
             // top island while the dose is pending.
             builder.setOngoing(true)
             builder.setAutoCancel(false)
-            builder.setOnlyAlertOnce(true)
+            // The first alert is the only loud one; a follow-up replaces the
+            // pinned notification and may chime softly once.
+            builder.setOnlyAlertOnce(!gentle)
             builder.setWhen(System.currentTimeMillis())
             builder.setUsesChronometer(true)
         } else {
             builder.setAutoCancel(true)
         }
 
-        if (alarmMode) {
-            // Alarm-clock presentation: wake the screen and ring until answered.
+        if (alarmMode && !gentle) {
+            // Alarm-clock presentation: wake the screen and ring for a minute
+            // at most (the activity silences itself).
             val fullScreenIntent = Intent(localizedContext, AlarmFullScreenActivity::class.java).apply {
                 putExtra("EXTRA_SCHEDULE_ID", scheduleId)
                 putExtra("EXTRA_MEDICATION_NAME", finalMedName)

@@ -45,7 +45,7 @@
     <string name="alarm_channel_critical_desc">Звук, который доносится даже в режиме «Не беспокоить»</string>
     <string name="notif_taken">Принято</string>
     <string name="settings_alarm_mode">Режим будильника</string>
-    <string name="settings_alarm_mode_desc">Будильник на весь экран: будит дисплей и звонит, пока вы не примете или не отложите</string>
+    <string name="settings_alarm_mode_desc">Полноэкранный будильник, который включает экран. Звук нарастает постепенно и сам выключается через минуту; если приём не отмечен, позже придут два тихих повтора — без бесконечного звонка</string>
     <string name="settings_alarm_blocked">Нажмите здесь, чтобы разрешить показ на весь экран в настройках системы</string>
     <string name="settings_title">Настройки</string>
     <string name="settings_theme">Тема</string>
@@ -142,7 +142,7 @@
     <string name="ob_reminder_title">Как приходит напоминание</string>
     <string name="ob_reminder_desc">В час приёма сверху опустится островок:</string>
     <string name="ob_reminder_explain">«Принято» — и оно исчезнет. Заняты — «Отложить», и оно вернётся через 15 минут.</string>
-    <string name="ob_reminder_alarm">Если приём так и не отмечен — включится будильник на весь экран, который слышно даже в беззвучном режиме.</string>
+    <string name="ob_reminder_alarm">Нужно громче? Включите режим будильника в Настройках: полноэкранный будильник со звуком, который нарастает и сам выключается через минуту.</string>
     <string name="ob_alarm_label">Полноэкранный будильник</string>
     <string name="ob_demo_title">Попробуйте: отметьте приём</string>
     <string name="ob_demo_desc">Кружок справа работает так же, как на главном экране.</string>
@@ -195,4 +195,10 @@
     <string name="upd_minimize">Свернуть</string>
     <string name="upd_releases">Страница релизов</string>
     <string name="upd_installer_hint">Когда скачивание закончится, установщик откроется сам — останется нажать «Установить». Файл обновления живёт внутри приложения (в проводнике ничего не появится) и удаляется сразу после обновления.</string>
+    <string name="alarm_silence">Выключить звук</string>
+    <string name="alarm_silenced">Звук выключен. Напоминание остаётся в уведомлениях.</string>
+    <string name="alarm_followup_title">Ещё не принято: %1$s</string>
+    <string name="alarm_followup_text">Нажмите «Принял», когда выпьете, или отложите на потом.</string>
+    <string name="alarm_channel_gentle_name">Мягкие напоминания</string>
+    <string name="alarm_channel_gentle_desc">Тихие повторы, если приём ещё не отмечен</string>
 </resources>

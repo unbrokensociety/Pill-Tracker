@@ -107,8 +107,8 @@ internal fun UpdateDialog(
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                Color(0xFF1C232E),
-                                Color(0xFF151B24)
+                                Color(0xFF17181D),
+                                Color(0xFF0C0D10)
                             )
                         )
                     )

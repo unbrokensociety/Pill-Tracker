@@ -74,6 +74,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -303,14 +304,6 @@ private fun buildTourSteps(): List<TourStep> = listOf(
         icon = Icons.Filled.CalendarMonth,
         titleRes = R.string.ob_step_cal_title,
         descRes = R.string.ob_step_cal_desc,
-        primaryRes = R.string.ob_next
-    ),
-    TourStep(
-        tag = "settings_content",
-        wantPage = 3,
-        icon = Icons.Filled.Tune,
-        titleRes = R.string.ob_step_settings_title,
-        descRes = R.string.ob_step_settings_desc,
         primaryRes = R.string.ob_next
     ),
     TourStep(
@@ -749,16 +742,36 @@ private fun ReminderSlide() {
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 
-    Spacer(modifier = Modifier.height(16.dp))
+    Spacer(modifier = Modifier.height(18.dp))
 
-    AlarmMockArt()
+    AlarmTip()
+}
 
-    Spacer(modifier = Modifier.height(12.dp))
-    Text(
-        text = stringResource(R.string.ob_reminder_alarm),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+// Alarm mode is optional and lives in Settings, so the tour mentions it in one
+// calm line instead of staging a second mock-up.
+@Composable
+private fun AlarmTip() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Alarm,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
+        Text(
+            text = stringResource(R.string.ob_reminder_alarm),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 /* ── Slide 4: the notification permission, asked honestly ── */

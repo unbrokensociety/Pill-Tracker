@@ -10,6 +10,11 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 class AlarmScheduler(private val context: Context) {
+    companion object {
+        // No snooze length equals 10 minutes, so this slot is free.
+        const val FOLLOW_UP_SLOT = 10
+    }
+
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun scheduleAlarm(schedule: Schedule, medicationName: String) {
@@ -60,6 +65,9 @@ class AlarmScheduler(private val context: Context) {
     }
 
     fun scheduleSnooze(scheduleId: Int, medicationName: String, snoozeMinutes: Int) {
+        // A snooze replaces any pending follow-up: the user has just answered.
+        cancelFollowUp(scheduleId)
+
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("EXTRA_SCHEDULE_ID", scheduleId)
             putExtra("EXTRA_MEDICATION_NAME", medicationName)
@@ -94,6 +102,54 @@ class AlarmScheduler(private val context: Context) {
         }
     }
 
+    /**
+     * A quiet follow-up for a dose that is still not marked (alarm mode only).
+     * Only one is pending at a time: it lives in its own request-code slot, so
+     * scheduling the next one simply replaces the previous.
+     * [repeat] is the 1-based number of this follow-up.
+     */
+    fun scheduleFollowUp(scheduleId: Int, medicationName: String, minutes: Int, repeat: Int) {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            putExtra("EXTRA_SCHEDULE_ID", scheduleId)
+            putExtra("EXTRA_MEDICATION_NAME", medicationName)
+            putExtra(AlarmReceiver.EXTRA_FOLLOW_UP, repeat)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            scheduleId * 1000 + FOLLOW_UP_SLOT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val triggerAtMillis = System.currentTimeMillis() + (minutes * 60 * 1000L)
+
+        try {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        } catch (e: Exception) {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMillis,
+                pendingIntent
+            )
+        }
+    }
+
+    fun cancelFollowUp(scheduleId: Int) {
+        val intent = Intent(context, AlarmReceiver::class.java)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            scheduleId * 1000 + FOLLOW_UP_SLOT,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+    }
+
     fun cancelAlarm(schedule: Schedule) {
         val intent = Intent(context, AlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
@@ -105,11 +161,12 @@ class AlarmScheduler(private val context: Context) {
         alarmManager.cancel(pendingIntent)
     }
 
-    // Snooze alarms use the requestCode space scheduleId * 1000 + minutes.
-    // Cancelling the two supported snooze lengths drops any pending snooze
-    // for a dose that has just been logged as taken.
+    // Snooze alarms use the requestCode space scheduleId * 1000 + minutes, and
+    // the follow-up reminder uses the slot FOLLOW_UP_SLOT of the same space.
+    // Cancelling them drops anything pending for a dose that has just been
+    // logged as taken (or snoozed again).
     fun cancelSnoozeAlarms(scheduleId: Int) {
-        listOf(15, 30).forEach { minutes ->
+        listOf(FOLLOW_UP_SLOT, 15, 30, 60).forEach { minutes ->
             val intent = Intent(context, AlarmReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,

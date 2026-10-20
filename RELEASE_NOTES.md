@@ -1,11 +1,12 @@
-> app-version: 2.6.0
+> app-version: 2.7.0
 
-* Privacy policy now matches what the app actually does: removed the
-  leftover mentions of HIPAA and Firestore, listed every permission and
-  why it is needed, dropped the "allowBackup" jargon
-* Texts are plainer: shorter About card, no emoji in the streak card,
-  and the onboarding no longer claims the app asks for a single
-  permission or never touches the internet (updates use it)
-* Behind the scenes: the repository was reorganised, the interval
-  schedule is covered by unit tests and the build script was cleaned up
-* Everything else is exactly as it was
+* The dark theme is now truly dark: a pure black background, softer
+  card surfaces and a cleaner accent
+* Alarm mode no longer rings endlessly: the sound rises gradually and stops
+  by itself after a minute (or at once with "Silence"); if the dose is still
+  not marked, at most two quiet follow-ups arrive 10 minutes apart
+* Shorter onboarding: a calmer reminders slide and a four-step tour
+* The privacy policy now matches what the app does, and the wording is
+  plainer across the app
+* Behind the scenes: repository reorganised, interval schedule covered by
+  unit tests, CI refuses releases without app code or with a wrong version

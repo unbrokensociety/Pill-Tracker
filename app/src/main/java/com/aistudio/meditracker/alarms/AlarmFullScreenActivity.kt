@@ -7,6 +7,8 @@ import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.view.WindowManager
@@ -46,9 +48,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,11 +73,38 @@ import java.time.format.DateTimeFormatter
 
 // Full-screen alarm presentation for a medication reminder. Launched by the
 // notification's full-screen intent: turns the display on over the lock
-// screen and rings (alarm stream, looping) until the dose is taken or snoozed.
+// screen and rings on the alarm stream. It is built not to wear the user out:
+// the volume rises gradually, and the sound stops by itself after
+// RING_LIMIT_MS (or at once on "Silence"). The reminder stays on screen and in
+// the notification shade, and AlarmReceiver sends at most two quiet follow-ups.
 class AlarmFullScreenActivity : ComponentActivity() {
+
+    private companion object {
+        const val RING_LIMIT_MS = 60_000L
+        const val RAMP_STEPS = 20
+        const val RAMP_STEP_MS = 500L
+        const val RAMP_START = 0.15f
+    }
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var rampStep = 0
+    private var silenced by mutableStateOf(false)
+
+    private val rampRunnable = object : Runnable {
+        override fun run() {
+            rampStep++
+            val volume = (RAMP_START + (1f - RAMP_START) * rampStep / RAMP_STEPS).coerceAtMost(1f)
+            try {
+                mediaPlayer?.setVolume(volume, volume)
+            } catch (_: Exception) {
+            }
+            if (rampStep < RAMP_STEPS) handler.postDelayed(this, RAMP_STEP_MS)
+        }
+    }
+
+    private val silenceRunnable = Runnable { silence() }
 
     override fun attachBaseContext(newBase: Context) {
         val lang = LocaleHelper.getLanguage(newBase)
@@ -103,13 +135,15 @@ class AlarmFullScreenActivity : ComponentActivity() {
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
-                    primary = Color(0xFF2DD4BF),
-                    background = Color(0xFF0A121F),
-                    surface = Color(0xFF111C2E)
+                    primary = AlarmAccent,
+                    background = Color.Black,
+                    surface = Color(0xFF0C0D10)
                 )
             ) {
                 AlarmScreen(
                     medicationName = medicationName,
+                    silenced = silenced,
+                    onSilence = { silence() },
                     onTaken = {
                         fireAction(AlarmReceiver.ACTION_TAKEN, scheduleId, medicationName, 0)
                     },
@@ -153,9 +187,13 @@ class AlarmFullScreenActivity : ComponentActivity() {
                             .build()
                     )
                     isLooping = true
+                    setVolume(RAMP_START, RAMP_START)
                     prepare()
                     start()
                 }
+                rampStep = 0
+                handler.postDelayed(rampRunnable, RAMP_STEP_MS)
+                handler.postDelayed(silenceRunnable, RING_LIMIT_MS)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -164,7 +202,7 @@ class AlarmFullScreenActivity : ComponentActivity() {
         try {
             val vibe = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
             if (vibe != null && vibe.hasVibrator()) {
-                vibe.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 600, 250, 600), 0))
+                vibe.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 400, 700), 0))
                 vibrator = vibe
             }
         } catch (e: Exception) {
@@ -172,7 +210,16 @@ class AlarmFullScreenActivity : ComponentActivity() {
         }
     }
 
+    // Sound and vibration off, screen free to sleep; the reminder itself stays.
+    private fun silence() {
+        stopRinging()
+        silenced = true
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
     private fun stopRinging() {
+        handler.removeCallbacks(rampRunnable)
+        handler.removeCallbacks(silenceRunnable)
         try {
             mediaPlayer?.stop()
         } catch (_: Exception) {
@@ -195,9 +242,16 @@ class AlarmFullScreenActivity : ComponentActivity() {
     }
 }
 
+private val AlarmAccent = Color(0xFF38BDF8)
+private val AlarmOnAccent = Color(0xFF00263A)
+private val AlarmText = Color(0xFFEDEEF2)
+private val AlarmMuted = Color(0xFF9A9FAB)
+
 @Composable
 private fun AlarmScreen(
     medicationName: String,
+    silenced: Boolean,
+    onSilence: () -> Unit,
     onTaken: () -> Unit,
     onSnooze15: () -> Unit,
     onSnooze30: () -> Unit
@@ -206,12 +260,14 @@ private fun AlarmScreen(
     val finalName = if (medicationName.isBlank()) defaultName else medicationName
     val timeText = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
 
+    // A slow, small breathing motion while it rings; completely still once
+    // the sound is off.
     val transition = rememberInfiniteTransition(label = "alarmPulse")
     val pulse by transition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
+        initialValue = 0.96f,
+        targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = LinearEasing),
+            animation = tween(2400, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "alarmPulseScale"
@@ -220,11 +276,7 @@ private fun AlarmScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF0A121F), Color(0xFF102A3C), Color(0xFF0A121F))
-                )
-            )
+            .background(Color.Black)
     ) {
         Column(
             modifier = Modifier
@@ -238,21 +290,21 @@ private fun AlarmScreen(
         ) {
             Text(
                 text = timeText,
-                fontSize = 64.sp,
+                fontSize = 60.sp,
                 fontWeight = FontWeight.Light,
-                color = Color(0xFF2DD4BF)
+                color = AlarmText
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
             Box(
                 modifier = Modifier
-                    .size(96.dp)
-                    .scale(pulse)
+                    .size(92.dp)
+                    .scale(if (silenced) 1f else pulse)
                     .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
-                            listOf(Color(0xFF2DD4BF).copy(alpha = 0.35f), Color(0x142DD4BF))
+                            listOf(AlarmAccent.copy(alpha = 0.28f), AlarmAccent.copy(alpha = 0.06f))
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -260,8 +312,8 @@ private fun AlarmScreen(
                 Icon(
                     imageVector = Icons.Filled.Alarm,
                     contentDescription = null,
-                    tint = Color(0xFF2DD4BF),
-                    modifier = Modifier.size(48.dp)
+                    tint = AlarmAccent,
+                    modifier = Modifier.size(44.dp)
                 )
             }
 
@@ -269,10 +321,10 @@ private fun AlarmScreen(
 
             Text(
                 text = stringResource(R.string.alarm_title, finalName),
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
                 textAlign = TextAlign.Center,
-                color = Color.White,
+                color = AlarmText,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -280,35 +332,35 @@ private fun AlarmScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = stringResource(R.string.alarm_text),
-                fontSize = 16.sp,
+                text = stringResource(if (silenced) R.string.alarm_silenced else R.string.alarm_text),
+                fontSize = 15.sp,
                 textAlign = TextAlign.Center,
-                color = Color(0xFF9DB4C6)
+                color = AlarmMuted
             )
 
-            Spacer(modifier = Modifier.height(44.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             Button(
                 onClick = onTaken,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .height(60.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2DD4BF),
-                    contentColor = Color(0xFF062019)
+                    containerColor = AlarmAccent,
+                    contentColor = AlarmOnAccent
                 )
             ) {
-                Icon(imageVector = Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(24.dp))
+                Icon(imageVector = Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(22.dp))
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(
                     text = stringResource(R.string.notif_taken),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -318,11 +370,9 @@ private fun AlarmScreen(
                     onClick = onSnooze15,
                     modifier = Modifier
                         .weight(1f)
-                        .height(56.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF9DB4C6)
-                    )
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AlarmText)
                 ) {
                     Text(text = stringResource(R.string.snooze_15m))
                 }
@@ -330,13 +380,21 @@ private fun AlarmScreen(
                     onClick = onSnooze30,
                     modifier = Modifier
                         .weight(1f)
-                        .height(56.dp),
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF9DB4C6)
-                    )
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AlarmText)
                 ) {
                     Text(text = stringResource(R.string.snooze_30m))
+                }
+            }
+
+            if (!silenced) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = onSilence) {
+                    Text(
+                        text = stringResource(R.string.alarm_silence),
+                        color = AlarmMuted
+                    )
                 }
             }
         }

@@ -45,7 +45,7 @@
     <string name="alarm_channel_critical_desc">Sound that reaches you even in Do Not Disturb</string>
     <string name="notif_taken">Taken</string>
     <string name="settings_alarm_mode">Alarm mode</string>
-    <string name="settings_alarm_mode_desc">A full-screen alarm that wakes the display and rings until you take it or snooze</string>
+    <string name="settings_alarm_mode_desc">A full-screen alarm that wakes the display. The sound rises gradually and stops by itself after a minute; if the dose is still not marked, two quiet follow-ups arrive later — never an endless ring</string>
     <string name="settings_alarm_blocked">Tap here to allow full-screen display in system settings</string>
     <string name="settings_title">Settings</string>
     <string name="settings_theme">Theme</string>
@@ -142,7 +142,7 @@
     <string name="ob_reminder_title">How a reminder looks</string>
     <string name="ob_reminder_desc">At dose time an island slides down from the top:</string>
     <string name="ob_reminder_explain">Tap “Taken” and it’s gone. Busy? “Snooze” brings it back in 15 minutes.</string>
-    <string name="ob_reminder_alarm">If the dose stays unmarked, a full-screen alarm takes over — audible even in silent mode.</string>
+    <string name="ob_reminder_alarm">Want something louder? Turn on alarm mode in Settings: a full-screen alarm with a gradually rising sound that stops by itself after a minute.</string>
     <string name="ob_alarm_label">Full-screen alarm</string>
     <string name="ob_demo_title">Try it: mark a dose</string>
     <string name="ob_demo_desc">The circle on the right works just like on the home screen.</string>
@@ -195,4 +195,10 @@
     <string name="upd_minimize">Hide</string>
     <string name="upd_releases">Releases page</string>
     <string name="upd_installer_hint">When the download finishes, the installer opens by itself — just tap “Install”. The update file lives inside the app (nothing appears in your file manager) and is deleted right after the update.</string>
+    <string name="alarm_silence">Silence</string>
+    <string name="alarm_silenced">Sound off. The reminder stays in your notifications.</string>
+    <string name="alarm_followup_title">Still not taken: %1$s</string>
+    <string name="alarm_followup_text">Tap “Taken” once you’ve had it, or snooze for later.</string>
+    <string name="alarm_channel_gentle_name">Gentle reminders</string>
+    <string name="alarm_channel_gentle_desc">Quiet follow-ups when a dose is still not marked</string>
 </resources>

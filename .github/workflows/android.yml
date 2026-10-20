@@ -76,6 +76,18 @@ jobs:
             echo "::warning::No KEYSTORE_BASE64 secret — the APK will be signed with the debug key (explicit opt-in, -PallowDebugSigning=true). Fine for GitHub Releases + in-app updates, NOT for a store."
           fi
 
+      - name: Check version marker
+        # The in-app updater compares versionName with the app-version marker
+        # in RELEASE_NOTES.md; if they differ no user is ever offered the update.
+        run: |
+          NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts | head -1)
+          MARK=$(grep -oP '^> app-version: \K[0-9.]+' RELEASE_NOTES.md | head -1)
+          echo "versionName=$NAME  marker=$MARK"
+          if [ -z "$NAME" ] || [ "$NAME" != "$MARK" ]; then
+            echo "::error::versionName ($NAME) and the app-version marker in RELEASE_NOTES.md ($MARK) must match"
+            exit 1
+          fi
+
       - name: Build Release APK
         # The flag is a fallback: allowDebugSigning=true also ships in
         # gradle.properties, so a bare `gradle assembleRelease` builds too.
@@ -108,6 +120,13 @@ jobs:
             fi
           fi
           ls -la pill-tracker.apk
+
+      - name: Verify APK contains the app code
+        run: |
+          unzip -l pill-tracker.apk | grep -q 'classes.*\.dex' || { echo "::error::no classes.dex in the APK"; exit 1; }
+          unzip -p pill-tracker.apk 'classes*.dex' | grep -qa 'com/aistudio/meditracker/MainActivity' \
+            || { echo "::error::MainActivity is missing from the APK - sources were not compiled"; exit 1; }
+          echo "APK contains the app code"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
